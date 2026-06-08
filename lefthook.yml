@@ -1,0 +1,16 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: bun run tsc
+
+    fix:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: bunx ultracite fix {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}
