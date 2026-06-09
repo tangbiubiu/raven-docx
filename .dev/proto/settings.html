@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>设置 — AgentWrite</title>
+    <style>
+      /* ============================================================
+       Modern minimal — same tokens as editor
+       ============================================================ */
+      :root {
+        --bg: oklch(99% 0.002 240);
+        --bg-alt: oklch(97% 0.003 250);
+        --surface: oklch(100% 0 0);
+        --fg: oklch(18% 0.012 250);
+        --muted: oklch(54% 0.012 250);
+        --border: oklch(92% 0.005 250);
+        --accent: oklch(58% 0.18 255);
+        --danger: oklch(58% 0.18 15);
+        --success: oklch(58% 0.16 145);
+        --warning: oklch(65% 0.14 85);
+        --shell-bg: #1a1c20;
+
+        --font-display:
+          -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui,
+          sans-serif;
+        --font-body:
+          -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui,
+          sans-serif;
+        --font-mono:
+          "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+      }
+
+      [data-theme="dark"] {
+        --bg: oklch(16% 0.008 250);
+        --bg-alt: oklch(20% 0.008 250);
+        --surface: oklch(22% 0.008 250);
+        --fg: oklch(92% 0.005 250);
+        --muted: oklch(64% 0.01 250);
+        --border: oklch(28% 0.01 250);
+        --accent: oklch(65% 0.18 255);
+        --shell-bg: #0d0f12;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: var(--shell-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-body);
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+      }
+
+      .app-window {
+        width: min(100vw - 48px, 720px);
+        height: min(100vh - 48px, 820px);
+        background: var(--bg);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.06),
+          0 8px 32px rgba(0, 0, 0, 0.35);
+      }
+
+      /* Title bar */
+      .title-bar {
+        display: flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 12px;
+        background: var(--bg-alt);
+        border-bottom: 1px solid var(--border);
+        -webkit-app-region: drag;
+        user-select: none;
+        flex-shrink: 0;
+      }
+      .traffic-lights {
+        display: flex;
+        gap: 8px;
+        margin-right: 12px;
+      }
+      .traffic-lights span {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: block;
+      }
+      .tl-close {
+        background: #ff5f57;
+      }
+      .tl-min {
+        background: #ffbd2e;
+      }
+      .tl-max {
+        background: #28c840;
+      }
+      .title-bar .win-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--fg);
+        letter-spacing: -0.01em;
+      }
+      .title-bar .btn-back {
+        margin-left: auto;
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 5px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+        font-family: var(--font-body);
+        letter-spacing: -0.01em;
+        transition: all 0.12s;
+        -webkit-app-region: no-drag;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .title-bar .btn-back:hover {
+        background: var(--border);
+      }
+
+      /* Scrollable content */
+      .settings-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px 40px;
+      }
+
+      /* Section */
+      .settings-section {
+        margin-bottom: 32px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid #000;
+      }
+      .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+      .section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+
+      /* Field row */
+      .field {
+        margin-bottom: 16px;
+      }
+      .field-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--fg);
+        letter-spacing: -0.01em;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .field-label .hint {
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--muted);
+        font-family: var(--font-body);
+      }
+      .field-input {
+        width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        font-size: 13px;
+        font-family: var(--font-mono);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--fg);
+        outline: none;
+        letter-spacing: 0.02em;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .field-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px oklch(58% 0.18 255 / 0.1);
+      }
+      .field-input::placeholder {
+        font-family: var(--font-body);
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+
+      /* Input with action */
+      .input-row {
+        display: flex;
+        gap: 8px;
+      }
+      .input-row .field-input {
+        flex: 1;
+      }
+      .btn-sm {
+        height: 38px;
+        padding: 0 14px;
+        font-size: 12px;
+        font-family: var(--font-body);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--fg);
+        cursor: pointer;
+        white-space: nowrap;
+        letter-spacing: -0.01em;
+        transition: all 0.12s;
+      }
+      .btn-sm:hover {
+        background: var(--bg-alt);
+      }
+      .btn-sm.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .btn-sm.primary:hover {
+        opacity: 0.88;
+      }
+
+      /* Select */
+      .field-select {
+        width: 100%;
+        height: 38px;
+        padding: 0 10px;
+        font-size: 13px;
+        font-family: var(--font-body);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--fg);
+        outline: none;
+        cursor: pointer;
+        letter-spacing: -0.01em;
+        transition: border-color 0.15s;
+      }
+      .field-select:focus {
+        border-color: var(--accent);
+      }
+
+      /* Toggle switch */
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .toggle-label {
+        font-size: 13px;
+        color: var(--fg);
+        letter-spacing: -0.01em;
+      }
+      .toggle-label .desc {
+        font-size: 11px;
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .toggle {
+        width: 42px;
+        height: 24px;
+        border-radius: 12px;
+        background: var(--border);
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .toggle.on {
+        background: var(--accent);
+      }
+      .toggle::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        top: 2px;
+        left: 2px;
+        transition: transform 0.2s;
+      }
+      .toggle.on::after {
+        transform: translateX(18px);
+      }
+
+      /* Status badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 6px;
+        letter-spacing: -0.01em;
+      }
+      .status-badge.ok {
+        background: oklch(58% 0.16 145 / 0.1);
+        color: var(--success);
+      }
+      .status-badge.warn {
+        background: oklch(65% 0.14 85 / 0.12);
+        color: var(--warning);
+      }
+      .status-badge.error {
+        background: oklch(58% 0.18 15 / 0.08);
+        color: var(--danger);
+      }
+
+      /* Info card */
+      .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        font-size: 12.5px;
+        color: var(--fg);
+        letter-spacing: -0.01em;
+      }
+      .info-card .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+      }
+      .info-card .row + .row {
+        border-top: 1px solid var(--border);
+      }
+      .info-card .row .key {
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 18px;
+        background: oklch(20% 0.015 250);
+        color: #fff;
+        border-radius: 8px;
+        font-size: 12.5px;
+        letter-spacing: -0.01em;
+        z-index: 600;
+        animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: oklch(88% 0.005 250);
+        border-radius: 3px;
+      }
+      [data-theme="dark"] ::-webkit-scrollbar-thumb {
+        background: oklch(32% 0.01 250);
+      }
+
+      ::selection {
+        background: oklch(58% 0.18 255 / 0.22);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-window">
+      <!-- Title bar -->
+      <div class="title-bar">
+        <div class="traffic-lights">
+          <span class="tl-close"></span>
+          <span class="tl-min"></span>
+          <span class="tl-max"></span>
+        </div>
+        <span class="win-title">设置 — AgentWrite</span>
+        <a href="index.html" class="btn-back">← 返回编辑器</a>
+      </div>
+
+      <div class="settings-scroll" id="settings-scroll">
+        <!-- ========== API Key 配置 ========== -->
+        <div class="settings-section">
+          <div class="section-title">API Key 配置</div>
+
+          <!-- API 类型 -->
+          <div class="field">
+            <div class="field-label">
+              API 类型
+              <span class="hint">（必填）</span>
+            </div>
+            <select class="field-select" id="api-type">
+              <option value="openai-completions">OpenAI Completions</option>
+              <option value="openai-responses">OpenAI Response</option>
+              <option value="anthropic">Anthropic</option>
+            </select>
+          </div>
+
+          <!-- API Key -->
+          <div class="field">
+            <div class="field-label">
+              API Key
+              <span class="hint">（可选）</span>
+            </div>
+            <div class="input-row">
+              <input
+                type="password"
+                class="field-input"
+                id="api-key"
+                placeholder="sk-… 或 sk-ant-api03-…"
+                autocomplete="off"
+              />
+              <button class="btn-sm" id="btn-toggle-key" title="显示/隐藏">
+                👁
+              </button>
+            </div>
+          </div>
+
+          <!-- Base URL -->
+          <div class="field">
+            <div class="field-label">
+              Base URL
+              <span class="hint">（可选，自定义 API 端点或代理）</span>
+            </div>
+            <input
+              type="text"
+              class="field-input"
+              id="base-url"
+              placeholder="https://api.openai.com/v1"
+            />
+          </div>
+
+          <!-- 模型选择 -->
+          <div class="field">
+            <div class="field-label">模型选择</div>
+            <select class="field-select" id="model-select">
+              <option value="claude-sonnet-4">Claude Sonnet 4</option>
+              <option value="claude-opus-4">Claude Opus 4</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4.1">GPT-4.1</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="deepseek-v3">DeepSeek V3</option>
+            </select>
+          </div>
+
+          <!-- 测试连接 -->
+          <div class="field" style="margin-bottom: 0; text-align: center">
+            <div
+              class="input-row"
+              style="
+                align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 10px;
+              "
+            >
+              <button
+                class="btn-sm primary"
+                id="btn-test-connection"
+                style="min-width: 160px; padding: 0 28px"
+              >
+                测试连接
+              </button>
+              <span id="test-status"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 模型设置 ========== -->
+        <div class="settings-section">
+          <div class="section-title">模型设置</div>
+
+          <div class="field">
+            <div class="field-label">Thinking / 推理模式</div>
+            <select class="field-select" id="thinking-select">
+              <option value="auto">自动（Agent 自行判断）</option>
+              <option value="always">始终启用扩展推理</option>
+              <option value="never">禁用（快速响应）</option>
+            </select>
+          </div>
+
+          <div class="toggle-row" style="border-bottom: none">
+            <div class="toggle-label">
+              流式输出
+              <span class="desc">Agent 的响应逐字流式显示在侧边栏中</span>
+            </div>
+            <div
+              class="toggle on"
+              id="toggle-streaming"
+              role="switch"
+              tabindex="0"
+            ></div>
+          </div>
+        </div>
+
+        <!-- ========== 许可与激活 ========== -->
+        <div class="settings-section">
+          <div class="section-title">许可与激活</div>
+
+          <div class="info-card" id="activation-card">
+            <div class="row">
+              <span class="key">激活状态</span>
+              <span id="activation-status">—</span>
+            </div>
+            <div class="row">
+              <span class="key">到期时间</span>
+              <span id="activation-expiry">—</span>
+            </div>
+            <div class="row">
+              <span class="key">绑定设备</span>
+              <span id="activation-device">—</span>
+            </div>
+            <div class="row">
+              <span class="key">剩余试用</span>
+              <span id="activation-trial">—</span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top: 14px">
+            <div class="field-label">激活码</div>
+            <div class="input-row">
+              <input
+                type="text"
+                class="field-input"
+                id="activation-code"
+                placeholder="XXXX-XXXX-XXXX-XXXX"
+                style="letter-spacing: 0.08em"
+              />
+              <button class="btn-sm primary" id="btn-activate">激活</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== 编辑器偏好 ========== -->
+        <div class="settings-section">
+          <div class="section-title">编辑器偏好</div>
+
+          <div class="toggle-row">
+            <div class="toggle-label">
+              暗色模式
+              <span class="desc">跟随系统偏好或手动切换</span>
+            </div>
+            <div
+              class="toggle"
+              id="toggle-darkmode"
+              role="switch"
+              tabindex="0"
+            ></div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-label">
+              自动保存
+              <span class="desc">每 30 秒自动保存变更</span>
+            </div>
+            <div
+              class="toggle on"
+              id="toggle-autosave"
+              role="switch"
+              tabindex="0"
+            ></div>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-label">
+              拼写检查
+              <span class="desc">启用浏览器内置拼写检查</span>
+            </div>
+            <div
+              class="toggle on"
+              id="toggle-spellcheck"
+              role="switch"
+              tabindex="0"
+            ></div>
+          </div>
+
+          <div class="field" style="margin-top: 14px">
+            <div class="field-label">默认字体大小</div>
+            <select class="field-select" id="default-font-size">
+              <option value="14">14px</option>
+              <option value="15" selected>15px</option>
+              <option value="16">16px</option>
+              <option value="18">18px</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ========== 危险区域 ========== -->
+        <div class="settings-section">
+          <button
+            class="btn-sm"
+            id="btn-reset"
+            style="
+              border-color: var(--danger);
+              color: var(--danger);
+              width: 100%;
+              justify-content: center;
+              margin-bottom: 8px;
+            "
+          >
+            重置所有设置
+          </button>
+          <button
+            class="btn-sm"
+            id="btn-clear-data"
+            style="
+              border-color: var(--danger);
+              color: var(--danger);
+              width: 100%;
+              justify-content: center;
+            "
+          >
+            清除所有本地数据并退出
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+      "use strict";
+
+      // ---- DOM refs ----
+      const apiType = document.getElementById("api-type");
+      const apiKey = document.getElementById("api-key");
+      const baseUrl = document.getElementById("base-url");
+      const modelSelect = document.getElementById("model-select");
+      const thinkingSelect = document.getElementById("thinking-select");
+      const activationCode = document.getElementById("activation-code");
+      const testStatusEl = document.getElementById("test-status");
+
+      // ---- Theme ----
+      const html = document.documentElement;
+      const toggleDarkmode = document.getElementById("toggle-darkmode");
+
+      function applyTheme(theme) {
+        html.setAttribute("data-theme", theme);
+        toggleDarkmode.classList.toggle("on", theme === "dark");
+      }
+
+      applyTheme(localStorage.getItem("agentwrite:theme") || "light");
+
+      toggleDarkmode.addEventListener("click", () => {
+        const next =
+          html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        applyTheme(next);
+        localStorage.setItem("agentwrite:theme", next);
+        saveAllSettings();
+      });
+
+      // ---- Toast ----
+      function showToast(msg, duration = 2400) {
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.textContent = msg;
+        document.getElementById("toast-container").appendChild(t);
+        setTimeout(() => {
+          t.style.opacity = "0";
+          setTimeout(() => t.remove(), 300);
+        }, duration);
+      }
+
+      // ---- Toggle switches ----
+      function setupToggle(id, key, onChange) {
+        const el = document.getElementById(id);
+        el.addEventListener("click", () => {
+          const v = !el.classList.contains("on");
+          el.classList.toggle("on", v);
+          localStorage.setItem(`agentwrite:${key}`, v);
+          if (onChange) onChange(v);
+          saveAllSettings();
+        });
+        return el;
+      }
+
+      setupToggle("toggle-streaming", "streaming");
+      setupToggle("toggle-autosave", "autosave");
+      setupToggle("toggle-spellcheck", "spellcheck");
+
+      // ---- API Key show/hide ----
+      document
+        .getElementById("btn-toggle-key")
+        .addEventListener("click", () => {
+          const isPwd = apiKey.type === "password";
+          apiKey.type = isPwd ? "text" : "password";
+        });
+
+      // ---- Connection test ----
+      document
+        .getElementById("btn-test-connection")
+        .addEventListener("click", async () => {
+          const type = apiType.value;
+          const key = apiKey.value.trim();
+          const url = baseUrl.value.trim();
+          const model = modelSelect.options[modelSelect.selectedIndex].text;
+
+          testStatusEl.innerHTML =
+            '<span class="status-badge warn">⏳ 测试中…</span>';
+
+          if (!key && !url) {
+            testStatusEl.innerHTML =
+              '<span class="status-badge error">✕ 请至少填入 API Key 或 Base URL</span>';
+            return;
+          }
+
+          await new Promise((r) => setTimeout(r, 1200 + Math.random() * 800));
+
+          const ok = !key.includes("invalid");
+          const label =
+            type === "anthropic"
+              ? "Anthropic"
+              : type === "openai-completions"
+                ? "OpenAI Completions"
+                : "OpenAI Response";
+
+          if (ok) {
+            testStatusEl.innerHTML =
+              '<span class="status-badge ok">✓ 连接成功</span>';
+            showToast(`${label} · ${model} — 连接验证成功`);
+          } else {
+            testStatusEl.innerHTML =
+              '<span class="status-badge error">✕ 连接失败</span>';
+            showToast(`${label} · ${model} — 连接失败，请检查配置`);
+          }
+        });
+
+      // ---- Model select persistence ----
+      modelSelect.addEventListener("change", saveAllSettings);
+      thinkingSelect.addEventListener("change", saveAllSettings);
+
+      // ---- Activation ----
+      function updateActivationCard() {
+        const data = JSON.parse(
+          localStorage.getItem("agentwrite:activation") || "{}",
+        );
+        const now = Date.now();
+        const trialDays = 14;
+        const firstLaunch = parseInt(
+          localStorage.getItem("agentwrite:firstLaunch") || now,
+        );
+
+        if (!localStorage.getItem("agentwrite:firstLaunch")) {
+          localStorage.setItem("agentwrite:firstLaunch", now);
+        }
+
+        const trialRemaining = Math.max(
+          0,
+          trialDays - Math.floor((now - firstLaunch) / 86400000),
+        );
+        const isActivated = data.activated;
+
+        document.getElementById("activation-status").innerHTML = isActivated
+          ? '<span class="status-badge ok">✓ 已激活</span>'
+          : `<span class="status-badge warn">试用中 · 剩余 ${trialRemaining} 天</span>`;
+
+        document.getElementById("activation-expiry").textContent = isActivated
+          ? data.expiry || "永久"
+          : `${trialRemaining} 天后到期`;
+
+        document.getElementById("activation-device").textContent =
+          data.device || 'MacBook Pro 14"';
+
+        document.getElementById("activation-trial").textContent = isActivated
+          ? "已激活，无限使用"
+          : `${trialRemaining} 天免费试用剩余`;
+      }
+
+      updateActivationCard();
+
+      document
+        .getElementById("btn-activate")
+        .addEventListener("click", async () => {
+          const code = activationCode.value.trim();
+          if (!code) {
+            showToast("请输入激活码");
+            return;
+          }
+          if (
+            !/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(
+              code.toUpperCase(),
+            )
+          ) {
+            showToast("激活码格式不正确（XXXX-XXXX-XXXX-XXXX）");
+            return;
+          }
+          showToast("⏳ 验证激活码…");
+          await new Promise((r) => setTimeout(r, 1800));
+          // Simulate validation (demo: accept any valid format)
+          localStorage.setItem(
+            "agentwrite:activation",
+            JSON.stringify({
+              activated: true,
+              code: code.toUpperCase(),
+              expiry: "2027-06-08",
+              device: 'MacBook Pro 14"',
+            }),
+          );
+          showToast("✓ 激活成功！欢迎使用 AgentWrite");
+          updateActivationCard();
+        });
+
+      // ---- Save all settings ----
+      function saveAllSettings() {
+        const settings = {
+          apiType: apiType.value,
+          apiKey: apiKey.value,
+          baseUrl: baseUrl.value,
+          model: modelSelect.value,
+          thinking: thinkingSelect.value,
+          streaming: document
+            .getElementById("toggle-streaming")
+            .classList.contains("on"),
+          autosave: document
+            .getElementById("toggle-autosave")
+            .classList.contains("on"),
+          spellcheck: document
+            .getElementById("toggle-spellcheck")
+            .classList.contains("on"),
+          theme: html.getAttribute("data-theme"),
+          defaultFontSize: document.getElementById("default-font-size").value,
+        };
+        localStorage.setItem("agentwrite:settings", JSON.stringify(settings));
+        // Also sync theme to main app
+        localStorage.setItem("agentwrite:theme", settings.theme);
+        // Sync API keys
+        if (settings.apiKey)
+          localStorage.setItem("agentwrite:api-key", settings.apiKey);
+      }
+
+      // Auto-save on input changes
+      [apiKey, baseUrl].forEach((el) => {
+        el.addEventListener("input", () => {
+          clearTimeout(el._saveTimer);
+          el._saveTimer = setTimeout(saveAllSettings, 600);
+        });
+      });
+
+      document
+        .getElementById("default-font-size")
+        .addEventListener("change", saveAllSettings);
+
+      // ---- Restore settings ----
+      function restoreSettings() {
+        try {
+          const raw = localStorage.getItem("agentwrite:settings");
+          if (!raw) return;
+          const s = JSON.parse(raw);
+          if (s.apiType) apiType.value = s.apiType;
+          if (s.apiKey) apiKey.value = s.apiKey;
+          if (s.baseUrl) baseUrl.value = s.baseUrl;
+
+          if (s.model) modelSelect.value = s.model;
+          if (s.thinking) thinkingSelect.value = s.thinking;
+          if (s.defaultFontSize)
+            document.getElementById("default-font-size").value =
+              s.defaultFontSize;
+          document
+            .getElementById("toggle-streaming")
+            .classList.toggle("on", s.streaming !== false);
+          document
+            .getElementById("toggle-autosave")
+            .classList.toggle("on", s.autosave !== false);
+          document
+            .getElementById("toggle-spellcheck")
+            .classList.toggle("on", s.spellcheck !== false);
+        } catch (_) {}
+      }
+      restoreSettings();
+
+      // ---- Danger zone ----
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        if (confirm("确定要重置所有设置吗？此操作不可撤销。")) {
+          ["agentwrite:settings", "agentwrite:api-key"].forEach((k) => {
+            try {
+              localStorage.removeItem(k);
+            } catch (_) {}
+          });
+          apiType.value = "openai-completions";
+          apiKey.value = "";
+          baseUrl.value = "";
+
+          modelSelect.value = "claude-sonnet-4";
+          thinkingSelect.value = "auto";
+          document.getElementById("toggle-streaming").classList.add("on");
+          document.getElementById("toggle-autosave").classList.add("on");
+          document.getElementById("toggle-spellcheck").classList.add("on");
+          document.getElementById("default-font-size").value = "15";
+          testStatusEl.innerHTML = "";
+          showToast("✓ 所有设置已重置");
+        }
+      });
+
+      document
+        .getElementById("btn-clear-data")
+        .addEventListener("click", () => {
+          if (
+            confirm(
+              "确定要清除所有本地数据并退出吗？\n\n这将删除所有设置、会话、激活信息。",
+            )
+          ) {
+            try {
+              localStorage.clear();
+            } catch (_) {}
+            showToast("所有数据已清除");
+            setTimeout(() => {
+              window.location.href = "login.html";
+            }, 800);
+          }
+        });
+
+      // ---- Keyboard ----
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          window.location.href = "index.html";
+        }
+      });
+
+      console.log("AgentWrite Settings — ready.");
+    </script>
+  </body>
+</html>

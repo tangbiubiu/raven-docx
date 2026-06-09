@@ -37,3 +37,7 @@ dist-ssr
 
 # Generated tauri-specta bindings
 src/lib/bindings.ts
+
+# devleopment files
+.dev
+AGENTS.md
