@@ -6,7 +6,13 @@
   },
   "overrides": [
     {
-      "includes": ["src/stores/**", "src/hooks/**", "src/lib/i18n/**"],
+      "includes": [
+        "src/stores/**",
+        "src/hooks/**",
+        "src/lib/i18n/**",
+        "src/features/settings/**",
+        "src/pages/**"
+      ],
       "linter": {
         "rules": {
           "style": {

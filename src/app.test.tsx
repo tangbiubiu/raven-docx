@@ -1,90 +1,82 @@
 // biome-ignore-all lint/performance/useTopLevelRegex: This doesn't get called often to be a performance bottleneck
 // biome-ignore-all lint/style/useThrowOnlyError: Tauri IPC requires throwing strings
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./app";
 
 describe("App", () => {
   beforeEach(() => {
-    mockIPC((cmd, args) => {
+    mockIPC((cmd) => {
       if (cmd === "plugin:log|log") {
         return;
       }
-
-      if (cmd === "greet") {
-        const name = (args as { name: string }).name;
-
-        if (!name?.trim()) {
-          throw "Name cannot be empty";
-        }
-
-        if (name.length > 100) {
-          throw "Name is too long (max 100 characters)";
-        }
-
-        return `Hello, ${name.trim()}! You've been greeted from Rust!`;
-      }
-      throw `Unknown command: ${cmd}`;
+      return null;
     });
+
+    localStorage.clear();
   });
 
   afterEach(() => {
     clearMocks();
   });
 
-  it("renders the welcome heading", () => {
+  it("renders the workspace page", () => {
     render(<App />);
-    expect(screen.getByText(/Welcome to Tauri \+ React/i)).toBeInTheDocument();
+    // 页面有两个 "geex-docx"（标题栏 + 主内容区）
+    expect(screen.getAllByText("geex-docx")).toHaveLength(2);
   });
 
-  it("renders the logo links", () => {
+  it("shows API Key configuration prompt", () => {
     render(<App />);
-    expect(screen.getByAltText("Vite logo")).toBeInTheDocument();
-    expect(screen.getByAltText("Tauri logo")).toBeInTheDocument();
-    expect(screen.getByAltText("React logo")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /配置 API Key/i })
+    ).toBeInTheDocument();
   });
 
-  it("greets the user when form is submitted with a valid name", async () => {
+  it("shows 'not configured' in status bar", () => {
+    render(<App />);
+    expect(screen.getByText("⚠ 未配置 API Key")).toBeInTheDocument();
+  });
+
+  it("auto-opens SettingsDrawer on first launch when no API Key", () => {
+    render(<App />);
+    // 首次启动无 API Key → SettingsDrawer 自动打开
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
+  });
+
+  it("closes SettingsDrawer when clicking Done", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const input = screen.getByPlaceholderText(/Enter a name/i);
-    const button = screen.getByRole("button", { name: /Greet/i });
+    // SettingsDrawer 已自动打开
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
 
-    await user.type(input, "World");
-    await user.click(button);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Hello, World!/i)).toBeInTheDocument();
-    });
+    await user.click(screen.getByRole("button", { name: /完成/ }));
+    expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
   });
 
-  it("shows error when submitting empty name", async () => {
+  it("closes SettingsDrawer when pressing Escape", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const button = screen.getByRole("button", { name: /Greet/i });
-    await user.click(button);
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText(/Error:/i)).toBeInTheDocument();
-    });
+    await user.keyboard("{Escape}");
+    expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
   });
 
-  it("trims whitespace from name input", async () => {
+  it("reopens SettingsDrawer when clicking configure button", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const input = screen.getByPlaceholderText(/Enter a name/i);
-    const button = screen.getByRole("button", { name: /Greet/i });
+    // 先关闭自动打开的 drawer
+    await user.keyboard("{Escape}");
+    expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
 
-    await user.type(input, "  Alice  ");
-    await user.click(button);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Hello, Alice!/i)).toBeInTheDocument();
-    });
+    // 点击按钮重新打开
+    await user.click(screen.getByRole("button", { name: /配置 API Key/i }));
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
   });
 });
