@@ -1,36 +1,10 @@
-// biome-ignore-all lint/performance/useTopLevelRegex: Tauri IPC mocking requires this
+// biome-ignore-all lint/performance/useTopLevelRegex: This doesn't get called often to be a performance bottleneck
 // biome-ignore-all lint/style/useThrowOnlyError: Tauri IPC requires throwing strings
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./app";
-import { useSettingsStore } from "./stores/useSettingsStore";
-import { useAppStore } from "./stores/useAppStore";
-
-// 初始化 store 为已加载状态，跳过异步 init
-function setupLoadedStore() {
-  useSettingsStore.setState({
-    isLoaded: true,
-    apiConfig: {
-      provider: "anthropic",
-      apiKey: "",
-      baseUrl: "",
-      model: "claude-sonnet-4",
-    },
-    modelConfig: {
-      thinking: "auto",
-      streaming: true,
-    },
-    editorConfig: {
-      theme: "system",
-      locale: "zh-CN",
-      defaultFontSize: 15,
-      autoSave: true,
-      spellCheck: true,
-    },
-  });
-  useAppStore.setState({ isInitialLoading: false });
-}
 
 describe("App", () => {
   beforeEach(() => {
@@ -38,57 +12,71 @@ describe("App", () => {
       if (cmd === "plugin:log|log") {
         return;
       }
-      if (cmd === "plugin:event|listen") {
-        return () => {};
-      }
-      throw `Unknown command: ${cmd}`;
+      return null;
     });
-    setupLoadedStore();
+
+    localStorage.clear();
   });
 
   afterEach(() => {
     clearMocks();
   });
 
-  it("renders the workspace layout without crashing", () => {
+  it("renders the workspace page", () => {
     render(<App />);
-
-    expect(screen.getByRole("menubar")).toBeInTheDocument();
-    expect(screen.getByText("文件")).toBeInTheDocument();
-    expect(screen.getByText("编辑")).toBeInTheDocument();
-    expect(screen.getByText("视图")).toBeInTheDocument();
-    expect(screen.getByText("插入")).toBeInTheDocument();
-    expect(screen.getByText("格式")).toBeInTheDocument();
-    expect(screen.getByText("Agent")).toBeInTheDocument();
-    expect(screen.getByText("帮助")).toBeInTheDocument();
+    // 页面有两个 "geex-docx"（标题栏 + 主内容区）
+    expect(screen.getAllByText("geex-docx")).toHaveLength(2);
   });
 
-  it("renders the toolbar placeholder", () => {
+  it("shows API Key configuration prompt", () => {
     render(<App />);
-    expect(screen.getByRole("toolbar")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /配置 API Key/i })
+    ).toBeInTheDocument();
   });
 
-  it("renders the editor pane placeholder", () => {
+  it("shows 'not configured' in status bar", () => {
     render(<App />);
-    const pageArea = document.querySelector(".max-w-\\[760px\\]");
-    expect(pageArea).toBeInTheDocument();
+    expect(screen.getByText("⚠ 未配置 API Key")).toBeInTheDocument();
   });
 
-  it("renders the status bar", () => {
+  it("auto-opens SettingsDrawer on first launch when no API Key", () => {
     render(<App />);
-    expect(screen.getByText(/第/)).toBeInTheDocument();
-    expect(screen.getByText(/0 字/)).toBeInTheDocument();
+    // 首次启动无 API Key → SettingsDrawer 自动打开
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
   });
 
-  it("closes agent sidebar and shows toggle button", () => {
-    useAppStore.getState().setAgentSidebarOpen(false);
-
+  it("closes SettingsDrawer when clicking Done", async () => {
+    const user = userEvent.setup();
     render(<App />);
-    expect(screen.getByRole("button", { name: /Agent/ })).toBeInTheDocument();
+
+    // SettingsDrawer 已自动打开
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /完成/ }));
+    expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
   });
 
-  it("renders the outline panel", () => {
+  it("closes SettingsDrawer when pressing Escape", async () => {
+    const user = userEvent.setup();
     render(<App />);
-    expect(screen.getByText("大纲")).toBeInTheDocument();
+
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
+  });
+
+  it("reopens SettingsDrawer when clicking configure button", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // 先关闭自动打开的 drawer
+    await user.keyboard("{Escape}");
+    expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
+
+    // 点击按钮重新打开
+    await user.click(screen.getByRole("button", { name: /配置 API Key/i }));
+    expect(screen.getByText("API Key 配置")).toBeInTheDocument();
   });
 });

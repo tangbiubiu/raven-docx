@@ -1,111 +1,78 @@
-// WorkspacePage — 编辑器主页面 (Workspace Page)
-// 单页面应用的核心布局编排器，组合所有面板组件
-// Phase 1: 布局壳，所有子组件为占位状态
-// Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §2, .dev/docs/modules/pages/workspace-page.md
+// pages/WorkspacePage.tsx — 编辑器主页面 (Workspace Page)
+// 单页面应用的唯一页面，编排所有面板和弹层
+// Reference: .dev/docs/modules/pages/workspace-page.md
 
-import { useEffect } from "react";
-import { DocumentTitleBar } from "@/features/document/components/DocumentTitleBar";
-import { MenuBar } from "@/features/formatting/components/MenuBar";
-import { Toolbar } from "@/features/formatting/components/Toolbar";
-import { EditorPane } from "@/features/editor/components/EditorPane";
-import { StatusBar } from "@/features/editor/components/StatusBar";
-import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
-import { AgentSidebar } from "@/features/agent/components/AgentSidebar";
-import { useSettingsStore } from "@/stores/useSettingsStore";
+import { useEffect, useRef } from "react";
+import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { useAppStore } from "@/stores/useAppStore";
-import { onCloseRequested } from "@/lib/tauri-events";
-import { useKeyboard } from "@/hooks/useKeyboard";
-import { logger } from "@/lib/logger";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 
-export function WorkspacePage() {
+/**
+ * WorkspacePage — 编辑器主页面。
+ *
+ * Phase 1 状态：布局壳，仅实现 SettingsDrawer toggle。
+ * 后续 Phase 将逐步填充 TitleBar、Toolbar、EditorPane、AgentSidebar 等。
+ */
+export default function WorkspacePage() {
+  const settingsDrawerOpen = useAppStore((s) => s.settingsDrawerOpen);
+  const toggleSettingsDrawer = useAppStore((s) => s.toggleSettingsDrawer);
+  const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
+
   const isLoaded = useSettingsStore((s) => s.isLoaded);
-  const setInitialLoading = useAppStore((s) => s.setInitialLoading);
+  const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
 
-  // 设置加载完成后降下 loading 状态
+  // 确保首次启动自动打开仅触发一次
+  const autoOpenedRef = useRef(false);
+
+  // 首次启动自动打开 SettingsDrawer 并定位到 ApiKeySection（TSS §4.4.4）
   useEffect(() => {
-    if (isLoaded) {
-      setInitialLoading(false);
+    if (isLoaded && !hasApiKey && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setSettingsDrawerOpen(true);
     }
-  }, [isLoaded, setInitialLoading]);
+  }, [isLoaded, hasApiKey, setSettingsDrawerOpen]);
 
-  // 注册 Tauri 关闭事件
-  useEffect(() => {
-    const unlistenPromise = onCloseRequested(async () => {
-      logger.debug("Close requested, checking unsaved changes");
-      // Phase 1: 暂不实现关闭提示，直接允许关闭
-    });
-
-    return () => {
-      unlistenPromise
-        .then((unlisten) => unlisten())
-        .catch(() => {
-          // cleanup may fail in test environment
-        });
-    };
-  }, []);
-
-  // 注册全局快捷键
-  useKeyboard([
-    {
-      key: "k",
-      metaKey: true,
-      handler: () => {
-        // Phase 3: 打开 CommandPalette
-        logger.debug("Cmd+K pressed");
-      },
-    },
-    {
-      key: "f",
-      metaKey: true,
-      handler: () => {
-        // Phase 2: 打开 FindReplaceDialog
-        logger.debug("Cmd+F pressed");
-      },
-    },
-    {
-      key: "s",
-      metaKey: true,
-      handler: () => {
-        // Phase 2: 保存文档
-        logger.debug("Cmd+S pressed");
-      },
-    },
-    {
-      key: "Escape",
-      handler: () => {
-        // 关闭当前弹窗
-        useAppStore.getState().closeModal();
-      },
-    },
-  ]);
+  const initialSection = hasApiKey ? undefined : ("apiKey" as const);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* 标题栏区域 */}
-      <DocumentTitleBar />
+    <div className="flex h-screen w-screen flex-col bg-background text-foreground">
+      {/* 标题栏占位 */}
+      <header className="flex h-10 shrink-0 items-center border-border border-b px-3">
+        <span className="font-medium text-muted-foreground text-sm">
+          geex-docx
+        </span>
+      </header>
 
-      {/* 菜单栏 */}
-      <MenuBar />
-
-      {/* 格式工具栏 */}
-      <Toolbar />
-
-      {/* 主内容区域 */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* 左侧大纲面板 */}
-        <OutlinePanel />
-
-        {/* 编辑器区域 */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <EditorPane />
+      {/* 主内容区 */}
+      <main className="flex flex-1 items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-2 font-semibold text-2xl">geex-docx</h1>
+          <p className="mb-4 text-muted-foreground">Agent 原生文档编辑器</p>
+          <button
+            className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm hover:bg-primary/90"
+            onClick={toggleSettingsDrawer}
+            type="button"
+          >
+            配置 API Key
+          </button>
+          <p className="mt-2 text-muted-foreground text-xs">
+            或通过菜单栏 → 设置打开
+          </p>
         </div>
+      </main>
 
-        {/* 右侧 Agent 侧边栏 */}
-        <AgentSidebar />
-      </div>
+      {/* 状态栏占位 */}
+      <footer className="flex h-7 shrink-0 items-center justify-between border-border border-t bg-muted/30 px-3">
+        <span className="text-muted-foreground text-xs">
+          {hasApiKey ? "✓ Agent 就绪" : "⚠ 未配置 API Key"}
+        </span>
+        <span className="text-muted-foreground text-xs">v0.2.0</span>
+      </footer>
 
-      {/* 底部状态栏 */}
-      <StatusBar />
+      {/* SettingsDrawer */}
+      {settingsDrawerOpen ? (
+        <SettingsDrawer initialSection={initialSection} />
+      ) : null}
     </div>
   );
 }
