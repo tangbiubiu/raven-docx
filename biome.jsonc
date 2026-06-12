@@ -3,5 +3,17 @@
   "extends": ["ultracite/core", "ultracite/react"],
   "files": {
     "includes": ["**", "!src/lib/bindings.ts", "!src/components/ui"]
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/stores/**", "src/hooks/**", "src/lib/i18n/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    }
+  ]
 }
