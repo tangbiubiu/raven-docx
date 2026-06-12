@@ -145,4 +145,4 @@ unmount → 注销快捷键
 - **区域**: ApiKeySection → ModelSettings → EditorPreferences → DataManagement
 - **首次启动**: 自动打开并定位到 ApiKeySection
 
-> 详细设计见 [SettingsDrawer 文档](./settings-page.md)。
+> 详细设计见 [SettingsDrawer 文档](./settings-drawer.md)。

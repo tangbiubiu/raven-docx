@@ -39,5 +39,8 @@ dist-ssr
 src/lib/bindings.ts
 
 # devleopment files
-.dev
 AGENTS.md
+
+# Local env files
+.env
+.pi

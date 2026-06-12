@@ -53,6 +53,27 @@
 
 ---
 
+### 1.6 超大文档性能策略
+
+> **背景**：docx-editor 基于 ProseMirror 构建，ProseMirror EditorView 仅渲染视口内可见节点，天然支持虚拟滚动。
+> 超大文档的性能瓶颈在 OOXML 解析阶段（ZIP 解压 + XML 反序列化），而非渲染阶段。
+
+| 阶段 | 策略 | 说明 |
+|------|------|------|
+| **文件打开** | 全量解析 + 进度指示 | OOXML 解析在 Rust 端完成后一次性传入前端；50MB+ 文件显示进度条 |
+| **渲染** | ProseMirror Viewport | EditorView 仅渲染可见区域的 DOM 节点（约3-5页），视口外节点为 ProseMirror 内部表示 |
+| **Agent 全文操作** | 分批注入（每批 2000 字 + 格式上下文） | 见 §4.4.1 上下文注入分级策略 |
+| **前端交互** | 打开前警告确认对话框 | 见 error-states.md §2.2 |
+| **降级** | 禁用全文校对等高开销功能 | 超大文档打开后工具栏给出轻量提示 |
+
+**阈值定义**：
+- 文件 > 50MB 或页面数 > 500 → 弹出警告确认对话框
+- 文件 > 100MB → 打开后自动禁用全文 Agent 校对功能
+
+**已知限制（MVP）**：
+- 全文校对分批注入可能丢失跨节上下文。未来方案：pi extension 注册 `get_page_content(n)` / `search_document(q)` 工具，Agent 按需拉取。
+- 暂不引入 Web Worker 异步解析（docx-editor 不支持 worker 上下文中的 ProseMirror 实例化）。
+
 ## 2. 系统架构约束
 
 | 约束 | 决策 | 原因 |
