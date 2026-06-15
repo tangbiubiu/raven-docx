@@ -21,6 +21,7 @@ export const en: Translations = {
   "menu.format": "Format",
   "menu.agent": "Agent",
   "menu.help": "Help",
+  "menu.help.about": "About",
   "menu.file.new": "New",
   "menu.file.open": "Open…",
   "menu.file.save": "Save",
@@ -44,6 +45,7 @@ export const en: Translations = {
   "menu.agent.panel": "Agent Panel",
   "menu.agent.send": "Send to Agent",
   "menu.settings.open": "Settings…",
+  "menu.view.darkMode": "Dark Mode",
 
   // === Document ===
   "document.new": "New Document",

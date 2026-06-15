@@ -2,7 +2,11 @@
 // Reference: .dev/plan/implementation-plan.md §Phase 2.3
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { addRecentFile, clearRecentFiles, getRecentFiles } from "../useRecentFiles";
+import {
+  addRecentFile,
+  clearRecentFiles,
+  getRecentFiles,
+} from "../useRecentFiles";
 
 describe("useRecentFiles", () => {
   beforeEach(() => {

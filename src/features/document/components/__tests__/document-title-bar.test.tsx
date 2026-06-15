@@ -4,8 +4,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DocumentTitleBar } from "../document-title-bar";
 import { useDocumentStore } from "@/stores/useDocumentStore";
+import { DocumentTitleBar } from "../document-title-bar";
 
 describe("DocumentTitleBar", () => {
   beforeEach(() => {
@@ -19,11 +19,13 @@ describe("DocumentTitleBar", () => {
   });
 
   it("打开文档后显示文件名", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/Users/test/my-document.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument(
+        {} as unknown,
+        new ArrayBuffer(8),
+        "/Users/test/my-document.docx"
+      );
 
     render(<DocumentTitleBar onNew={vi.fn()} onOpen={vi.fn()} />);
 
@@ -31,11 +33,9 @@ describe("DocumentTitleBar", () => {
   });
 
   it("文档已保存时显示「已保存」", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/tmp/test.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), "/tmp/test.docx");
 
     render(<DocumentTitleBar onNew={vi.fn()} onOpen={vi.fn()} />);
 
@@ -43,11 +43,9 @@ describe("DocumentTitleBar", () => {
   });
 
   it("文档未保存时显示「未保存」", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/tmp/test.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), "/tmp/test.docx");
     useDocumentStore.getState().setDirty(true);
 
     render(<DocumentTitleBar onNew={vi.fn()} onOpen={vi.fn()} />);
@@ -56,11 +54,9 @@ describe("DocumentTitleBar", () => {
   });
 
   it("未保存时显示修改标记 ●", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/tmp/test.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), "/tmp/test.docx");
     useDocumentStore.getState().setDirty(true);
 
     render(<DocumentTitleBar onNew={vi.fn()} onOpen={vi.fn()} />);

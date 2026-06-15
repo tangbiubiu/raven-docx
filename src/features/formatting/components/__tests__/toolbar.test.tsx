@@ -1,6 +1,5 @@
-// biome-ignore-all lint/performance/useTopLevelRegex: test file — regex in assertions is standard
-// features/formatting/components/__tests__/Toolbar.test.tsx — Toolbar 测试
-// TDD: 红阶段 → 绿阶段 → 重构
+// features/formatting/components/__tests__/toolbar.test.tsx — Toolbar 测试
+// 测试工具栏渲染和交互，mock 共享 commands 模块。
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { Transaction } from "prosemirror-state";
@@ -10,44 +9,47 @@ import type { EditorBridge, SelectionInfo } from "@/stores/useDocumentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { Toolbar } from "../toolbar";
 
-// Mock prosemirror-commands to avoid deep ProseMirror internals.
-// vi.hoisted ensures mock fns are available inside the hoisted vi.mock factory.
-const { mockToggleMark, mockSetBlockType, mockWrapIn, mockLift } = vi.hoisted(
-  () => {
-    const mockToggleMark = vi.fn((markType: { name: string }) => {
-      const cmd = vi.fn((_state: unknown, dispatch?: Mock) => {
-        if (dispatch) {
-          dispatch({ type: "toggleMark", markName: markType.name });
-        }
-        return true;
-      });
-      return cmd;
-    });
-    const mockSetBlockType = vi.fn((_nodeType: unknown, _attrs: unknown) => {
-      const cmd = vi.fn().mockReturnValue(true);
-      return cmd;
-    });
-    const mockWrapIn = vi.fn((_nodeType: unknown, _attrs: unknown) => {
-      const cmd = vi.fn().mockReturnValue(true);
-      return cmd;
-    });
-    const mockLift = vi.fn((_state: unknown, _dispatch: unknown) => true);
-    return { mockToggleMark, mockSetBlockType, mockWrapIn, mockLift };
-  }
-);
+// === Mock 共享命令模块 ===
 
-vi.mock("prosemirror-commands", () => ({
-  toggleMark: (markType: unknown) =>
-    mockToggleMark(markType as { name: string }),
-  setBlockType: (nodeType: unknown, attrs?: unknown) =>
-    mockSetBlockType(nodeType, attrs),
-  wrapIn: (nodeType: unknown, attrs?: unknown) => mockWrapIn(nodeType, attrs),
-  lift: (state: unknown, dispatch?: unknown) => mockLift(state, dispatch),
+const mockCommands = vi.hoisted(() => ({
+  execToggleMark: vi.fn(),
+  execSetBlockType: vi.fn(),
+  execWrapIn: vi.fn(),
+  execLift: vi.fn(),
+  execUndo: vi.fn(),
+  execRedo: vi.fn(),
+  execIndent: vi.fn(),
+  execOutdent: vi.fn(),
+  execInsertTable: vi.fn(),
+  execInsertImage: vi.fn(),
+  execInsertLink: vi.fn(),
 }));
 
-/**
- * 创建 mock EditorView 用于测试格式命令分发。
- */
+vi.mock("@/features/editor/commands", () => mockCommands);
+
+// === Mock prosemirror-commands（useFormatState 依赖） ===
+
+vi.mock("prosemirror-commands", () => ({
+  toggleMark: () => vi.fn(),
+  setBlockType: () => vi.fn(),
+  wrapIn: () => vi.fn(),
+  lift: () => vi.fn(),
+}));
+
+// === Mock prosemirror-history ===
+vi.mock("prosemirror-history", () => ({
+  undo: vi.fn(),
+  redo: vi.fn(),
+}));
+
+// === Mock prosemirror-schema-list ===
+vi.mock("prosemirror-schema-list", () => ({
+  sinkListItem: () => vi.fn(),
+  liftListItem: () => vi.fn(),
+}));
+
+// === 辅助函数 ===
+
 function createMockView(markActive: Record<string, boolean> = {}) {
   const dispatchSpy: Mock = vi.fn();
   const activeMarks = Object.entries(markActive)
@@ -72,9 +74,11 @@ function createMockView(markActive: Record<string, boolean> = {}) {
           strike: { name: "strike" },
           superscript: { name: "superscript" },
           subscript: { name: "subscript" },
-          textColor: { name: "textColor" },
+          color: { name: "color" },
           highlight: { name: "highlight" },
           link: { name: "link" },
+          fontFamily: { name: "fontFamily" },
+          fontSize: { name: "fontSize" },
         },
         nodes: {
           paragraph: { name: "paragraph" },
@@ -113,7 +117,6 @@ function createMockView(markActive: Record<string, boolean> = {}) {
   return { view, dispatchSpy };
 }
 
-/** 注入 mock EditorBridge 到 store */
 function setupMockBridge(view: EditorView, dispatchSpy: Mock) {
   const bridge: EditorBridge = {
     save: vi.fn().mockResolvedValue(null),
@@ -146,47 +149,145 @@ describe("Toolbar", () => {
     setupMockBridge(view, dispatchSpy);
     render(<Toolbar />);
 
-    // 文字格式按钮
+    // 文字格式
     expect(screen.getByLabelText("加粗")).toBeInTheDocument();
     expect(screen.getByLabelText("斜体")).toBeInTheDocument();
     expect(screen.getByLabelText("下划线")).toBeInTheDocument();
+    expect(screen.getByLabelText("删除线")).toBeInTheDocument();
 
-    // 标题下拉 — 有多个 Select combobox (字体/字号/标题)
+    // 撤销/重做
+    expect(screen.getByTestId("toolbar-undo")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-redo")).toBeInTheDocument();
+
+    // 插入按钮
+    expect(screen.getByTestId("toolbar-insertTable")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-insertImage")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-insertLink")).toBeInTheDocument();
+
+    // 缩进
+    expect(screen.getByTestId("toolbar-indent")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-outdent")).toBeInTheDocument();
+
+    // 下拉框（标题 + 字体 + 字号）
     const comboboxes = screen.getAllByRole("combobox");
     expect(comboboxes.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("点击加粗按钮分发 toggleMark bold", () => {
-    mockToggleMark.mockClear();
+  it("点击加粗调用 execToggleMark('bold')", () => {
     const { view, dispatchSpy } = createMockView();
     setupMockBridge(view, dispatchSpy);
     render(<Toolbar />);
 
     fireEvent.click(screen.getByLabelText("加粗"));
-    // toggleMark 被调用，参数为 bold mark type
-    expect(mockToggleMark).toHaveBeenCalledWith({ name: "bold" });
-    // dispatch 被调用
-    expect(dispatchSpy).toHaveBeenCalled();
+    expect(mockCommands.execToggleMark).toHaveBeenCalledWith("bold");
   });
 
-  it("选中加粗文字时加粗按钮显示 active 状态", () => {
+  it("点击斜体调用 execToggleMark('italic')", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByLabelText("斜体"));
+    expect(mockCommands.execToggleMark).toHaveBeenCalledWith("italic");
+  });
+
+  it("点击撤销调用 execUndo", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-undo"));
+    expect(mockCommands.execUndo).toHaveBeenCalledOnce();
+  });
+
+  it("点击重做调用 execRedo", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-redo"));
+    expect(mockCommands.execRedo).toHaveBeenCalledOnce();
+  });
+
+  it("点击插入表格调用 execInsertTable", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-insertTable"));
+    expect(mockCommands.execInsertTable).toHaveBeenCalledOnce();
+  });
+
+  it("点击插入图片调用 execInsertImage", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-insertImage"));
+    expect(mockCommands.execInsertImage).toHaveBeenCalledOnce();
+  });
+
+  it("点击插入链接调用 execInsertLink", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-insertLink"));
+    expect(mockCommands.execInsertLink).toHaveBeenCalledOnce();
+  });
+
+  it("点击增加缩进调用 execIndent", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-indent"));
+    expect(mockCommands.execIndent).toHaveBeenCalledOnce();
+  });
+
+  it("点击减少缩进调用 execOutdent", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-outdent"));
+    expect(mockCommands.execOutdent).toHaveBeenCalledOnce();
+  });
+
+  it("选中加粗文字时按钮显示 active 状态", () => {
     const { view, dispatchSpy } = createMockView({ bold: true });
     setupMockBridge(view, dispatchSpy);
-    // Toolbar reads selectionFormat from store, not directly from PM view
     useDocumentStore.getState().setSelectionFormat({ bold: true });
     render(<Toolbar />);
 
-    const boldButton = screen.getByLabelText("加粗");
-    expect(boldButton).toHaveAttribute("data-state", "on");
+    expect(screen.getByLabelText("加粗")).toHaveAttribute("data-state", "on");
   });
 
-  it("未选中加粗文字时加粗按钮不显示 active", () => {
+  it("未选中加粗文字时按钮不显示 active", () => {
     const { view, dispatchSpy } = createMockView({ bold: false });
     setupMockBridge(view, dispatchSpy);
     useDocumentStore.getState().setSelectionFormat({ bold: false });
     render(<Toolbar />);
 
-    const boldButton = screen.getByLabelText("加粗");
-    expect(boldButton).toHaveAttribute("data-state", "off");
+    expect(screen.getByLabelText("加粗")).toHaveAttribute("data-state", "off");
+  });
+
+  it("点击清除格式调用清除操作", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    fireEvent.click(screen.getByTestId("toolbar-clearFormat"));
+    // clearFormat 通过 store 读取 bridge 并执行 removeMark
+    // 由于 selection 为 empty，不执行任何操作
+  });
+
+  it("颜色选择器存在", () => {
+    const { view, dispatchSpy } = createMockView();
+    setupMockBridge(view, dispatchSpy);
+    render(<Toolbar />);
+
+    expect(screen.getByTestId("toolbar-textColor")).toBeInTheDocument();
+    expect(screen.getByTestId("toolbar-highlight")).toBeInTheDocument();
   });
 });

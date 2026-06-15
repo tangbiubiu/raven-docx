@@ -24,27 +24,27 @@ export function DocumentTitleBar({ onNew, onOpen }: DocumentTitleBarProps) {
     <div className="flex h-10 shrink-0 items-center justify-between border-border border-b bg-background px-4">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground text-sm">{displayName}</span>
-        {isDirty && (
+        {isDirty ? (
           <span
             className="text-muted-foreground text-xs"
             title={t("document.modified")}
           >
             ●
           </span>
-        )}
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <button
-          type="button"
-          onClick={onNew}
           className="rounded px-2 py-1 text-xs hover:bg-accent"
+          onClick={onNew}
+          type="button"
         >
           {t("menu.file.new")}
         </button>
         <button
-          type="button"
-          onClick={onOpen}
           className="rounded px-2 py-1 text-xs hover:bg-accent"
+          onClick={onOpen}
+          type="button"
         >
           {t("menu.file.open")}
         </button>

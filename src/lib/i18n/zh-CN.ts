@@ -21,6 +21,7 @@ export const zhCN: Translations = {
   "menu.format": "格式",
   "menu.agent": "Agent",
   "menu.help": "帮助",
+  "menu.help.about": "关于",
   "menu.file.new": "新建",
   "menu.file.open": "打开…",
   "menu.file.save": "保存",
@@ -44,6 +45,7 @@ export const zhCN: Translations = {
   "menu.agent.panel": "Agent 面板",
   "menu.agent.send": "发送给 Agent",
   "menu.settings.open": "设置…",
+  "menu.view.darkMode": "深色模式",
 
   // === 文档操作 ===
   "document.new": "新建文档",

@@ -18,7 +18,7 @@ export function StatusBar() {
 
   return (
     <div
-      className="flex h-7 shrink-0 items-center justify-between border-border border-t bg-background px-4 text-muted-foreground text-xs"
+      className="flex h-7 shrink-0 items-center justify-between border-border border-t bg-muted/60 px-4 text-muted-foreground text-xs"
       data-testid="status-bar"
     >
       {/* 左侧：保存状态 + 页码 + 字数 */}

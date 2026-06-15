@@ -1,8 +1,7 @@
 // Toolbar — 格式工具栏 (Formatting Toolbar)
-// Phase 2: 完整实现格式按钮，通过 ProseMirror toggleMark/setBlockType 操作
-// Reference: .dev/plan/implementation-plan.md §Phase 2, .dev/docs/module-split.md §3.3
+// 完整实现：撤销/重做 + 文字格式 + 字体/字号/颜色/高亮 + 标题/对齐/列表/缩进 + 插入/清除
+// Reference: .dev/plan/implementation-plan.md §Phase 2, .dev/proto/workspace.html
 
-import { lift, setBlockType, toggleMark, wrapIn } from "prosemirror-commands";
 import {
   Select,
   SelectContent,
@@ -11,13 +10,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
+import {
+  execIndent,
+  execInsertImage,
+  execInsertLink,
+  execInsertTable,
+  execLift,
+  execOutdent,
+  execRedo,
+  execSetBlockType,
+  execToggleMark,
+  execUndo,
+  execWrapIn,
+} from "@/features/editor/commands";
 import { useT } from "@/lib/i18n";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useFormatState } from "../hooks/use-format-state";
 
 // === 常量 ===
 
-/** 格式 toggle 按钮配置 */
 const TEXT_MARKS: {
   key: string;
   i18n: string;
@@ -38,18 +49,16 @@ const SUPER_SUB_MARKS: {
   { key: "subscript", i18n: "format.subscript", markName: "subscript" },
 ];
 
-/** 标题级别 */
 const HEADING_OPTIONS = [
-  { value: "paragraph", i18n: "format.normal", level: undefined },
-  { value: "heading1", i18n: "format.heading1", level: 1 },
-  { value: "heading2", i18n: "format.heading2", level: 2 },
-  { value: "heading3", i18n: "format.heading3", level: 3 },
-  { value: "heading4", i18n: "format.heading4", level: 4 },
-  { value: "heading5", i18n: "format.heading5", level: 5 },
-  { value: "heading6", i18n: "format.heading6", level: 6 },
+  { value: "paragraph", i18n: "format.normal" },
+  { value: "heading1", i18n: "format.heading1" },
+  { value: "heading2", i18n: "format.heading2" },
+  { value: "heading3", i18n: "format.heading3" },
+  { value: "heading4", i18n: "format.heading4" },
+  { value: "heading5", i18n: "format.heading5" },
+  { value: "heading6", i18n: "format.heading6" },
 ];
 
-/** 对齐选项 */
 const ALIGNMENTS: {
   key: string;
   i18n: string;
@@ -61,104 +70,149 @@ const ALIGNMENTS: {
   { key: "alignJustify", i18n: "format.alignJustify", alignment: "justify" },
 ];
 
-// === 工具函数 ===
+/** 字体列表 */
+const FONT_FAMILIES = [
+  { value: "default", label: "系统默认", font: "" },
+  { value: "sans", label: "无衬线", font: "system-ui, sans-serif" },
+  { value: "serif", label: "衬线体", font: "Georgia, serif" },
+  { value: "mono", label: "等宽体", font: "Menlo, monospace" },
+];
 
-/** 获取 ProseMirror EditorView，不存在则返回 null */
-function getView() {
+/** 字号列表（半磅） */
+const FONT_SIZES = [10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 48, 72];
+
+// === 辅助函数 ===
+
+/** 通过 bridge.applyFormatting 设置字体 */
+function applyFont(fontValue: string): void {
   const bridge = useDocumentStore.getState().editorBridge;
   if (!bridge) {
-    return null;
+    return;
   }
-  return bridge.getEditorView();
-}
+  const family = FONT_FAMILIES.find((f) => f.value === fontValue);
+  if (!family) {
+    return;
+  }
 
-/** 执行 toggleMark 命令 */
-function execToggleMark(markName: string) {
-  const view = getView();
+  // 通过 ProseMirror mark 设置字体
+  const view = bridge.getEditorView();
   if (!view) {
     return;
   }
   const { state, dispatch } = view;
-  const mark = state.schema.marks[markName];
-  if (!mark) {
-    return;
+  const fontFamilyMark = state.schema.marks.fontFamily;
+  if (fontFamilyMark && family.font) {
+    const { from, to, empty } = state.selection;
+    if (empty) {
+      return;
+    }
+    dispatch(
+      state.tr.addMark(from, to, fontFamilyMark.create({ ascii: family.font }))
+    );
   }
-  toggleMark(mark)(state, dispatch);
 }
 
-/** 执行 setBlockType 命令 */
-function execSetBlockType(nodeName: string, attrs?: Record<string, unknown>) {
-  const view = getView();
+/** 通过 ProseMirror mark 设置字号 */
+function applyFontSize(sizeHalfPt: number): void {
+  const bridge = useDocumentStore.getState().editorBridge;
+  if (!bridge) {
+    return;
+  }
+  const view = bridge.getEditorView();
   if (!view) {
     return;
   }
   const { state, dispatch } = view;
-  const node = state.schema.nodes[nodeName];
-  if (!node) {
-    return;
-  }
-  if (nodeName === "paragraph") {
-    // setBlockType with no attrs for paragraph
-    setBlockType(node)(state, dispatch);
-  } else {
-    setBlockType(node, attrs ?? null)(state, dispatch);
+  const fontSizeMark = state.schema.marks.fontSize;
+  if (fontSizeMark) {
+    const { from, to, empty } = state.selection;
+    if (empty) {
+      return;
+    }
+    dispatch(
+      state.tr.addMark(from, to, fontSizeMark.create({ size: sizeHalfPt }))
+    );
   }
 }
 
-/** 执行 wrapIn list 命令 */
-function execWrapIn(nodeName: string) {
-  const view = getView();
+/** 通过 ProseMirror mark 设置文字颜色 */
+function applyTextColor(color: string): void {
+  const bridge = useDocumentStore.getState().editorBridge;
+  if (!bridge) {
+    return;
+  }
+  const view = bridge.getEditorView();
   if (!view) {
     return;
   }
   const { state, dispatch } = view;
-  const node = state.schema.nodes[nodeName];
-  if (!node) {
-    return;
+  const colorMark = state.schema.marks.color;
+  if (colorMark) {
+    const { from, to, empty } = state.selection;
+    if (empty) {
+      return;
+    }
+    // OOXML color uses rgb without #
+    const rgb = color.replace("#", "");
+    dispatch(state.tr.addMark(from, to, colorMark.create({ rgb })));
   }
-  wrapIn(node)(state, dispatch);
 }
 
-/** 执行 lift 命令（取消列表/缩进） */
-function execLift() {
-  const view = getView();
+/** 通过 ProseMirror mark 设置高亮 */
+function applyHighlight(color: string): void {
+  const bridge = useDocumentStore.getState().editorBridge;
+  if (!bridge) {
+    return;
+  }
+  const view = bridge.getEditorView();
   if (!view) {
     return;
   }
   const { state, dispatch } = view;
-  lift(state, dispatch);
+  const highlightMark = state.schema.marks.highlight;
+  if (highlightMark) {
+    const { from, to, empty } = state.selection;
+    if (empty) {
+      return;
+    }
+    dispatch(state.tr.addMark(from, to, highlightMark.create({ color })));
+  }
 }
 
-// === 组件 ===
+/** 清除选区格式 */
+function clearFormatting(): void {
+  const bridge = useDocumentStore.getState().editorBridge;
+  if (!bridge) {
+    return;
+  }
+  const view = bridge.getEditorView();
+  if (!view) {
+    return;
+  }
+  const { state, dispatch } = view;
+  const { from, to, empty } = state.selection;
+  if (empty) {
+    return;
+  }
+  // 移除所有 marks
+  dispatch(state.tr.removeMark(from, to));
+}
 
-/**
- * Toolbar — 格式工具栏。
- *
- * 通过 `editorBridge.getEditorView()` 获取 ProseMirror EditorView，
- * 使用 toggleMark/setBlockType 命令实现格式操作。
- * 按钮 active 状态直接从 ProseMirror EditorView 读取（通过 useFormatState）。
- */
+// === 分隔符组件 ===
+
+function Separator() {
+  return <span className="mx-0.5 h-5 w-px bg-border" />;
+}
+
+// === 主组件 ===
+
 export function Toolbar() {
   const { t } = useT();
   const formatState = useFormatState();
 
-  /** 字体下拉选择 */
-  const handleFontChange = (_value: string) => {
-    // Phase 2: 字体切换暂不实现（需要字体列表）
-  };
-
-  /** 字号下拉选择 */
-  const handleFontSizeChange = (_value: string) => {
-    // Phase 2: 字号切换暂不实现
-  };
-
-  /** 当前标题级别对应的 value */
   const headingValue = () => {
     const level = formatState.getHeadingLevel();
-    if (!level) {
-      return "paragraph";
-    }
-    return `heading${level}`;
+    return level ? `heading${level}` : "paragraph";
   };
 
   const listType = formatState.getListType();
@@ -166,10 +220,34 @@ export function Toolbar() {
   return (
     <div
       aria-label={t("menu.format")}
-      className="flex h-10 shrink-0 items-center gap-0.5 border-border border-b bg-background px-2"
+      className="flex h-10 shrink-0 flex-wrap items-center gap-0.5 border-border border-b bg-background px-2"
       role="toolbar"
     >
-      {/* 文字格式：粗/斜/下划线/删除线 */}
+      {/* 撤销/重做 */}
+      <button
+        aria-label={t("menu.edit.undo")}
+        className="inline-flex h-7 w-7 items-center justify-center rounded text-xs hover:bg-muted"
+        data-testid="toolbar-undo"
+        onClick={() => execUndo()}
+        title={t("menu.edit.undo")}
+        type="button"
+      >
+        ↩
+      </button>
+      <button
+        aria-label={t("menu.edit.redo")}
+        className="inline-flex h-7 w-7 items-center justify-center rounded text-xs hover:bg-muted"
+        data-testid="toolbar-redo"
+        onClick={() => execRedo()}
+        title={t("menu.edit.redo")}
+        type="button"
+      >
+        ↪
+      </button>
+
+      <Separator />
+
+      {/* 文字格式 */}
       {TEXT_MARKS.map((mark) => (
         <Toggle
           aria-label={t(mark.i18n)}
@@ -183,8 +261,7 @@ export function Toolbar() {
         </Toggle>
       ))}
 
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
+      <Separator />
 
       {/* 上标/下标 */}
       {SUPER_SUB_MARKS.map((mark) => (
@@ -200,55 +277,7 @@ export function Toolbar() {
         </Toggle>
       ))}
 
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
-
-      {/* 字体 */}
-      <Select onValueChange={handleFontChange}>
-        <SelectTrigger className="h-7 w-[90px] text-xs" size="sm">
-          <SelectValue placeholder={t("format.font")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">{t("format.font")}</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* 字号 */}
-      <Select onValueChange={handleFontSizeChange}>
-        <SelectTrigger className="h-7 w-[60px] text-xs" size="sm">
-          <SelectValue placeholder={t("format.fontSize")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="default">{t("format.fontSize")}</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
-
-      {/* 文字颜色 */}
-      <input
-        aria-label={t("format.textColor")}
-        className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
-        onChange={(_e) => {
-          /* Phase 2: 文字颜色暂不实现 */
-        }}
-        type="color"
-      />
-
-      {/* 高亮 */}
-      <input
-        aria-label={t("format.highlight")}
-        className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
-        onChange={(_e) => {
-          /* Phase 2: 高亮暂不实现 */
-        }}
-        type="color"
-        value="#ffff00"
-      />
-
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
+      <Separator />
 
       {/* 标题下拉 */}
       <Select
@@ -274,8 +303,35 @@ export function Toolbar() {
         </SelectContent>
       </Select>
 
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
+      {/* 字体 */}
+      <Select onValueChange={applyFont}>
+        <SelectTrigger className="h-7 w-[80px] text-xs" size="sm">
+          <SelectValue placeholder={t("format.font")} />
+        </SelectTrigger>
+        <SelectContent>
+          {FONT_FAMILIES.map((f) => (
+            <SelectItem key={f.value} value={f.value}>
+              {f.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* 字号 */}
+      <Select onValueChange={(v) => applyFontSize(Number.parseInt(v, 10) * 2)}>
+        <SelectTrigger className="h-7 w-[60px] text-xs" size="sm">
+          <SelectValue placeholder={t("format.fontSize")} />
+        </SelectTrigger>
+        <SelectContent>
+          {FONT_SIZES.map((size) => (
+            <SelectItem key={size} value={String(size)}>
+              {size}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Separator />
 
       {/* 对齐按钮组 */}
       {ALIGNMENTS.map((align) => (
@@ -291,14 +347,15 @@ export function Toolbar() {
         />
       ))}
 
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
+      <Separator />
 
       {/* 列表按钮 */}
       <Toggle
         aria-label={t("format.orderedList")}
         data-testid="toolbar-orderedList"
-        onPressedChange={() => execWrapIn("ordered_list")}
+        onPressedChange={() =>
+          listType === "ordered" ? execLift() : execWrapIn("ordered_list")
+        }
         pressed={listType === "ordered"}
         size="sm"
       >
@@ -308,47 +365,102 @@ export function Toolbar() {
       <Toggle
         aria-label={t("format.unorderedList")}
         data-testid="toolbar-unorderedList"
-        onPressedChange={() => execWrapIn("bullet_list")}
+        onPressedChange={() =>
+          listType === "unordered" ? execLift() : execWrapIn("bullet_list")
+        }
         pressed={listType === "unordered"}
         size="sm"
       >
         <span className="text-xs">{t("format.unorderedList")}</span>
       </Toggle>
 
-      {/* 缩进按钮 */}
+      {/* 缩进 */}
       <button
         aria-label={t("format.indent")}
         className="inline-flex h-7 w-7 items-center justify-center rounded text-xs hover:bg-muted"
         data-testid="toolbar-indent"
-        onClick={() => {
-          // Phase 2: indent 暂不实现
-        }}
+        onClick={() => execIndent()}
+        title={t("format.indent")}
         type="button"
       >
         →
       </button>
-
       <button
         aria-label={t("format.outdent")}
         className="inline-flex h-7 w-7 items-center justify-center rounded text-xs hover:bg-muted"
         data-testid="toolbar-outdent"
-        onClick={() => {
-          // Phase 2: outdent 暂不实现
-        }}
+        onClick={() => execOutdent()}
+        title={t("format.outdent")}
         type="button"
       >
         ←
       </button>
 
-      {/* 分隔 */}
-      <span className="mx-0.5 h-5 w-px bg-border" />
+      <Separator />
+
+      {/* 文字颜色 */}
+      <input
+        aria-label={t("format.textColor")}
+        className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
+        data-testid="toolbar-textColor"
+        onChange={(e) => applyTextColor(e.target.value)}
+        title={t("format.textColor")}
+        type="color"
+      />
+
+      {/* 高亮 */}
+      <input
+        aria-label={t("format.highlight")}
+        className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
+        data-testid="toolbar-highlight"
+        onChange={(e) => applyHighlight(e.target.value)}
+        title={t("format.highlight")}
+        type="color"
+        value="#ffff00"
+      />
+
+      <Separator />
+
+      {/* 插入：表格/图片/链接 */}
+      <button
+        aria-label={t("menu.insert.table")}
+        className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
+        data-testid="toolbar-insertTable"
+        onClick={() => execInsertTable()}
+        title={t("menu.insert.table")}
+        type="button"
+      >
+        ⊞
+      </button>
+      <button
+        aria-label={t("menu.insert.image")}
+        className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
+        data-testid="toolbar-insertImage"
+        onClick={() => execInsertImage()}
+        title={t("menu.insert.image")}
+        type="button"
+      >
+        🖼
+      </button>
+      <button
+        aria-label={t("menu.insert.link")}
+        className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
+        data-testid="toolbar-insertLink"
+        onClick={() => execInsertLink()}
+        title={t("menu.insert.link")}
+        type="button"
+      >
+        🔗
+      </button>
+
+      <Separator />
 
       {/* 清除格式 */}
       <button
         aria-label={t("format.clearFormat")}
         className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
         data-testid="toolbar-clearFormat"
-        onClick={() => execLift()}
+        onClick={() => clearFormatting()}
         type="button"
       >
         {t("format.clearFormat")}
