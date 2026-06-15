@@ -26,8 +26,8 @@ export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
     handleChange,
     handleSave: _handleSave,
   } = useEditorBridge();
-  // 空状态：无文档（documentBuffer 未传入 且 非新建文档）
-  if (documentBuffer === undefined && !isNewDocument) {
+  // 空状态：无文档（documentBuffer 为 null/undefined 且 非新建文档）
+  if (documentBuffer == null && !isNewDocument) {
     return (
       <div
         className="flex flex-1 items-center justify-center bg-muted/30"

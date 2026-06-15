@@ -33,16 +33,14 @@ describe("App", () => {
 
   it("renders the workspace page", () => {
     render(<App />);
-    expect(screen.getByText("geex-docx")).toBeInTheDocument();
+    expect(screen.getByText("未命名文档")).toBeInTheDocument();
   });
-
   it("shows API Key configuration prompt", () => {
     render(<App />);
     expect(
       screen.getByRole("button", { name: /配置 API Key/i })
     ).toBeInTheDocument();
   });
-
   it("shows empty editor state when no document", () => {
     render(<App />);
     expect(screen.getByText(/打开或新建一个文档/)).toBeInTheDocument();

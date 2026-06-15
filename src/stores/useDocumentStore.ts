@@ -35,6 +35,7 @@ export type DocumentState = {
   documentBuffer: ArrayBuffer | null; // 原始 OOXML 字节（用于保存）
   documentPath: string | null; // 本地文件路径
   isDirty: boolean; // 是否有未保存修改
+  isNewDocument: boolean; // 是否处于新建空白文档模式
 
   // --- 编辑器桥接 ---
   editorBridge: EditorBridge | null;
@@ -63,6 +64,7 @@ export type DocumentState = {
   setPageInfo(current: number, total: number): void;
   setCanUndoRedo(canUndo: boolean, canRedo: boolean): void;
   closeDocument(): void; // 清空所有文档状态
+  createNewDocument(): void; // 进入新建空白文档模式
 };
 
 /** 格式状态 — 同步 Toolbar 按钮 active 状态 */
@@ -87,6 +89,7 @@ const initialDocumentState = {
   documentBuffer: null,
   documentPath: null,
   isDirty: false,
+  isNewDocument: false,
   editorBridge: null,
   selectionInfo: null,
   selectionFormat: null,
@@ -105,6 +108,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       document: doc,
       documentBuffer: buffer,
       documentPath: path,
+      isNewDocument: false,
       isDirty: false,
       canUndo: false,
       canRedo: false,
@@ -148,6 +152,24 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       document: null,
       documentBuffer: null,
       documentPath: null,
+      isNewDocument: false,
+      isDirty: false,
+      editorBridge: null,
+      selectionInfo: null,
+      selectionFormat: null,
+      canUndo: false,
+      canRedo: false,
+      totalPages: 1,
+      currentPage: 1,
+    });
+  },
+
+  createNewDocument() {
+    set({
+      document: null,
+      documentBuffer: null,
+      documentPath: null,
+      isNewDocument: true,
       isDirty: false,
       editorBridge: null,
       selectionInfo: null,

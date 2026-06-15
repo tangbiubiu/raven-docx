@@ -3,18 +3,20 @@
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
 import { useEffect, useRef } from "react";
+import { DocumentTitleBar } from "@/features/document/components/DocumentTitleBar";
+import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { StatusBar } from "@/features/editor/components/StatusBar";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { useAppStore } from "@/stores/useAppStore";
+import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
 /**
  * WorkspacePage — 编辑器主页面。
  *
- * Phase 2 状态：编辑器核心集成完成。
- * 后续 Phase 将逐步填充 TitleBar、Toolbar、AgentSidebar 等。
+ * Phase 2：集成 DocumentTitleBar + useDocument，将文档状态传入 EditorPane。
  */
 export default function WorkspacePage() {
   const settingsDrawerOpen = useAppStore((s) => s.settingsDrawerOpen);
@@ -23,6 +25,11 @@ export default function WorkspacePage() {
 
   const isLoaded = useSettingsStore((s) => s.isLoaded);
   const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
+
+  const documentBuffer = useDocumentStore((s) => s.documentBuffer);
+  const isNewDocument = useDocumentStore((s) => s.isNewDocument);
+
+  const { newDocument, openDocument } = useDocument();
 
   // 确保首次启动自动打开仅触发一次
   const autoOpenedRef = useRef(false);
@@ -39,26 +46,27 @@ export default function WorkspacePage() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-background text-foreground">
-      {/* 标题栏占位 — Phase 3 实现 TitleBar */}
-      <header className="flex h-10 shrink-0 items-center border-border border-b px-3">
-        <span className="font-medium text-muted-foreground text-sm">
-          geex-docx
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
-            onClick={toggleSettingsDrawer}
-            type="button"
-          >
-            {hasApiKey ? "设置" : "配置 API Key"}
-          </button>
-        </div>
-      </header>
+      {/* 文档标题栏 — 文件操作 + 文档状态 */}
+      <DocumentTitleBar onNew={newDocument} onOpen={openDocument} />
+
+      {/* 设置入口 */}
+      <div className="flex shrink-0 items-center justify-end border-border border-b px-3 py-1">
+        <button
+          className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
+          onClick={toggleSettingsDrawer}
+          type="button"
+        >
+          {hasApiKey ? "设置" : "配置 API Key"}
+        </button>
+      </div>
 
       {/* 主内容区 — OutlinePanel + DocxEditor */}
       <main className="flex flex-1 overflow-hidden">
         <OutlinePanel />
-        <EditorPane />
+        <EditorPane
+          documentBuffer={documentBuffer}
+          isNewDocument={isNewDocument}
+        />
       </main>
 
       {/* 状态栏 — 页码/字数/缩放/保存状态 */}

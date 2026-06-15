@@ -1,12 +1,17 @@
 // DocumentTitleBar — 文档标题栏 (Document Title Bar)
-// 显示文档名 + 修改标记 + 保存状态
-// Phase 1: 占位壳，仅显示布局结构
+// 显示文档名 + 修改标记 + 保存状态 + 新建/打开按钮
+// Phase 2: 增加文件操作按钮
 // Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.1
 
 import { useT } from "@/lib/i18n";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 
-export function DocumentTitleBar() {
+export type DocumentTitleBarProps = {
+  onNew: () => void;
+  onOpen: () => void;
+};
+
+export function DocumentTitleBar({ onNew, onOpen }: DocumentTitleBarProps) {
   const { t } = useT();
   const documentPath = useDocumentStore((s) => s.documentPath);
   const isDirty = useDocumentStore((s) => s.isDirty);
@@ -28,7 +33,21 @@ export function DocumentTitleBar() {
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onNew}
+          className="rounded px-2 py-1 text-xs hover:bg-accent"
+        >
+          {t("menu.file.new")}
+        </button>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="rounded px-2 py-1 text-xs hover:bg-accent"
+        >
+          {t("menu.file.open")}
+        </button>
         {isDirty ? (
           <span className="text-muted-foreground text-xs">
             {t("document.unsaved")}
