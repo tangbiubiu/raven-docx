@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 pub struct RecentFile {
     pub path: String,
     pub name: String,
-    pub last_opened_at: u64,
+    pub last_opened_at: f64,
 }
 
 /// 应用状态（state.json 的顶层结构）
@@ -204,7 +204,7 @@ fn update_recent_files(file_path: &Path) -> Result<(), String> {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
-        .as_secs();
+        .as_secs() as f64;
 
     // 移除已存在的同路径记录
     state.recent_files.retain(|f| f.path != path_str);
