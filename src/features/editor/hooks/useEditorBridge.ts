@@ -23,7 +23,7 @@ export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
     applyFormatting: () => false,
     setParagraphStyle: () => false,
     scrollToParaId: (paraId) => ref.scrollToParaId(paraId),
-    setZoom: (zoom) => ref.setZoom(zoom),
+    setZoom: (zoom) => ref.setZoom(zoom / 100), // store 存百分比，DocxEditor 用分数刻度
   };
 }
 
@@ -65,9 +65,9 @@ export function useEditorBridge() {
       }
       const current = editorRef.current.getCurrentPage();
       const total = editorRef.current.getTotalPages();
-      const z = editorRef.current.getZoom();
+      const z = editorRef.current.getZoom(); // DocxEditor 分数刻度（1.0 = 100%）
       setPageInfo(current, total);
-      setZoom(z);
+      setZoom(Math.round(z * 100));
     }, 500);
 
     window.__editorPagePollingId = id;
