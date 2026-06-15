@@ -10,6 +10,21 @@ import type { EditorBridge, SelectionInfo } from "@/stores/useDocumentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { extractHeadings } from "../utils";
 
+/** 从 ProseMirror view 计算文档字数（CJK 逐字 + 拉丁按词） */
+function computeCharCount(view: {
+  state: {
+    doc: {
+      content: { size: number };
+      textBetween: (from: number, to: number, sep: string) => string;
+    };
+  };
+}): number {
+  const text = view.state.doc.textBetween(0, view.state.doc.content.size, " ");
+  const cjk = (text.match(/[\u3400-\u9fff\uf900-\ufaff]/g) ?? []).length;
+  const latin = (text.match(/[a-zA-Z0-9]+/g) ?? []).length;
+  return cjk + latin;
+}
+
 /** EditorBridge factory — 从 DocxEditorRef 创建桥接对象 */
 export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
   return {
@@ -71,6 +86,12 @@ export function useEditorBridge() {
       const z = editorRef.current.getZoom(); // DocxEditor 分数刻度（1.0 = 100%）
       setPageInfo(current, total);
       setZoom(Math.round(z * 100));
+
+      // 轮询计算字数（解决打开文档时 onChange 不触发的问题）
+      const view = editorRef.current.getEditorRef()?.getView();
+      if (view) {
+        setCharCount(computeCharCount(view));
+      }
     }, 500);
 
     window.__editorPagePollingId = id;
@@ -148,18 +169,10 @@ export function useEditorBridge() {
     // 从文档中提取标题并更新 store，驱动 OutlinePanel 响应式渲染
     setHeadings(extractHeadings(_doc));
 
-    // 计算字符数：通过 ProseMirror doc.textBetween 提取全文并去除空白
+    // 计算字数（编辑时即时更新，轮询兜底覆盖打开文档场景）
     const view = editorRef.current?.getEditorRef()?.getView();
     if (view) {
-      const text = view.state.doc.textBetween(
-        0,
-        view.state.doc.content.size,
-        " "
-      );
-      // 统计：CJK 字符逐个计数 + 拉丁单词按空格分词计数
-      const cjk = (text.match(/[\u3400-\u9fff\uf900-\ufaff]/g) ?? []).length;
-      const latin = (text.match(/[a-zA-Z0-9]+/g) ?? []).length;
-      setCharCount(cjk + latin);
+      setCharCount(computeCharCount(view));
     }
   };
 
