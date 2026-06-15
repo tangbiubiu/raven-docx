@@ -45,6 +45,7 @@ export function useEditorBridge() {
   const setHeadings = useDocumentStore((s) => s.setHeadings);
   const setPageInfo = useDocumentStore((s) => s.setPageInfo);
   const setZoom = useDocumentStore((s) => s.setZoom);
+  const setCharCount = useDocumentStore((s) => s.setCharCount);
 
   /** 将 EditorBridge 注入 store（只执行一次） */
   const injectBridge = () => {
@@ -141,11 +142,25 @@ export function useEditorBridge() {
     }
   };
 
-  /** 文档内容变化回调 — 同步 dirty 标记 + 大纲标题 */
+  /** 文档内容变化回调 — 同步 dirty 标记 + 大纲标题 + 字数 */
   const handleChange = (_doc: Document) => {
     setDirty(true);
     // 从文档中提取标题并更新 store，驱动 OutlinePanel 响应式渲染
     setHeadings(extractHeadings(_doc));
+
+    // 计算字符数：通过 ProseMirror doc.textBetween 提取全文并去除空白
+    const view = editorRef.current?.getEditorRef()?.getView();
+    if (view) {
+      const text = view.state.doc.textBetween(
+        0,
+        view.state.doc.content.size,
+        " "
+      );
+      // 统计：CJK 字符逐个计数 + 拉丁单词按空格分词计数
+      const cjk = (text.match(/[\u3400-\u9fff\uf900-\ufaff]/g) ?? []).length;
+      const latin = (text.match(/[a-zA-Z0-9]+/g) ?? []).length;
+      setCharCount(cjk + latin);
+    }
   };
 
   /** 保存回调（Ctrl+S） */

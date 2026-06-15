@@ -15,6 +15,7 @@ export function StatusBar() {
   const currentPage = useDocumentStore((s) => s.currentPage);
   const totalPages = useDocumentStore((s) => s.totalPages);
   const isDirty = useDocumentStore((s) => s.isDirty);
+  const charCount = useDocumentStore((s) => s.charCount);
 
   return (
     <div
@@ -33,7 +34,7 @@ export function StatusBar() {
           })}
         </span>
         <span data-testid="word-count">
-          {t("editor.statusBar.wordCount", { count: 0 })}
+          {t("editor.statusBar.wordCount", { count: charCount })}
         </span>
       </div>
 

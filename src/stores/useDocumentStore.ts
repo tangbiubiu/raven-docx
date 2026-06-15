@@ -66,6 +66,9 @@ export type DocumentState = {
   totalPages: number;
   currentPage: number;
 
+  // --- 统计 ---
+  charCount: number; // 文档字符数（CJK + 拉丁）
+
   // --- 撤销重做 ---
   canUndo: boolean;
   canRedo: boolean;
@@ -84,6 +87,7 @@ export type DocumentState = {
   setPageInfo(current: number, total: number): void;
   setCanUndoRedo(canUndo: boolean, canRedo: boolean): void;
   setHeadings(headings: OutlineItem[]): void;
+  setCharCount(count: number): void;
   closeDocument(): void; // 清空所有文档状态
   createNewDocument(): void; // 进入新建空白文档模式
 };
@@ -117,6 +121,7 @@ const initialDocumentState = {
   zoom: 100,
   totalPages: 1,
   currentPage: 1,
+  charCount: 0,
   canUndo: false,
   canRedo: false,
   headings: [],
@@ -173,6 +178,10 @@ export const useDocumentStore = create<DocumentState>((set) => ({
     set({ headings });
   },
 
+  setCharCount(count) {
+    set({ charCount: count });
+  },
+
   closeDocument() {
     set({
       document: null,
@@ -186,6 +195,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       canUndo: false,
       canRedo: false,
       headings: [],
+      charCount: 0,
       totalPages: 1,
       currentPage: 1,
     });
@@ -204,6 +214,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       canUndo: false,
       canRedo: false,
       headings: [],
+      charCount: 0,
       totalPages: 1,
       currentPage: 1,
     });

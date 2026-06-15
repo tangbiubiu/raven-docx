@@ -194,6 +194,13 @@ describe("useDocumentStore", () => {
     });
   });
 
+  describe("setCharCount", () => {
+    it("更新文档字符数", () => {
+      useDocumentStore.getState().setCharCount(42);
+      expect(useDocumentStore.getState().charCount).toBe(42);
+    });
+  });
+
   describe("closeDocument", () => {
     it("清空所有文档状态", () => {
       // 先设置各种状态
@@ -206,6 +213,7 @@ describe("useDocumentStore", () => {
       store.setZoom(150);
       store.setPageInfo(5, 20);
       store.setCanUndoRedo(true, true);
+      store.setCharCount(100);
 
       // 关闭文档
       store.closeDocument();
@@ -222,6 +230,7 @@ describe("useDocumentStore", () => {
       expect(state.canRedo).toBe(false);
       expect(state.totalPages).toBe(1);
       expect(state.currentPage).toBe(1);
+      expect(state.charCount).toBe(0);
       // zoom 不应被 closeDocument 重置
       expect(state.zoom).toBe(150);
     });
