@@ -8,6 +8,7 @@ import type { DocxEditorRef } from "@eigenpal/docx-editor-react";
 import { useEffect, useRef } from "react";
 import type { EditorBridge, SelectionInfo } from "@/stores/useDocumentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
+import { extractHeadings } from "../utils";
 
 /** EditorBridge factory — 从 DocxEditorRef 创建桥接对象 */
 export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
@@ -41,6 +42,7 @@ export function useEditorBridge() {
   const setSelection = useDocumentStore((s) => s.setSelection);
   const setSelectionFormat = useDocumentStore((s) => s.setSelectionFormat);
   const setDirty = useDocumentStore((s) => s.setDirty);
+  const setHeadings = useDocumentStore((s) => s.setHeadings);
   const setPageInfo = useDocumentStore((s) => s.setPageInfo);
   const setZoom = useDocumentStore((s) => s.setZoom);
 
@@ -139,9 +141,11 @@ export function useEditorBridge() {
     }
   };
 
-  /** 文档内容变化回调 */
+  /** 文档内容变化回调 — 同步 dirty 标记 + 大纲标题 */
   const handleChange = (_doc: Document) => {
     setDirty(true);
+    // 从文档中提取标题并更新 store，驱动 OutlinePanel 响应式渲染
+    setHeadings(extractHeadings(_doc));
   };
 
   /** 保存回调（Ctrl+S） */

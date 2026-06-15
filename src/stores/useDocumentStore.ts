@@ -38,6 +38,13 @@ export type SelectionInfo = {
   paraId?: string;
 };
 
+/** 大纲条目 */
+export type OutlineItem = {
+  paraId: string;
+  text: string;
+  level: number; // outlineLevel: 0=H1, 1=H2, ...
+};
+
 /** 文档状态 */
 export type DocumentState = {
   // --- 文档数据 ---
@@ -63,6 +70,9 @@ export type DocumentState = {
   canUndo: boolean;
   canRedo: boolean;
 
+  // --- 大纲 ---
+  headings: OutlineItem[];
+
   // --- Actions ---
   setDocument(doc: unknown, buffer: ArrayBuffer, path: string | null): void;
   setDirty(dirty: boolean): void;
@@ -73,6 +83,7 @@ export type DocumentState = {
   setZoom(zoom: number): void;
   setPageInfo(current: number, total: number): void;
   setCanUndoRedo(canUndo: boolean, canRedo: boolean): void;
+  setHeadings(headings: OutlineItem[]): void;
   closeDocument(): void; // 清空所有文档状态
   createNewDocument(): void; // 进入新建空白文档模式
 };
@@ -108,6 +119,7 @@ const initialDocumentState = {
   currentPage: 1,
   canUndo: false,
   canRedo: false,
+  headings: [],
 } as const satisfies Partial<DocumentState>;
 
 export const useDocumentStore = create<DocumentState>((set) => ({
@@ -157,6 +169,10 @@ export const useDocumentStore = create<DocumentState>((set) => ({
     set({ canUndo, canRedo });
   },
 
+  setHeadings(headings) {
+    set({ headings });
+  },
+
   closeDocument() {
     set({
       document: null,
@@ -169,6 +185,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       selectionFormat: null,
       canUndo: false,
       canRedo: false,
+      headings: [],
       totalPages: 1,
       currentPage: 1,
     });
@@ -186,6 +203,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       selectionFormat: null,
       canUndo: false,
       canRedo: false,
+      headings: [],
       totalPages: 1,
       currentPage: 1,
     });
