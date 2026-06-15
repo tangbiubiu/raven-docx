@@ -11,6 +11,7 @@
         "src/hooks/**",
         "src/lib/i18n/**",
         "src/features/settings/**",
+        "src/features/editor/**",
         "src/pages/**"
       ],
       "linter": {

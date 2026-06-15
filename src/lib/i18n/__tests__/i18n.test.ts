@@ -19,7 +19,7 @@ describe("i18n", () => {
       it("支持模板参数", () => {
         expect(
           t("editor.statusBar.page", "zh-CN", { current: 1, total: 5 })
-        ).toBe("第 1 / 5 页");
+        ).toBe("第 1/5 页");
         expect(t("editor.statusBar.wordCount", "zh-CN", { count: 1200 })).toBe(
           "1200 字"
         );
@@ -35,7 +35,7 @@ describe("i18n", () => {
 
       it("支持模板参数", () => {
         expect(t("editor.statusBar.page", "en", { current: 1, total: 5 })).toBe(
-          "Page 1 of 5"
+          "Page 1/5"
         );
         expect(t("editor.statusBar.wordCount", "en", { count: 1200 })).toBe(
           "1200 words"

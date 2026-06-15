@@ -11,6 +11,10 @@ export default mergeConfig(
       setupFiles: ["./vitest.setup.ts"],
       globals: true,
       include: ["src/**/*.test.{ts,tsx}"],
+      // React 19 + testing-library: force development React in tests
+      env: {
+        NODE_ENV: "development",
+      },
       coverage: {
         provider: "v8",
         reporter: ["text", "json", "html"],

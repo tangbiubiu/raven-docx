@@ -3,10 +3,10 @@
 // 完整 Agent 交互在 Phase 3 实现
 // Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.8
 
-import { useAppStore } from "@/stores/useAppStore";
-import { useAgentStore } from "@/stores/useAgentStore";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useAgentStore } from "@/stores/useAgentStore";
+import { useAppStore } from "@/stores/useAppStore";
 
 export function AgentSidebar() {
   const { t } = useT();
@@ -17,22 +17,22 @@ export function AgentSidebar() {
   if (!open) {
     return (
       <button
-        type="button"
-        onClick={toggle}
-        className="flex w-8 shrink-0 items-center justify-center border-border border-l bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         aria-label={t("agent.title")}
+        className="flex w-8 shrink-0 items-center justify-center border-border border-l bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        onClick={toggle}
         title={t("agent.title")}
+        type="button"
       >
         <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
           fill="none"
+          height="16"
           stroke="currentColor"
-          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
         >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
@@ -42,10 +42,10 @@ export function AgentSidebar() {
 
   return (
     <aside
+      aria-label={t("agent.title")}
       className={cn(
         "flex w-[380px] shrink-0 flex-col border-border border-l bg-background"
       )}
-      aria-label={t("agent.title")}
     >
       {/* Agent 标题栏 */}
       <div className="flex items-center justify-between border-border border-b px-3 py-2">
@@ -60,21 +60,21 @@ export function AgentSidebar() {
           </span>
         </div>
         <button
-          type="button"
-          onClick={toggle}
-          className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           aria-label={t("agent.title")}
+          className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          onClick={toggle}
+          type="button"
         >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
             fill="none"
+            height="14"
             stroke="currentColor"
-            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="14"
+            xmlns="http://www.w3.org/2000/svg"
           >
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />

@@ -59,15 +59,18 @@ export const zhCN: Translations = {
   "document.noRecent": "暂无最近文件",
   "document.fileType": "Word 文档 (*.docx)",
 
-  // === 编辑器状态栏 ===
-  "editor.statusBar.page": "第 {current} / {total} 页",
+  "editor.statusBar.page": "第 {current}/{total} 页",
   "editor.statusBar.wordCount": "{count} 字",
   "editor.statusBar.cursor": "行 {line}，列 {col}",
   "editor.statusBar.zoom": "{zoom}%",
+  "editor.statusBar.dirty": "未保存",
+  "editor.statusBar.saved": "已保存",
+  "editor.pane.empty": "打开或新建一个文档",
   "editor.outline.title": "大纲",
   "editor.outline.empty": "暂无可导航标题",
 
   // === 格式工具栏 ===
+
   "format.bold": "加粗",
   "format.italic": "斜体",
   "format.underline": "下划线",
@@ -174,7 +177,6 @@ export const zhCN: Translations = {
   "settings.data.reset": "重置所有设置",
   "settings.data.resetWarning": "这将重置所有偏好设置，不会删除文档",
   "settings.data.clearing": "清除中…",
-
   // === 表格 ===
   "table.insert": "插入表格",
   "table.insert.grid": "{rows}×{cols} 表格",

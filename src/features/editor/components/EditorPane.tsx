@@ -1,28 +1,59 @@
 // EditorPane — 编辑器容器 (Editor Container)
-// Phase 1: 占位容器，显示空白页面区域
-// 完整 DocxEditor 集成在 Phase 2 实现
-// Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.2
+// Phase 2: 集成 <DocxEditor> 组件并桥接 useEditorBridge
+// Reference: .dev/plan/implementation-plan.md §Phase 2, .dev/proto/workspace.html
 
+import { createEmptyDocument, DocxEditor } from "@eigenpal/docx-editor-react";
+import { useT } from "@/lib/i18n";
+import { useEditorBridge } from "../hooks/useEditorBridge";
+export type EditorPaneProps = {
+  /** 已打开的文档 OOXML 字节 */
+  documentBuffer?: ArrayBuffer | null;
+  /** 是否新建文档 */
+  isNewDocument?: boolean;
+};
 /**
- * 编辑器占位容器。
- * Phase 2 将替换为 `<DocxEditor>` 组件并集成 useEditorBridge。
+ * 编辑器容器。
+ *
+ * `documentBuffer` 非 null → 渲染 DocxEditor 显示文档
+ * `isNewDocument` → 渲染 DocxEditor + createEmptyDocument()
+ * 两者都为 false/null → 显示空状态提示
  */
-export function EditorPane() {
-  return (
-    <div className="flex flex-1 flex-col items-center overflow-auto bg-muted/30 p-8">
-      {/* 模拟页面纸张 */}
-      <div className="flex w-full max-w-[760px] flex-1 flex-col bg-background p-16 shadow-sm">
-        <div className="mb-6 h-8 w-3/4 rounded bg-muted/60" />
-        <div className="mb-3 h-4 w-full rounded bg-muted/40" />
-        <div className="mb-3 h-4 w-11/12 rounded bg-muted/40" />
-        <div className="mb-3 h-4 w-4/5 rounded bg-muted/40" />
-        <div className="mb-6 h-4 w-2/3 rounded bg-muted/40" />
-
-        <div className="mb-4 h-6 w-1/2 rounded bg-muted/50" />
-        <div className="mb-3 h-4 w-full rounded bg-muted/40" />
-        <div className="mb-3 h-4 w-full rounded bg-muted/40" />
-        <div className="h-4 w-3/4 rounded bg-muted/40" />
+export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
+  const { t } = useT();
+  const {
+    editorRef,
+    handleSelectionChange,
+    handleChange,
+    handleSave: _handleSave,
+  } = useEditorBridge();
+  // 空状态：无文档（documentBuffer 未传入 且 非新建文档）
+  if (documentBuffer === undefined && !isNewDocument) {
+    return (
+      <div
+        className="flex flex-1 items-center justify-center bg-muted/30"
+        data-testid="editor-pane-empty"
+      >
+        <p className="text-muted-foreground">{t("editor.pane.empty")}</p>
       </div>
+    );
+  }
+  // 新建文档或打开已有文档
+  const docProp = isNewDocument ? createEmptyDocument() : undefined;
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <DocxEditor
+        document={docProp}
+        documentBuffer={documentBuffer ?? null}
+        onChange={handleChange}
+        onSelectionChange={handleSelectionChange}
+        ref={editorRef}
+        showMarginGuides={false}
+        showOutline={false}
+        showOutlineButton={false}
+        showRuler={false}
+        showToolbar={false}
+        showZoomControl={false}
+      />
     </div>
   );
 }

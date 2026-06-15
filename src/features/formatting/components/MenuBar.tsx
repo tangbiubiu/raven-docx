@@ -21,17 +21,17 @@ export function MenuBar() {
 
   return (
     <nav
+      aria-label={t("menu.file")}
       className="flex h-8 shrink-0 items-center gap-1 border-border border-b bg-background px-4"
       role="menubar"
-      aria-label={t("menu.file")}
     >
       {MENU_ITEMS.map((key) => (
         <button
-          key={key}
-          type="button"
-          role="menuitem"
           className="cursor-default rounded px-2 py-0.5 text-muted-foreground text-xs hover:bg-accent hover:text-accent-foreground"
+          key={key}
+          role="menuitem"
           tabIndex={0}
+          type="button"
         >
           {t(key)}
         </button>

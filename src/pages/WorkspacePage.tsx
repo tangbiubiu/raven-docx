@@ -3,6 +3,8 @@
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
 import { useEffect, useRef } from "react";
+import { EditorPane } from "@/features/editor/components/EditorPane";
+import { StatusBar } from "@/features/editor/components/StatusBar";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
@@ -10,8 +12,8 @@ import { useSettingsStore } from "@/stores/useSettingsStore";
 /**
  * WorkspacePage — 编辑器主页面。
  *
- * Phase 1 状态：布局壳，仅实现 SettingsDrawer toggle。
- * 后续 Phase 将逐步填充 TitleBar、Toolbar、EditorPane、AgentSidebar 等。
+ * Phase 2 状态：编辑器核心集成完成。
+ * 后续 Phase 将逐步填充 TitleBar、Toolbar、AgentSidebar 等。
  */
 export default function WorkspacePage() {
   const settingsDrawerOpen = useAppStore((s) => s.settingsDrawerOpen);
@@ -36,38 +38,29 @@ export default function WorkspacePage() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-background text-foreground">
-      {/* 标题栏占位 */}
+      {/* 标题栏占位 — Phase 3 实现 TitleBar */}
       <header className="flex h-10 shrink-0 items-center border-border border-b px-3">
         <span className="font-medium text-muted-foreground text-sm">
           geex-docx
         </span>
-      </header>
-
-      {/* 主内容区 */}
-      <main className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <h1 className="mb-2 font-semibold text-2xl">geex-docx</h1>
-          <p className="mb-4 text-muted-foreground">Agent 原生文档编辑器</p>
+        <div className="ml-auto flex items-center gap-2">
           <button
-            className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm hover:bg-primary/90"
+            className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
             onClick={toggleSettingsDrawer}
             type="button"
           >
-            配置 API Key
+            {hasApiKey ? "设置" : "配置 API Key"}
           </button>
-          <p className="mt-2 text-muted-foreground text-xs">
-            或通过菜单栏 → 设置打开
-          </p>
         </div>
+      </header>
+
+      {/* 主内容区 — DocxEditor */}
+      <main className="flex flex-1 overflow-hidden">
+        <EditorPane />
       </main>
 
-      {/* 状态栏占位 */}
-      <footer className="flex h-7 shrink-0 items-center justify-between border-border border-t bg-muted/30 px-3">
-        <span className="text-muted-foreground text-xs">
-          {hasApiKey ? "✓ Agent 就绪" : "⚠ 未配置 API Key"}
-        </span>
-        <span className="text-muted-foreground text-xs">v0.2.0</span>
-      </footer>
+      {/* 状态栏 — 页码/字数/缩放/保存状态 */}
+      <StatusBar />
 
       {/* SettingsDrawer */}
       {settingsDrawerOpen ? (

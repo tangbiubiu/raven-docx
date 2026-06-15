@@ -2019,7 +2019,7 @@
       style="display: none"
     />
 
-    <script>
+    <script>"use strict";
       // ============================================================
       // AgentWrite — Full-featured Desktop Word Editor with AI Agent
       // ============================================================
@@ -2114,7 +2114,7 @@
         zoomSlider.value = percent;
       }
       zoomSlider.addEventListener("input", () =>
-        applyZoom(parseInt(zoomSlider.value)),
+        applyZoom(Number.parseInt(zoomSlider.value)),
       );
       editorScroll.addEventListener(
         "wheel",
@@ -2124,7 +2124,7 @@
             const delta = e.deltaY > 0 ? -5 : 5;
             const newZoom = Math.max(
               50,
-              Math.min(200, parseInt(zoomSlider.value) + delta),
+              Math.min(200, Number.parseInt(zoomSlider.value) + delta),
             );
             applyZoom(newZoom);
           }
@@ -2508,7 +2508,7 @@
 
       function filterCommands(query) {
         const q = query.toLowerCase().trim();
-        let filtered = q
+        const filtered = q
           ? commands.filter((c) =>
               c.id.startsWith("type")
                 ? false
@@ -2539,7 +2539,7 @@
 
         commandList.querySelectorAll(".command-item").forEach((item) => {
           item.addEventListener("click", () => {
-            const idx = parseInt(item.dataset.idx);
+            const idx = Number.parseInt(item.dataset.idx);
             if (filtered[idx] && filtered[idx].action) {
               closeCommandPalette();
               filtered[idx].action();
@@ -2643,8 +2643,8 @@
 
       function highlightTableGrid(r, c) {
         const cells = tableGrid.querySelectorAll(".table-grid-cell");
-        const maxCols = Math.min(parseInt(tableCols.value) || 4, 8);
-        const maxRows = Math.min(parseInt(tableRows.value) || 3, 10);
+        const maxCols = Math.min(Number.parseInt(tableCols.value) || 4, 8);
+        const maxRows = Math.min(Number.parseInt(tableRows.value) || 3, 10);
         cells.forEach((cell, i) => {
           const col = i % maxCols;
           const row = Math.floor(i / maxCols);
@@ -2654,7 +2654,7 @@
 
       tableGrid.addEventListener("mousemove", (e) => {
         const rect = tableGrid.getBoundingClientRect();
-        const maxCols = Math.min(parseInt(tableCols.value) || 4, 8);
+        const maxCols = Math.min(Number.parseInt(tableCols.value) || 4, 8);
         const col = Math.min(Math.ceil((e.clientX - rect.left) / 24), maxCols);
         const row = Math.min(Math.ceil((e.clientY - rect.top) / 24), 10);
         highlightTableGrid(row, col);
@@ -2678,7 +2678,7 @@
 
       tableGrid.addEventListener("click", (e) => {
         const rect = tableGrid.getBoundingClientRect();
-        const maxCols = Math.min(parseInt(tableCols.value) || 4, 8);
+        const maxCols = Math.min(Number.parseInt(tableCols.value) || 4, 8);
         const col = Math.min(Math.ceil((e.clientX - rect.left) / 24), maxCols);
         const row = Math.min(Math.ceil((e.clientY - rect.top) / 24), 10);
         insertTable(row, col);
@@ -2688,8 +2688,8 @@
       document
         .getElementById("table-insert-btn")
         .addEventListener("click", () => {
-          const rows = parseInt(tableRows.value) || 3;
-          const cols = parseInt(tableCols.value) || 4;
+          const rows = Number.parseInt(tableRows.value) || 3;
+          const cols = Number.parseInt(tableCols.value) || 4;
           insertTable(rows, cols);
           closeModal("table-modal");
         });
@@ -2701,7 +2701,7 @@
         html += "</tr></thead><tbody>";
         for (let r = 1; r < rows; r++) {
           html += "<tr>";
-          for (let c = 0; c < cols; c++) html += `<td>单元格</td>`;
+          for (let c = 0; c < cols; c++) html += "<td>单元格</td>";
           html += "</tr>";
         }
         html += "</tbody></table><p></p>";
@@ -2754,7 +2754,7 @@
       /* ============================================================
        COMMENTS SYSTEM
        ============================================================ */
-      let comments = [];
+      const comments = [];
 
       function addCommentFromSelection() {
         const sel = window.getSelection();
@@ -2904,13 +2904,13 @@
             label: "放大",
             shortcut: "⌘+",
             action: () =>
-              applyZoom(Math.min(200, parseInt(zoomSlider.value) + 10)),
+              applyZoom(Math.min(200, Number.parseInt(zoomSlider.value) + 10)),
           },
           {
             label: "缩小",
             shortcut: "⌘-",
             action: () =>
-              applyZoom(Math.max(50, parseInt(zoomSlider.value) - 10)),
+              applyZoom(Math.max(50, Number.parseInt(zoomSlider.value) - 10)),
           },
           { label: "重置缩放", shortcut: "⌘0", action: () => applyZoom(100) },
         ],
@@ -3491,8 +3491,7 @@
       });
       document.addEventListener("click", (e) => {
         if (
-          !e.target.closest(".agent-suggestion") &&
-          !e.target.closest(".suggestion-popover")
+          !(e.target.closest(".agent-suggestion") ||e.target.closest(".suggestion-popover"))
         ) {
           suggestionPopover.classList.remove("visible");
         }
@@ -3797,10 +3796,10 @@
           openDocument();
         } else if (mod && e.key === "=") {
           e.preventDefault();
-          applyZoom(Math.min(200, parseInt(zoomSlider.value) + 10));
+          applyZoom(Math.min(200, Number.parseInt(zoomSlider.value) + 10));
         } else if (mod && e.key === "-") {
           e.preventDefault();
-          applyZoom(Math.max(50, parseInt(zoomSlider.value) - 10));
+          applyZoom(Math.max(50, Number.parseInt(zoomSlider.value) - 10));
         } else if (mod && e.key === "0") {
           e.preventDefault();
           applyZoom(100);

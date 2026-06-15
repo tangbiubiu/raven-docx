@@ -1,13 +1,29 @@
+// vitest.setup.ts — Test environment setup (jsdom + Tauri mocks)
+// Reference: AGENTS.md §Testing, .dev/docs/modules/infrastructure.md §4
+
 import "@testing-library/jest-dom/vitest";
-import { randomFillSync } from "node:crypto";
 import { vi } from "vitest";
 
-// jsdom doesn't include WebCrypto, which is required by Tauri's mocking utilities
-Object.defineProperty(window, "crypto", {
-  value: {
-    getRandomValues: (buffer: Uint8Array) => randomFillSync(buffer),
-  },
-});
+// Modern jsdom (vitest ≥ 4) provides crypto.getRandomValues natively.
+// Fallback polyfill for environments where it's missing.
+if (
+  typeof globalThis.crypto === "undefined" ||
+  !globalThis.crypto.getRandomValues
+) {
+  Object.defineProperty(globalThis, "crypto", {
+    value: {
+      getRandomValues: (buffer: Uint8Array) => {
+        const bytes = new Uint8Array(buffer.length);
+        for (let i = 0; i < bytes.length; i++) {
+          bytes[i] = Math.floor(Math.random() * 256);
+        }
+        buffer.set(bytes);
+        return buffer;
+      },
+    },
+    writable: true,
+  });
+}
 
 // Mock Tauri internals that are expected to exist
 Object.defineProperty(window, "__TAURI_INTERNALS__", {

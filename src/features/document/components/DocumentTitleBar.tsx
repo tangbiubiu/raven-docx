@@ -3,8 +3,8 @@
 // Phase 1: 占位壳，仅显示布局结构
 // Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.1
 
-import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useT } from "@/lib/i18n";
+import { useDocumentStore } from "@/stores/useDocumentStore";
 
 export function DocumentTitleBar() {
   const { t } = useT();
@@ -12,7 +12,7 @@ export function DocumentTitleBar() {
   const isDirty = useDocumentStore((s) => s.isDirty);
 
   const displayName = documentPath
-    ? documentPath.split("/").pop() ?? documentPath
+    ? (documentPath.split("/").pop() ?? documentPath)
     : t("document.unnamed");
 
   return (
@@ -20,16 +20,23 @@ export function DocumentTitleBar() {
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground text-sm">{displayName}</span>
         {isDirty && (
-          <span className="text-muted-foreground text-xs" title={t("document.modified")}>
+          <span
+            className="text-muted-foreground text-xs"
+            title={t("document.modified")}
+          >
             ●
           </span>
         )}
       </div>
       <div className="flex items-center gap-1">
         {isDirty ? (
-          <span className="text-muted-foreground text-xs">{t("document.unsaved")}</span>
+          <span className="text-muted-foreground text-xs">
+            {t("document.unsaved")}
+          </span>
         ) : (
-          <span className="text-muted-foreground text-xs">{t("document.saved")}</span>
+          <span className="text-muted-foreground text-xs">
+            {t("document.saved")}
+          </span>
         )}
       </div>
     </div>

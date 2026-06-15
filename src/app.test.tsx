@@ -3,8 +3,17 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./app";
+
+// Mock DocxEditor to avoid CSS import issues in test environment
+vi.mock("@eigenpal/docx-editor-react", () => {
+  const DummyDoc = { type: "document", children: [] };
+  return {
+    DocxEditor: vi.fn(() => <div data-testid="docx-editor">ready</div>),
+    createEmptyDocument: vi.fn(() => DummyDoc),
+  };
+});
 
 describe("App", () => {
   beforeEach(() => {
@@ -24,8 +33,7 @@ describe("App", () => {
 
   it("renders the workspace page", () => {
     render(<App />);
-    // 页面有两个 "geex-docx"（标题栏 + 主内容区）
-    expect(screen.getAllByText("geex-docx")).toHaveLength(2);
+    expect(screen.getByText("geex-docx")).toBeInTheDocument();
   });
 
   it("shows API Key configuration prompt", () => {
@@ -35,14 +43,13 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows 'not configured' in status bar", () => {
+  it("shows empty editor state when no document", () => {
     render(<App />);
-    expect(screen.getByText("⚠ 未配置 API Key")).toBeInTheDocument();
+    expect(screen.getByText(/打开或新建一个文档/)).toBeInTheDocument();
   });
 
   it("auto-opens SettingsDrawer on first launch when no API Key", () => {
     render(<App />);
-    // 首次启动无 API Key → SettingsDrawer 自动打开
     expect(screen.getByText("API Key 配置")).toBeInTheDocument();
   });
 
@@ -50,7 +57,6 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // SettingsDrawer 已自动打开
     expect(screen.getByText("API Key 配置")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /完成/ }));
@@ -71,11 +77,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // 先关闭自动打开的 drawer
     await user.keyboard("{Escape}");
     expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
 
-    // 点击按钮重新打开
     await user.click(screen.getByRole("button", { name: /配置 API Key/i }));
     expect(screen.getByText("API Key 配置")).toBeInTheDocument();
   });

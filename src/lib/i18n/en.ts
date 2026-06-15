@@ -59,11 +59,13 @@ export const en: Translations = {
   "document.noRecent": "No recent files",
   "document.fileType": "Word Document (*.docx)",
 
-  // === Editor Status Bar ===
-  "editor.statusBar.page": "Page {current} of {total}",
+  "editor.statusBar.page": "Page {current}/{total}",
   "editor.statusBar.wordCount": "{count} words",
   "editor.statusBar.cursor": "Ln {line}, Col {col}",
   "editor.statusBar.zoom": "{zoom}%",
+  "editor.statusBar.dirty": "Unsaved",
+  "editor.statusBar.saved": "Saved",
+  "editor.pane.empty": "Open or create a document",
   "editor.outline.title": "Outline",
   "editor.outline.empty": "No headings to navigate",
 
@@ -177,8 +179,8 @@ export const en: Translations = {
   "settings.data.resetWarning":
     "This will reset all preferences. Documents will not be deleted",
   "settings.data.clearing": "Clearing…",
-
   // === Table ===
+
   "table.insert": "Insert Table",
   "table.insert.grid": "{rows}×{cols} Table",
   "table.insertRow": "Insert Row Above",

@@ -3,9 +3,9 @@
 // Phase 1: 占位壳，展示空状态
 // Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.2
 
-import { useAppStore } from "@/stores/useAppStore";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/useAppStore";
 
 export function OutlinePanel() {
   const { t } = useT();
@@ -18,10 +18,10 @@ export function OutlinePanel() {
 
   return (
     <aside
+      aria-label={t("editor.outline.title")}
       className={cn(
         "flex w-[220px] shrink-0 flex-col border-border border-r bg-background"
       )}
-      aria-label={t("editor.outline.title")}
     >
       {/* 面板标题 */}
       <div className="flex items-center justify-between border-border border-b px-3 py-2">
@@ -29,21 +29,21 @@ export function OutlinePanel() {
           {t("editor.outline.title")}
         </span>
         <button
-          type="button"
-          onClick={toggle}
-          className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           aria-label={t("editor.outline.title")}
+          className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          onClick={toggle}
+          type="button"
         >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
             fill="none"
+            height="14"
             stroke="currentColor"
-            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="14"
+            xmlns="http://www.w3.org/2000/svg"
           >
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
