@@ -2,16 +2,18 @@
 // Phase 2: 实时显示页码、字数、缩放比例、保存状态
 // Reference: .dev/plan/implementation-plan.md §Phase 2, .dev/proto/workspace.html
 
+import { useT } from "@/lib/i18n";
 import { useDocumentStore } from "@/stores/useDocumentStore";
+import { ZoomControl } from "./ZoomControl";
 
 /**
  * 底部状态栏。
  * 从 useDocumentStore 读取状态，不直接调用编辑器 API。
  */
 export function StatusBar() {
+  const { t } = useT();
   const currentPage = useDocumentStore((s) => s.currentPage);
   const totalPages = useDocumentStore((s) => s.totalPages);
-  const zoom = useDocumentStore((s) => s.zoom);
   const isDirty = useDocumentStore((s) => s.isDirty);
 
   return (
@@ -22,18 +24,18 @@ export function StatusBar() {
       {/* 左侧：保存状态 + 页码 + 字数 */}
       <div className="flex items-center gap-4">
         <span data-testid="dirty-status">
-          {isDirty ? "● 未保存" : "✓ 已保存"}
+          {isDirty ? t("editor.statusBar.dirty") : t("editor.statusBar.saved")}
         </span>
         <span>
-          第 {currentPage}/{totalPages} 页
+          {t("editor.statusBar.page", {
+            current: currentPage,
+            total: totalPages,
+          })}
         </span>
-        <span>— 字</span>
       </div>
 
-      {/* 右侧：缩放 */}
-      <div className="flex items-center gap-2">
-        <span>{zoom}%</span>
-      </div>
+      {/* 右侧：缩放控制 */}
+      <ZoomControl />
     </div>
   );
 }

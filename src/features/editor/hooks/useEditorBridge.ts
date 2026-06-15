@@ -16,6 +16,7 @@ export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
     focus: () => ref.focus(),
     getAgent: () => ref.getAgent(),
     getDocument: () => ref.getDocument(),
+    getLayout: () => ref.getEditorRef()?.getLayout() ?? null,
     getSelectionInfo: () => useDocumentStore.getState().selectionInfo,
     applyFormatting: () => false,
     setParagraphStyle: () => false,
