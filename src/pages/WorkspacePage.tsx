@@ -3,7 +3,7 @@
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
 import { useEffect, useRef } from "react";
-import { DocumentTitleBar } from "@/features/document/components/DocumentTitleBar";
+import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
 import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";

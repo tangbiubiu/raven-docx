@@ -18,6 +18,8 @@ export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
     getDocument: () => ref.getDocument(),
     getLayout: () => ref.getEditorRef()?.getLayout() ?? null,
     getSelectionInfo: () => useDocumentStore.getState().selectionInfo,
+    getEditorView: () => ref.getEditorRef()?.getView() ?? null,
+    dispatchTransaction: (tr) => ref.getEditorRef()?.dispatch?.(tr),
     applyFormatting: () => false,
     setParagraphStyle: () => false,
     scrollToParaId: (paraId) => ref.scrollToParaId(paraId),

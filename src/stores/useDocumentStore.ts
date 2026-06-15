@@ -15,10 +15,18 @@ export type EditorBridge = {
   getDocument(): unknown;
   getLayout(): unknown;
   getSelectionInfo(): SelectionInfo | null;
+  getEditorView(): ProseMirrorEditorView | null; // 获取 ProseMirror EditorView
+  dispatchTransaction(tr: ProseMirrorTransaction): void; // 分发 PM Transaction
   applyFormatting(opts: Record<string, unknown>): boolean;
   setParagraphStyle(opts: { paraId: string; styleId: string }): boolean;
   scrollToParaId(paraId: string): boolean;
 };
+
+// 最小类型契约，避免直接依赖 prosemirror-view 类型
+// biome-ignore lint/suspicious/noExplicitAny: EditorView 为 ProseMirror 复杂类型
+type ProseMirrorEditorView = any;
+// biome-ignore lint/suspicious/noExplicitAny: Transaction 为 ProseMirror 复杂类型
+type ProseMirrorTransaction = any;
 
 /** 选区信息 */
 export type SelectionInfo = {

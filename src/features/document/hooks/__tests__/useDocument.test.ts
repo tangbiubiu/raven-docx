@@ -43,10 +43,14 @@ describe("useDocument — saveDocument", () => {
       focus: vi.fn(),
       getAgent: vi.fn(),
       getDocument: vi.fn(),
+      getLayout: vi.fn(),
       getSelectionInfo: vi.fn(),
       applyFormatting: vi.fn(),
       setParagraphStyle: vi.fn(),
       scrollToParaId: vi.fn(),
+      setZoom: vi.fn(),
+      getEditorView: vi.fn(),
+      dispatchTransaction: vi.fn(),
     };
     useDocumentStore.getState().setEditorBridge(bridge);
 
@@ -63,10 +67,14 @@ describe("useDocument — saveDocument", () => {
       focus: vi.fn(),
       getAgent: vi.fn(),
       getDocument: vi.fn(),
+      getLayout: vi.fn(),
       getSelectionInfo: vi.fn(),
       applyFormatting: vi.fn(),
       setParagraphStyle: vi.fn(),
       scrollToParaId: vi.fn(),
+      setZoom: vi.fn(),
+      getEditorView: vi.fn(),
+      dispatchTransaction: vi.fn(),
     };
     useDocumentStore.getState().setEditorBridge(bridge);
     useDocumentStore.getState().setDirty(true);

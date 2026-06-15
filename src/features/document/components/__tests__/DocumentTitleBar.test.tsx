@@ -4,7 +4,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DocumentTitleBar } from "../DocumentTitleBar";
+import { DocumentTitleBar } from "../document-title-bar";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 
 describe("DocumentTitleBar", () => {

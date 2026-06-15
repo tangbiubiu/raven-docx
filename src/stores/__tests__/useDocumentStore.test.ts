@@ -24,6 +24,10 @@ function createMockBridge(overrides?: Partial<EditorBridge>): EditorBridge {
     applyFormatting: () => false,
     setParagraphStyle: () => false,
     scrollToParaId: () => false,
+    getEditorView: () => null,
+    dispatchTransaction: () => {
+      /* no-op */
+    },
     ...overrides,
   };
 }
