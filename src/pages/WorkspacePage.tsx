@@ -8,6 +8,7 @@ import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
+import { Toolbar } from "@/features/formatting/components/toolbar";
 import { StatusBar } from "@/features/editor/components/StatusBar";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { useAppStore } from "@/stores/useAppStore";
@@ -65,6 +66,7 @@ export default function WorkspacePage() {
       <main className="flex flex-1 overflow-hidden">
         <OutlinePanel />
         <div className="relative flex flex-1 flex-col overflow-hidden">
+          <Toolbar />
           <Ruler />
           <EditorPane
             documentBuffer={documentBuffer}

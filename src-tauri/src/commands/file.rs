@@ -66,9 +66,7 @@ fn validate_path(path: &str) -> Result<PathBuf, String> {
     }
 
     // 规范化路径并检查是否包含 .. 遍历
-    let canonical = p
-        .canonicalize()
-        .map_err(|e| format!("路径无效: {}", e))?;
+    let canonical = p.canonicalize().map_err(|e| format!("路径无效: {}", e))?;
 
     // 检查扩展名
     match canonical.extension().and_then(|e| e.to_str()) {
@@ -155,8 +153,7 @@ pub fn get_recent_files() -> Result<Vec<RecentFile>, String> {
         return Ok(Vec::new());
     }
 
-    let content =
-        fs::read_to_string(&path).map_err(|e| format!("读取状态文件失败: {}", e))?;
+    let content = fs::read_to_string(&path).map_err(|e| format!("读取状态文件失败: {}", e))?;
 
     let state: AppState =
         serde_json::from_str(&content).map_err(|e| format!("解析状态文件失败: {}", e))?;
@@ -172,8 +169,7 @@ fn write_autosave(original_path: &str, data: &[u8]) -> Result<(), String> {
     let hash = doc_hash(original_path);
     let autosave_path = dir.join(format!("{}.docx", hash));
 
-    fs::write(&autosave_path, data)
-        .map_err(|e| format!("写入 autosave 失败: {}", e))?;
+    fs::write(&autosave_path, data).map_err(|e| format!("写入 autosave 失败: {}", e))?;
 
     Ok(())
 }
@@ -222,8 +218,8 @@ fn update_recent_files(file_path: &Path) -> Result<(), String> {
     // 限制最大数量
     state.recent_files.truncate(MAX_RECENT_FILES);
 
-    let json = serde_json::to_string_pretty(&state)
-        .map_err(|e| format!("序列化状态失败: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(&state).map_err(|e| format!("序列化状态失败: {}", e))?;
 
     fs::write(&state_path, json).map_err(|e| format!("写入状态文件失败: {}", e))?;
 
