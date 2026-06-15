@@ -10,11 +10,7 @@ import { useDocumentStore } from "@/stores/useDocumentStore";
 import { OutlinePanel } from "../OutlinePanel";
 
 /** 创建测试用 OutlineItem */
-function makeHeading(
-  paraId: string,
-  level: number,
-  text: string
-): OutlineItem {
+function makeHeading(paraId: string, level: number, text: string): OutlineItem {
   return { paraId, level, text };
 }
 
@@ -35,10 +31,12 @@ describe("OutlinePanel", () => {
     useDocumentStore.getState().setEditorBridge({
       scrollToParaId,
     } as never);
-    useDocumentStore.getState().setHeadings([
-      makeHeading("p1", 0, "Heading 1"),
-      makeHeading("p2", 1, "Heading 2"),
-    ]);
+    useDocumentStore
+      .getState()
+      .setHeadings([
+        makeHeading("p1", 0, "Heading 1"),
+        makeHeading("p2", 1, "Heading 2"),
+      ]);
     render(<OutlinePanel />);
 
     expect(screen.getByText("Heading 1")).toBeInTheDocument();
@@ -50,9 +48,9 @@ describe("OutlinePanel", () => {
     useDocumentStore.getState().setEditorBridge({
       scrollToParaId,
     } as never);
-    useDocumentStore.getState().setHeadings([
-      makeHeading("target-para", 0, "Jump Here"),
-    ]);
+    useDocumentStore
+      .getState()
+      .setHeadings([makeHeading("target-para", 0, "Jump Here")]);
     const user = userEvent.setup();
     render(<OutlinePanel />);
 
