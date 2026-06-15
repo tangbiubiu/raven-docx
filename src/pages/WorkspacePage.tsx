@@ -7,6 +7,7 @@ import { DocumentTitleBar } from "@/features/document/components/document-title-
 import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
+import { Ruler } from "@/features/editor/components/Ruler";
 import { StatusBar } from "@/features/editor/components/StatusBar";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { useAppStore } from "@/stores/useAppStore";
@@ -60,13 +61,16 @@ export default function WorkspacePage() {
         </button>
       </div>
 
-      {/* 主内容区 — OutlinePanel + DocxEditor */}
+      {/* 主内容区 — OutlinePanel + Ruler + DocxEditor */}
       <main className="flex flex-1 overflow-hidden">
         <OutlinePanel />
-        <EditorPane
-          documentBuffer={documentBuffer}
-          isNewDocument={isNewDocument}
-        />
+        <div className="relative flex flex-1 flex-col overflow-hidden">
+          <Ruler />
+          <EditorPane
+            documentBuffer={documentBuffer}
+            isNewDocument={isNewDocument}
+          />
+        </div>
       </main>
 
       {/* 状态栏 — 页码/字数/缩放/保存状态 */}

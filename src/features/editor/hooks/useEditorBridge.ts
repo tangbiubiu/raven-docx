@@ -23,6 +23,7 @@ export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
     applyFormatting: () => false,
     setParagraphStyle: () => false,
     scrollToParaId: (paraId) => ref.scrollToParaId(paraId),
+    setZoom: (zoom) => ref.setZoom(zoom),
   };
 }
 
@@ -93,6 +94,23 @@ export function useEditorBridge() {
     };
   }, []);
 
+  /** 从 ProseMirror 当前选区提取段落 paraId */
+  const getCurrentParaId = (): string | undefined => {
+    const pmState = editorRef.current?.getEditorRef()?.getState();
+    if (!pmState) {
+      return;
+    }
+    // 获取选区起始位置所在的最近块级节点（段落）
+    const { $from } = pmState.selection;
+    // 从文档根到 $from 深度遍历，找到最近的 paragraph 节点
+    for (let d = $from.depth; d >= 0; d--) {
+      const node = d === 0 ? $from.doc : $from.node(d);
+      if (node.type.name === "paragraph" || node.type.name === "heading") {
+        return (node.attrs as { paraId?: string })?.paraId;
+      }
+    }
+  };
+
   /** 选区变化回调 */
   const handleSelectionChange = (state: SelectionState | null) => {
     if (state) {
@@ -100,7 +118,7 @@ export function useEditorBridge() {
         from: state.startParagraphIndex,
         to: state.endParagraphIndex,
         text: "",
-        paraId: state.styleId ?? undefined,
+        paraId: getCurrentParaId(),
       };
 
       setSelection(info);

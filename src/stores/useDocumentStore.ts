@@ -20,6 +20,8 @@ export type EditorBridge = {
   applyFormatting(opts: Record<string, unknown>): boolean;
   setParagraphStyle(opts: { paraId: string; styleId: string }): boolean;
   scrollToParaId(paraId: string): boolean;
+  /** 同步缩放级别到编辑器视图 */
+  setZoom(zoom: number): void;
 };
 
 // 最小类型契约，避免直接依赖 prosemirror-view 类型

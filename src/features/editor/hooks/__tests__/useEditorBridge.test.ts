@@ -22,6 +22,31 @@ describe("useEditorBridge", () => {
     it("有选区时更新 store.selectionInfo 和 selectionFormat", () => {
       const { result } = renderHook(() => useEditorBridge());
 
+      // 设置 mock editorRef，让 getCurrentParaId() 能从 PM 状态提取 paraId
+      const mockPMState = {
+        selection: {
+          $from: {
+            node: (d: number) => {
+              if (d === 1) {
+                return {
+                  type: { name: "paragraph" },
+                  attrs: { paraId: "P1A2B3" },
+                };
+              }
+              return null;
+            },
+            doc: null as unknown,
+            depth: 1,
+          },
+        },
+      } as unknown as import("prosemirror-state").EditorState;
+      act(() => {
+        // minimal mock — 仅需 getEditorRef().getState()
+        result.current.editorRef.current = {
+          getEditorRef: () => ({ getState: () => mockPMState }),
+        } as any;
+      });
+
       act(() => {
         result.current.handleSelectionChange({
           hasSelection: true,
@@ -45,7 +70,8 @@ describe("useEditorBridge", () => {
       expect(info).not.toBeNull();
       expect(info?.from).toBe(0);
       expect(info?.to).toBe(2);
-      expect(info?.paraId).toBe("Heading1");
+      // paraId 来自 ProseMirror state 的段落 attrs，非 styleId
+      expect(info?.paraId).toBe("P1A2B3");
 
       const fmt = useDocumentStore.getState().selectionFormat;
       expect(fmt).not.toBeNull();

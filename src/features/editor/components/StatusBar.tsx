@@ -32,6 +32,9 @@ export function StatusBar() {
             total: totalPages,
           })}
         </span>
+        <span data-testid="word-count">
+          {t("editor.statusBar.wordCount", { count: 0 })}
+        </span>
       </div>
 
       {/* 右侧：缩放控制 */}

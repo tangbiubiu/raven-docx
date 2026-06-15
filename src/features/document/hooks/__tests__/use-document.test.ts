@@ -85,7 +85,7 @@ describe("useDocument — saveDocument", () => {
     expect(useDocumentStore.getState().isDirty).toBe(false);
   });
 
-  it("没有 editorBridge 时 saveDocument 返回 null", async () => {
+  it("没有 editorBridge 时 saveDocument 返回 null", () => {
     const bridge = useDocumentStore.getState().editorBridge;
     expect(bridge).toBeNull();
 
@@ -101,11 +101,9 @@ describe("useDocument — closeDocument", () => {
   });
 
   it("closeDocument 清空所有文档状态", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/tmp/test.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), "/tmp/test.docx");
     useDocumentStore.getState().setDirty(true);
 
     useDocumentStore.getState().closeDocument();
@@ -118,11 +116,9 @@ describe("useDocument — closeDocument", () => {
   });
 
   it("文档未修改时 closeDocument 直接关闭", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/tmp/test.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), "/tmp/test.docx");
 
     useDocumentStore.getState().closeDocument();
 
@@ -130,11 +126,9 @@ describe("useDocument — closeDocument", () => {
   });
 
   it("文档已修改时需确认是否放弃更改", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      "/tmp/test.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), "/tmp/test.docx");
     useDocumentStore.getState().setDirty(true);
 
     expect(useDocumentStore.getState().isDirty).toBe(true);
@@ -152,21 +146,17 @@ describe("useDocument — documentPath", () => {
 
   it("setDocument 同时设置 path", () => {
     const testPath = "/Users/test/document.docx";
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      testPath
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), testPath);
 
     expect(useDocumentStore.getState().documentPath).toBe(testPath);
   });
 
   it("新建文档的 path 为 null", () => {
-    useDocumentStore.getState().setDocument(
-      {} as unknown,
-      new ArrayBuffer(8),
-      null
-    );
+    useDocumentStore
+      .getState()
+      .setDocument({} as unknown, new ArrayBuffer(8), null);
 
     expect(useDocumentStore.getState().documentPath).toBeNull();
   });

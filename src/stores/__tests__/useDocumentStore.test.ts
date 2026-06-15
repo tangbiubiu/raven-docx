@@ -28,6 +28,9 @@ function createMockBridge(overrides?: Partial<EditorBridge>): EditorBridge {
     dispatchTransaction: () => {
       /* no-op */
     },
+    setZoom: () => {
+      /* no-op */
+    },
     ...overrides,
   };
 }

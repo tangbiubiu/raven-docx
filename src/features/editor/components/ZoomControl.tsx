@@ -17,17 +17,24 @@ const STEP = 5;
 export function ZoomControl() {
   const { t } = useT();
   const zoom = useDocumentStore((s) => s.zoom);
-  const setZoom = useDocumentStore((s) => s.setZoom);
+  const storeSetZoom = useDocumentStore((s) => s.setZoom);
+  const editorBridge = useDocumentStore((s) => s.editorBridge);
+
+  const applyZoom = (value: number) => {
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
+    storeSetZoom(clamped);
+    editorBridge?.setZoom(clamped);
+  };
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
     if (!Number.isNaN(value)) {
-      setZoom(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value)));
+      applyZoom(value);
     }
   };
 
   const handleReset = () => {
-    setZoom(100);
+    applyZoom(100);
   };
 
   return (
