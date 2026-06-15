@@ -3,6 +3,7 @@
 // Reference: .dev/plan/implementation-plan.md §Phase 2, .dev/proto/workspace.html
 
 import { createEmptyDocument, DocxEditor } from "@eigenpal/docx-editor-react";
+import { useEffect } from "react";
 import { useT } from "@/lib/i18n";
 import { useEditorBridge } from "../hooks/useEditorBridge";
 export type EditorPaneProps = {
@@ -22,10 +23,21 @@ export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
   const { t } = useT();
   const {
     editorRef,
+    injectBridge,
     handleSelectionChange,
     handleChange,
     handleSave: _handleSave,
   } = useEditorBridge();
+
+  // 当 DocxEditor 首次渲染时注入 bridge（解决空状态→编辑状态的时序问题）
+  const shouldRenderEditor = documentBuffer != null || isNewDocument;
+  useEffect(() => {
+    if (shouldRenderEditor) {
+      // requestAnimationFrame 确保 DocxEditor 完成 ref 赋值
+      const id = requestAnimationFrame(() => injectBridge());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [shouldRenderEditor, injectBridge]);
   // 空状态：无文档（documentBuffer 为 null/undefined 且 非新建文档）
   if (documentBuffer == null && !isNewDocument) {
     return (
@@ -39,11 +51,12 @@ export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
   }
   // 新建文档或打开已有文档
   const docProp = isNewDocument ? createEmptyDocument() : undefined;
+  const docBuffer = documentBuffer ?? null;
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <DocxEditor
         document={docProp}
-        documentBuffer={documentBuffer ?? null}
+        documentBuffer={docBuffer}
         onChange={handleChange}
         onSelectionChange={handleSelectionChange}
         ref={editorRef}
