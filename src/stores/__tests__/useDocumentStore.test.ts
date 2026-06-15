@@ -19,6 +19,7 @@ function createMockBridge(overrides?: Partial<EditorBridge>): EditorBridge {
     },
     getAgent: () => null,
     getDocument: () => null,
+    getLayout: () => null,
     getSelectionInfo: () => null,
     applyFormatting: () => false,
     setParagraphStyle: () => false,

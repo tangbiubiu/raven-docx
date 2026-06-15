@@ -4,6 +4,7 @@
 
 import { useEffect, useRef } from "react";
 import { EditorPane } from "@/features/editor/components/EditorPane";
+import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { StatusBar } from "@/features/editor/components/StatusBar";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { useAppStore } from "@/stores/useAppStore";
@@ -54,8 +55,9 @@ export default function WorkspacePage() {
         </div>
       </header>
 
-      {/* 主内容区 — DocxEditor */}
+      {/* 主内容区 — OutlinePanel + DocxEditor */}
       <main className="flex flex-1 overflow-hidden">
+        <OutlinePanel />
         <EditorPane />
       </main>
 

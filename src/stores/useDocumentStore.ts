@@ -13,6 +13,7 @@ export type EditorBridge = {
   focus(): void;
   getAgent(): unknown;
   getDocument(): unknown;
+  getLayout(): unknown;
   getSelectionInfo(): SelectionInfo | null;
   applyFormatting(opts: Record<string, unknown>): boolean;
   setParagraphStyle(opts: { paraId: string; styleId: string }): boolean;
