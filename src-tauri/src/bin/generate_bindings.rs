@@ -4,6 +4,9 @@
 #[path = "../commands/mod.rs"]
 mod commands;
 
+#[path = "../pi/mod.rs"]
+mod pi;
+
 use specta_typescript::Typescript;
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 
@@ -18,6 +21,11 @@ fn main() {
             commands::keychain::set_api_key,
             commands::keychain::delete_api_key,
             commands::system::get_system_info,
+            commands::pi_agent::agent_spawn,
+            commands::pi_agent::agent_send,
+            commands::pi_agent::agent_abort,
+            commands::pi_agent::agent_get_status,
+            commands::pi_agent::agent_test_connection,
         ])
         .error_handling(ErrorHandlingMode::Result);
 
