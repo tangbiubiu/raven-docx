@@ -45,6 +45,7 @@ export type PendingSuggestion = {
   originalText: string;
   suggestedText: string;
   action: AgentActionType;
+  position?: { top: number; left: number };
 };
 
 /** useAgentCommands 返回值 */
@@ -308,12 +309,23 @@ export function useAgentCommands(): UseAgentCommandsReturn {
           info
         ) {
           pendingResponseRef.current = response;
+          // 获取选区视口坐标，用于定位 SuggestionPopover
+          let position: { top: number; left: number } | undefined;
+          const bridge = useDocumentStore.getState().editorBridge;
+          const view = bridge?.getEditorView();
+          if (view && info) {
+            try {
+              const coords = view.coordsAtPos(info.from);
+              position = { top: coords.bottom + 8, left: coords.left };
+            } catch {
+            }
+          }
           setPendingSuggestion({
             originalText: info.text,
             suggestedText: response.newText,
             action,
+            position,
           });
-          return;
         }
 
         await applyResponse(response);

@@ -14,6 +14,10 @@ vi.mock("@eigenpal/docx-editor-react", () => {
     createEmptyDocument: vi.fn(() => DummyDoc),
   };
 });
+// Mock tauri-events to prevent useAgentSession from setting up real event listeners
+vi.mock("@/lib/tauri-events", () => ({
+  onPiEvent: () => Promise.resolve(() => {}),
+}));
 
 describe("App", () => {
   beforeEach(() => {
