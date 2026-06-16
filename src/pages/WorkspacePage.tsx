@@ -3,6 +3,8 @@
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
 import { useEffect, useRef } from "react";
+import { CommandPalette } from "@/features/agent/components/command-palette";
+import { QuickActions } from "@/features/agent/components/quick-actions";
 import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
 import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
@@ -33,6 +35,8 @@ export default function WorkspacePage() {
   const toggleSettingsDrawer = useAppStore((s) => s.toggleSettingsDrawer);
   const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
   const toggleOutlinePanel = useAppStore((s) => s.toggleOutlinePanel);
+  const activeModal = useAppStore((s) => s.activeModal);
+  const openModal = useAppStore((s) => s.openModal);
 
   const isLoaded = useSettingsStore((s) => s.isLoaded);
   const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
@@ -53,6 +57,17 @@ export default function WorkspacePage() {
       setSettingsDrawerOpen(true);
     }
   }, [isLoaded, hasApiKey, setSettingsDrawerOpen]);
+  // Cmd/Ctrl+K 打开命令面板
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k" && !e.shiftKey) {
+        e.preventDefault();
+        openModal("commandPalette");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openModal]);
 
   const initialSection = hasApiKey ? undefined : ("apiKey" as const);
 
@@ -93,6 +108,7 @@ export default function WorkspacePage() {
         <OutlinePanel />
         <div className="relative flex flex-1 flex-col overflow-hidden">
           <Toolbar />
+          <QuickActions />
           <Ruler />
           <EditorPane
             documentBuffer={documentBuffer}
@@ -108,6 +124,9 @@ export default function WorkspacePage() {
       {settingsDrawerOpen ? (
         <SettingsDrawer initialSection={initialSection} />
       ) : null}
+
+      {/* CommandPalette */}
+      {activeModal === "commandPalette" ? <CommandPalette /> : null}
     </div>
   );
 }

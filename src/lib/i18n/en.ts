@@ -108,6 +108,7 @@ export const en: Translations = {
   "agent.input.stop": "Stop",
   "agent.cmdPalette.placeholder": "Type a command or search…",
   "agent.cmdPalette.empty": "Type a natural language command",
+  "agent.cmdPalette.backdrop": "Command palette backdrop",
   "agent.action.rewrite": "Polish",
   "agent.action.expand": "Expand",
   "agent.action.summarize": "Summarize",

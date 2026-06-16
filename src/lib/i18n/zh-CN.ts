@@ -109,6 +109,7 @@ export const zhCN: Translations = {
   "agent.input.stop": "停止",
   "agent.cmdPalette.placeholder": "输入指令或搜索…",
   "agent.cmdPalette.empty": "输入自然语言指令操作文档",
+  "agent.cmdPalette.backdrop": "命令面板遮罩",
   "agent.action.rewrite": "润色",
   "agent.action.expand": "扩写",
   "agent.action.summarize": "摘要",
