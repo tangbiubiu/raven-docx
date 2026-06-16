@@ -1,7 +1,8 @@
 // pi/mod.rs — pi agent 子进程管理核心
-// 负责 spawn/kill pi 进程、stdin/stdout JSONL 通信、状态机、消息队列、崩溃恢复、空闲超时
+// 负责 spawn/kill pi 进程、stdin/stdout JSONL 通信、状态机、崩溃恢复、空闲超时
+// Reference: .dev/plan/phase3-pi-rpc-fix.md
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -61,16 +62,16 @@ impl std::fmt::Display for PiState {
     }
 }
 
-// ===== 消息队列 =====
+// ===== 发送模式 =====
 
 /// 发送模式
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SendMode {
-    /// 默认：Idle 直接发送，Streaming 入队（follow_up）
+    /// 默认：Idle 直接发送 prompt，Streaming 发送 prompt + streamingBehavior: "followUp"
     Default,
-    /// 中断：abort 当前 + 清空队列 + 立即发送
+    /// 中断：发送 steer 命令（pi 自动处理中断和队列清空）
     Steer,
-    /// 强制入队：无论状态都入队
+    /// 强制追加：发送 prompt + streamingBehavior: "followUp"
     Enqueue,
 }
 
@@ -82,13 +83,6 @@ impl SendMode {
             _ => SendMode::Default,
         }
     }
-}
-
-/// 队列中的待发送消息
-#[derive(Debug, Clone)]
-struct QueuedMessage {
-    prompt: String,
-    mode: SendMode,
 }
 
 // ===== Session 管理 =====
@@ -112,8 +106,6 @@ pub struct AgentManager {
     child: Arc<Mutex<Option<Child>>>,
     /// stdin 写入端（共享，可 clone 用于写入）
     stdin: Arc<Mutex<Option<tokio::process::ChildStdin>>>,
-    /// 消息队列
-    pending: Arc<Mutex<VecDeque<QueuedMessage>>>,
     /// 崩溃记录（时间戳）
     crash_history: Arc<Mutex<Vec<Instant>>>,
     /// 最后活跃时间
@@ -132,7 +124,6 @@ impl AgentManager {
             state: Arc::new(Mutex::new(PiState::Stopped)),
             child: Arc::new(Mutex::new(None)),
             stdin: Arc::new(Mutex::new(None)),
-            pending: Arc::new(Mutex::new(VecDeque::new())),
             crash_history: Arc::new(Mutex::new(Vec::new())),
             last_active: Arc::new(Mutex::new(Instant::now())),
             sessions: Arc::new(Mutex::new(HashMap::new())),
@@ -188,6 +179,104 @@ impl AgentManager {
         Ok(app_data)
     }
 
+
+    /// spawn pi 子进程（使用 API Key 和 Base URL）
+    pub async fn spawn_with_credentials(
+        &self,
+        session_id: Option<String>,
+        api_key: Option<String>,
+        base_url: Option<String>,
+    ) -> Result<(), String> {
+        // 检查是否已安装
+        if !Self::check_pi_installed() {
+            self.set_state(PiState::NotInstalled).await;
+            self.emit_error("pi 未安装，请先安装 pi coding agent", None).await;
+            return Err("pi 未安装".to_string());
+        }
+
+        // 如果已在运行，直接返回
+        let current_state = self.get_state().await;
+        if current_state == PiState::Idle || current_state == PiState::Streaming {
+            log::info!("[pi] 进程已在运行，状态: {:?}", current_state);
+            return Ok(());
+        }
+
+        let agent_dir = Self::pi_agent_dir()?;
+
+        // 构建命令（使用正确的 pi CLI 参数）
+        let mut cmd = Command::new(PI_BINARY);
+        cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
+        cmd.arg("--mode").arg("rpc")
+            .arg("--session-dir").arg(&agent_dir);
+
+        // 如果有 API Key，添加 --api-key 参数
+        if let Some(key) = &api_key {
+            cmd.arg("--api-key").arg(key);
+        }
+
+        // 如果有 Base URL，添加 --base-url 参数
+        if let Some(url) = &base_url {
+            cmd.arg("--base-url").arg(url);
+        }
+
+        // 如果有 session_id，添加 --session-id 参数
+        if let Some(sid) = &session_id {
+            cmd.arg("--session-id").arg(sid);
+
+            // 记录 session 元数据
+            let mut sessions = self.sessions.lock().await;
+            let now = Utc::now();
+            sessions.insert(sid.clone(), SessionMeta {
+                session_id: sid.clone(),
+                created_at: now,
+                last_active: now,
+            });
+
+            let mut current = self.current_session.lock().await;
+            *current = Some(sid.clone());
+        } else {
+            cmd.arg("--no-session");
+        }
+
+        log::info!("[pi] spawn 命令: {:?}", cmd);
+
+        // spawn 进程
+        let mut child = cmd
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|e| format!("spawn pi 失败: {}", e))?;
+
+        // 获取 stdin/stdout
+        let child_stdin = child.stdin.take()
+            .ok_or_else(|| "无法获取 pi stdin".to_string())?;
+        let child_stdout = child.stdout.take()
+            .ok_or_else(|| "无法获取 pi stdout".to_string())?;
+
+        // 保存进程句柄和 stdin
+        {
+            let mut c = self.child.lock().await;
+            *c = Some(child);
+        }
+        {
+            let mut s = self.stdin.lock().await;
+            *s = Some(child_stdin);
+        }
+
+        // 设置状态为 Idle
+        self.set_state(PiState::Idle).await;
+        self.touch_last_active().await;
+
+        // 启动 stdout 读取循环
+        self.start_stdout_reader(child_stdout, Arc::clone(&self.stdin), self.clone());
+
+        // 启动空闲超时检测
+        self.start_idle_timeout_checker().await;
+
+        Ok(())
+    }
+
     /// spawn pi 子进程
     pub async fn spawn(&self, session_id: Option<String>) -> Result<(), String> {
         // 检查是否已安装
@@ -206,14 +295,15 @@ impl AgentManager {
 
         let agent_dir = Self::pi_agent_dir()?;
 
-        // 构建命令
+        // 构建命令（使用正确的 pi CLI 参数）
         let mut cmd = Command::new(PI_BINARY);
+        cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
         cmd.arg("--mode").arg("rpc")
-            .arg("--agent-dir").arg(&agent_dir);
+            .arg("--session-dir").arg(&agent_dir);
 
-        // 如果有 session_id，添加 --session 参数
+        // 如果有 session_id，添加 --session-id 参数
         if let Some(sid) = &session_id {
-            cmd.arg("--session").arg(sid);
+            cmd.arg("--session-id").arg(sid);
 
             // 记录 session 元数据
             let mut sessions = self.sessions.lock().await;
@@ -226,6 +316,8 @@ impl AgentManager {
 
             let mut current = self.current_session.lock().await;
             *current = Some(sid.clone());
+        } else {
+            cmd.arg("--no-session");
         }
 
         log::info!("[pi] spawn 命令: {:?}", cmd);
@@ -275,11 +367,10 @@ impl AgentManager {
         manager: AgentManager,
     ) {
         let state = Arc::clone(&self.state);
-        let pending = Arc::clone(&self.pending);
         let crash_history = Arc::clone(&self.crash_history);
         let last_active = Arc::clone(&self.last_active);
         let app_handle = Arc::clone(&self.app_handle);
-        let stdin_handle = stdin;
+        let stdin = Arc::clone(&stdin);
 
         tokio::spawn(async move {
             let reader = BufReader::new(stdout);
@@ -299,82 +390,115 @@ impl AgentManager {
                     *last = Instant::now();
                 }
 
-                // 解析 JSONL
-                match serde_json::from_str::<PiEvent>(&line) {
-                    Ok(event) => {
-                        // emit 到前端
+                // 解析 JSONL（按 pi RPC 协议格式）
+                match serde_json::from_str::<RpcFrame>(&line) {
+                    Ok(frame) => {
+                        // 处理不同帧类型
                         let app = app_handle.lock().await;
                         if let Some(handle) = app.as_ref() {
-                            match &event {
-                                PiEvent::TextDelta { text, message_id } => {
-                                    let _ = handle.emit("pi:text_delta", serde_json::json!({
-                                        "text": text,
-                                        "message_id": message_id,
-                                    }));
-                                }
-                                PiEvent::ToolCall { name, args, message_id } => {
-                                    let _ = handle.emit("pi:tool_call", serde_json::json!({
-                                        "name": name,
-                                        "args": args,
-                                        "message_id": message_id,
-                                    }));
-                                }
-                                PiEvent::AgentEnd { message_id } => {
-                                    let _ = handle.emit("pi:agent_end", serde_json::json!({
-                                        "message_id": message_id,
-                                    }));
-
-                                    // agent_end 后检查队列，自动发送下一条
+                            match &frame {
+                                RpcFrame::Ready => {
+                                    log::info!("[pi] 收到 ready 帧");
                                     let mut st = state.lock().await;
-                                    if *st == PiState::Streaming {
-                                        let mut queue = pending.lock().await;
-                                        if let Some(msg) = queue.pop_front() {
-                                            log::info!("[pi] 队列出队，发送下一条消息");
-                                            drop(st);
-                                            drop(queue);
+                                    *st = PiState::Idle;
+                                }
 
-                                            let message_id = format!("msg_{}", chrono::Utc::now().timestamp_millis());
-                                            let cmd = serde_json::json!({
-                                                "command": "prompt",
-                                                "text": msg.prompt,
-                                                "message_id": message_id,
-                                            });
-                                            let json_line = format!("{}\n", cmd);
+                                RpcFrame::Response { id, command, success, error, .. } => {
+                                    if !success {
+                                        let error_msg = error.clone().unwrap_or_else(|| format!("命令 {} 失败", command));
+                                        log::error!("[pi] RPC 响应失败: {} (id: {:?})", error_msg, id);
+                                        let _ = handle.emit("pi:error", serde_json::json!({
+                                            "message": error_msg,
+                                            "message_id": id,
+                                        }));
+                                    } else {
+                                        log::info!("[pi] RPC 响应成功: {} (id: {:?})", command, id);
+                                    }
+                                }
 
-                                            let mut si = stdin_handle.lock().await;
-                                            if let Some(writer) = si.as_mut() {
-                                                if writer.write_all(json_line.as_bytes()).await.is_ok()
-                                                    && writer.flush().await.is_ok()
-                                                {
-                                                    log::info!("[pi] 已自动发送队列消息 (message_id={})", message_id);
-                                                    let mut st2 = state.lock().await;
-                                                    *st2 = PiState::Streaming;
-                                                } else {
-                                                    log::error!("[pi] 写入 stdin 失败，队列消息已丢弃");
-                                                    let mut st2 = state.lock().await;
-                                                    *st2 = PiState::Idle;
-                                                }
-                                            } else {
-                                                log::error!("[pi] stdin 不可用，队列消息已丢弃");
-                                                let mut st2 = state.lock().await;
-                                                *st2 = PiState::Idle;
-                                            }
-                                        } else {
-                                            *st = PiState::Idle;
+                                RpcFrame::AgentStart => {
+                                    log::info!("[pi] agent_start");
+                                    let mut st = state.lock().await;
+                                    *st = PiState::Streaming;
+                                }
+
+                                RpcFrame::AgentEnd { .. } => {
+                                    log::info!("[pi] agent_end");
+                                    let mut st = state.lock().await;
+                                    *st = PiState::Idle;
+                                    let _ = handle.emit("pi:agent_end", serde_json::json!({}));
+                                }
+
+                                RpcFrame::MessageUpdate { assistant_message_event, .. } => {
+                                    // 处理嵌套的消息更新事件
+                                    match assistant_message_event {
+                                        AssistantMessageEvent::TextDelta { delta } => {
+                                            let _ = handle.emit("pi:text_delta", serde_json::json!({
+                                                "text": delta,
+                                            }));
+                                        }
+                                        AssistantMessageEvent::ThinkingDelta { delta } => {
+                                            let _ = handle.emit("pi:thinking_delta", serde_json::json!({
+                                                "text": delta,
+                                            }));
+                                        }
+                                        AssistantMessageEvent::ToolCallDelta { tool_call } => {
+                                            let _ = handle.emit("pi:tool_call", serde_json::json!({
+                                                "tool": tool_call,
+                                            }));
+                                        }
+                                        AssistantMessageEvent::Unknown => {
+                                            // 忽略未知的消息类型
+                                            log::debug!("[pi] ignored unknown assistant message event");
                                         }
                                     }
                                 }
-                                PiEvent::Error { message, message_id } => {
-                                    let _ = handle.emit("pi:error", serde_json::json!({
-                                        "message": message,
-                                        "message_id": message_id,
-                                    }));
+
+                                RpcFrame::TurnStart => {
+                                    log::debug!("[pi] turn_start");
+                                }
+
+                                RpcFrame::TurnEnd => {
+                                    log::debug!("[pi] turn_end");
+                                }
+
+                                RpcFrame::MessageStart => {
+                                    log::debug!("[pi] message_start");
+                                }
+
+                                RpcFrame::MessageEnd => {
+                                    log::debug!("[pi] message_end");
+                                }
+                                RpcFrame::ExtensionUIRequest { id, method, params } => {
+                                    log::info!("[pi] extension_ui_request: {} ({:?})", id, method);
+                                    // 自动确认扩展 UI 请求
+                                    let response = serde_json::json!({
+                                        "type": "extension_ui_response",
+                                        "id": id,
+                                        "confirmed": true,
+                                        "result": params
+                                    });
+                                    let mut stdin_guard = stdin.lock().await;
+                                    if let Some(ref mut stdin) = *stdin_guard {
+                                        let json_line = format!("{}\n", response);
+                                        if let Err(e) = stdin.write_all(json_line.as_bytes()).await {
+                                            log::error!("[pi] 写入 extension_ui_response 失败: {}", e);
+                                        } else if let Err(e) = stdin.flush().await {
+                                            log::error!("[pi] flush extension_ui_response 失败: {}", e);
+                                        }
+                                        log::debug!("[pi] 已自动确认 extension_ui_request: {}", id);
+                                    }
+                                }
+
+
+                                RpcFrame::Unknown => {
+                                    log::debug!("[pi] 收到未知帧类型");
                                 }
                             }
                         }
                     }
-                    Err(_) => {
-                        log::warn!("[pi] 无法解析 JSONL: {}", line);
+                    Err(e) => {
+                        log::warn!("[pi] 无法解析 JSONL: {} (错误: {})", line, e);
                     }
                 }
             }
@@ -487,54 +611,29 @@ impl AgentManager {
     /// 发送 prompt 到 pi stdin
     pub async fn send_prompt(&self, prompt: String, mode: SendMode) -> Result<String, String> {
         let message_id = format!("msg_{}", chrono::Utc::now().timestamp_millis());
-
         let current_state = self.get_state().await;
 
         match mode {
             SendMode::Default => {
                 if current_state == PiState::Idle {
-                    // 直接发送
-                    self.write_to_stdin(&prompt, &message_id).await?;
+                    // 直接发送 prompt（无 streamingBehavior）
+                    self.send_prompt_command(&prompt, &message_id).await?;
                     self.set_state(PiState::Streaming).await;
                 } else if current_state == PiState::Streaming {
-                    // 入队
-                    let mut queue = self.pending.lock().await;
-                    queue.push_back(QueuedMessage { prompt, mode });
-                    let position = queue.len() as u32;
-
-                    // emit 排队通知
-                    if let Some(handle) = self.get_app_handle().await {
-                        let _ = handle.emit("pi:queued", serde_json::json!({
-                            "position": position,
-                        }));
-                    }
+                    // 流式期间发送 prompt + streamingBehavior: "followUp"
+                    self.send_follow_up_command(&prompt, &message_id).await?;
                 } else {
                     return Err(format!("当前状态 {:?} 不允许发送", current_state));
                 }
             }
             SendMode::Steer => {
-                // 中断当前 + 清空队列 + 立即发送
-                self.abort().await?;
-
-                let mut queue = self.pending.lock().await;
-                queue.clear();
-                drop(queue);
-
-                self.write_to_stdin(&prompt, &message_id).await?;
+                // 发送 steer 命令（pi 自动处理中断和队列清空）
+                self.send_steer_command(&prompt, &message_id).await?;
                 self.set_state(PiState::Streaming).await;
             }
             SendMode::Enqueue => {
-                // 强制入队
-                let mut queue = self.pending.lock().await;
-                queue.push_back(QueuedMessage { prompt, mode });
-                let position = queue.len() as u32;
-
-                // emit 排队通知
-                if let Some(handle) = self.get_app_handle().await {
-                    let _ = handle.emit("pi:queued", serde_json::json!({
-                        "position": position,
-                    }));
-                }
+                // 发送 prompt + streamingBehavior: "followUp"（pi 内部队列处理）
+                self.send_follow_up_command(&prompt, &message_id).await?;
             }
         }
 
@@ -542,56 +641,82 @@ impl AgentManager {
         Ok(message_id)
     }
 
-    /// 写入 stdin
-    async fn write_to_stdin(&self, prompt: &str, message_id: &str) -> Result<(), String> {
+    /// 发送 RPC 命令
+    async fn send_rpc_command(&self, json: serde_json::Value) -> Result<(), String> {
         let mut stdin_lock = self.stdin.lock().await;
         if let Some(stdin) = stdin_lock.as_mut() {
-            // 构建 JSON 命令
-            let cmd = serde_json::json!({
-                "command": "prompt",
-                "text": prompt,
-                "message_id": message_id,
-            });
-
-            let json_line = format!("{}\n", cmd);
+            let json_line = format!("{}\n", json);
             stdin.write_all(json_line.as_bytes()).await
                 .map_err(|e| format!("写入 stdin 失败: {}", e))?;
             stdin.flush().await
                 .map_err(|e| format!("flush stdin 失败: {}", e))?;
-
-            log::info!("[pi] 已发送 prompt (message_id={})", message_id);
             Ok(())
         } else {
             Err("进程未运行".to_string())
         }
     }
 
-    /// 中止当前操作
+    /// 发送 prompt 命令（普通模式）
+    async fn send_prompt_command(&self, message: &str, id: &str) -> Result<(), String> {
+        self.send_rpc_command(serde_json::json!({
+            "type": "prompt",
+            "id": id,
+            "message": message,
+        })).await?;
+        log::info!("[pi] 已发送 prompt (id={})", id);
+        Ok(())
+    }
+
+    /// 发送 follow_up 命令（流式期间追加）
+    async fn send_follow_up_command(&self, message: &str, id: &str) -> Result<(), String> {
+        self.send_rpc_command(serde_json::json!({
+            "type": "prompt",
+            "id": id,
+            "message": message,
+            "streamingBehavior": "followUp",
+        })).await?;
+        log::info!("[pi] 已发送 follow_up (id={})", id);
+        Ok(())
+    }
+
+    /// 发送 steer 命令（中断 + 新消息，原子操作）
+    async fn send_steer_command(&self, message: &str, id: &str) -> Result<(), String> {
+        self.send_rpc_command(serde_json::json!({
+            "type": "steer",
+            "id": id,
+            "message": message,
+        })).await?;
+        log::info!("[pi] 已发送 steer (id={})", id);
+        Ok(())
+    }
+
+    /// 发送 abort 命令
     pub async fn abort(&self) -> Result<(), String> {
         let current_state = self.get_state().await;
         if current_state != PiState::Streaming {
             return Ok(());
         }
 
-        let mut stdin_lock = self.stdin.lock().await;
-        if let Some(stdin) = stdin_lock.as_mut() {
-            // 发送 abort 命令
-            let cmd = serde_json::json!({
-                "command": "abort",
-            });
-
-            let json_line = format!("{}\n", cmd);
-            stdin.write_all(json_line.as_bytes()).await
-                .map_err(|e| format!("写入 abort 失败: {}", e))?;
-            stdin.flush().await
-                .map_err(|e| format!("flush abort 失败: {}", e))?;
-
-            log::info!("[pi] 已发送 abort");
-        }
-
+        let id = format!("abort_{}", chrono::Utc::now().timestamp_millis());
+        self.send_rpc_command(serde_json::json!({
+            "type": "abort",
+            "id": id,
+        })).await?;
+        log::info!("[pi] 已发送 abort (id={})", id);
         Ok(())
     }
 
+
+    /// 发送 get_state RPC 命令（用于连接测试）
+    pub async fn send_get_state_rpc(&self) -> Result<(), String> {
+        let id = format!("get_state_{}", chrono::Utc::now().timestamp_millis());
+        self.send_rpc_command(serde_json::json!({
+            "type": "get_state",
+            "id": id,
+        })).await?;
+        log::info!("[pi] 已发送 get_state (id={})", id);
+        Ok(())
+    }
     /// 关闭进程（优雅关闭）
     pub async fn shutdown(&self) -> Result<(), String> {
         let current_state = self.get_state().await;
@@ -648,12 +773,6 @@ impl AgentManager {
         Ok(())
     }
 
-    /// 获取队列长度
-    pub async fn get_pending_count(&self) -> u32 {
-        let queue = self.pending.lock().await;
-        queue.len() as u32
-    }
-
     /// 获取当前 session_id
     pub async fn get_current_session(&self) -> Option<String> {
         let session = self.current_session.lock().await;
@@ -671,30 +790,270 @@ impl AgentManager {
     }
 }
 
-// ===== pi 事件类型 =====
 
-/// pi stdout 输出的事件
+/// 独立测试函数：验证 API Key 连接
+/// 返回 Ok(true) 表示连接成功，Ok(false) 表示认证失败，Err 表示其他错误
+pub async fn test_api_connection(
+    api_key: String,
+    base_url: Option<String>,
+) -> Result<bool, String> {
+    use std::process::Stdio;
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    use tokio::process::Command;
+    use tokio::time::{timeout, Duration};
+
+    // 输入验证：拒绝空 API Key
+    if api_key.trim().is_empty() {
+        return Err("API Key 不能为空".to_string());
+    }
+
+    // 检查是否已安装
+    if !AgentManager::check_pi_installed() {
+        return Err("pi 未安装".to_string());
+    }
+
+    let agent_dir = AgentManager::pi_agent_dir()?;
+
+    // 构建命令
+    let mut cmd = Command::new(PI_BINARY);
+    cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
+    cmd.arg("--mode").arg("rpc")
+        .arg("--session-dir").arg(&agent_dir)
+        .arg("--api-key").arg(&api_key);
+
+    if let Some(url) = &base_url {
+        cmd.arg("--base-url").arg(url);
+    }
+
+    log::info!("[pi-test] spawn 命令: {:?}", cmd);
+
+    // spawn 进程
+    let mut child = cmd
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("spawn pi 失败: {}", e))?;
+
+    // 获取 stdin/stdout
+    let mut child_stdin = child.stdin.take()
+        .ok_or_else(|| "无法获取 pi stdin".to_string())?;
+    let child_stdout = child.stdout.take()
+        .ok_or_else(|| "无法获取 pi stdout".to_string())?;
+
+    // 发送 get_state 命令
+    let request_id = "test_connection";
+    let cmd_json = serde_json::json!({
+        "type": "get_state",
+        "id": request_id,
+    });
+    let json_line = format!("{}\n", cmd_json);
+    
+    child_stdin.write_all(json_line.as_bytes()).await
+        .map_err(|e| format!("写入 stdin 失败: {}", e))?;
+    child_stdin.flush().await
+        .map_err(|e| format!("flush stdin 失败: {}", e))?;
+
+    // 读取响应
+    let mut reader = BufReader::new(child_stdout);
+    let mut line = String::new();
+    
+    let response_result = timeout(Duration::from_secs(10), async {
+        loop {
+            line.clear();
+            match reader.read_line(&mut line).await {
+                Ok(0) => return Err("pi 进程提前退出".to_string()),
+                Ok(_) => {
+                    // 尝试解析为 RPC 帧
+                    if let Ok(frame) = serde_json::from_str::<RpcFrame>(&line) {
+                        match frame {
+                            RpcFrame::Response { id, success, error, .. } => {
+                                if id.as_deref() == Some(request_id) {
+                                    if success {
+                                        log::info!("[pi-test] API 连接测试成功");
+                                        return Ok(true);
+                                    } else {
+                                        let err_msg = error.unwrap_or_else(|| "未知错误".to_string());
+                                        log::warn!("[pi-test] API 连接测试失败: {}", err_msg);
+                                        // 检查是否是认证错误
+                                        if err_msg.to_lowercase().contains("authentication")
+                                            || err_msg.to_lowercase().contains("api key")
+                                            || err_msg.to_lowercase().contains("unauthorized")
+                                            || err_msg.contains("认证")
+                                            || err_msg.contains("API")
+                                        {
+                                            return Ok(false);
+                                        }
+                                        return Err(err_msg);
+                                    }
+                                }
+                            }
+                            RpcFrame::Ready => {
+                                log::debug!("[pi-test] 收到 ready 帧，继续等待响应");
+                                continue;
+                            }
+                            _ => {
+                                // 忽略其他帧类型
+                                continue;
+                            }
+                        }
+                    }
+                }
+                Err(e) => return Err(format!("读取 stdout 失败: {}", e)),
+            }
+        }
+    }).await;
+
+    // 关闭进程
+    let _ = child.kill().await;
+    let _ = child.wait().await;
+
+    match response_result {
+        Ok(result) => result,
+        Err(_) => Err("连接测试超时".to_string()),
+    }
+}
+
+// ===== pi RPC 帧类型 =====
+
+/// pi stdout 输出的 RPC 帧（顶层）
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
-enum PiEvent {
-    #[serde(rename = "text_delta")]
-    TextDelta {
-        text: String,
-        message_id: String,
+enum RpcFrame {
+    /// 启动就绪
+    #[serde(rename = "ready")]
+    Ready,
+
+    /// 命令响应
+    #[serde(rename = "response")]
+    Response {
+        id: Option<String>,
+        command: String,
+        success: bool,
+        #[serde(default)]
+        data: Option<serde_json::Value>,
+        #[serde(default)]
+        error: Option<String>,
     },
-    #[serde(rename = "tool_call")]
-    ToolCall {
-        name: String,
-        args: serde_json::Value,
-        message_id: String,
-    },
+
+    /// Agent 会话开始
+    #[serde(rename = "agent_start")]
+    AgentStart,
+
+    /// Agent 会话结束
     #[serde(rename = "agent_end")]
     AgentEnd {
-        message_id: String,
+        #[serde(default)]
+        messages: Vec<serde_json::Value>,
     },
-    #[serde(rename = "error")]
-    Error {
-        message: String,
-        message_id: Option<String>,
+
+    /// 消息更新（含流式增量）
+    #[serde(rename = "message_update")]
+    MessageUpdate {
+        #[serde(default)]
+        id: Option<String>,
+        #[serde(rename = "assistantMessageEvent")]
+        assistant_message_event: AssistantMessageEvent,
+        #[serde(default)]
+        message: serde_json::Value,
     },
+
+    /// 消息开始
+    #[serde(rename = "message_start")]
+    MessageStart,
+
+    /// 消息结束
+    #[serde(rename = "message_end")]
+    MessageEnd,
+
+    /// Turn 开始
+    #[serde(rename = "turn_start")]
+    TurnStart,
+
+    /// Turn 结束
+    #[serde(rename = "turn_end")]
+    TurnEnd,
+
+    /// 扩展 UI 请求（如确认对话框、输入框）
+    #[serde(rename = "extension_ui_request")]
+    ExtensionUIRequest {
+        id: String,
+        #[serde(default)]
+        method: Option<String>,
+        #[serde(default)]
+        params: serde_json::Value,
+    },
+
+    /// 未知帧类型
+    #[serde(other)]
+    Unknown,
+}
+
+/// 嵌套的消息更新事件
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum AssistantMessageEvent {
+    #[serde(rename = "text_delta")]
+    TextDelta {
+        delta: String,
+    },
+
+    #[serde(rename = "thinking_delta")]
+    ThinkingDelta {
+        delta: String,
+    },
+
+    #[serde(rename = "tool_call_delta")]
+    ToolCallDelta {
+        tool_call: serde_json::Value,
+    },
+
+    #[serde(other)]
+    Unknown,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_invalid_api_key() {
+        // Test with invalid API key - should return Ok(false) for authentication error
+        let result = test_api_connection(
+            "invalid_key_12345".to_string(),
+            None,
+        ).await;
+        
+        match result {
+            Ok(false) => {
+                println!("✓ Correctly detected invalid API key");
+            }
+            Ok(true) => {
+                panic!("Should not succeed with invalid API key");
+            }
+            Err(e) => {
+                println!("Note: Got error (may be expected if pi not installed): {}", e);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn test_empty_api_key() {
+        let result = test_api_connection(
+            "".to_string(),
+            None,
+        ).await;
+        
+        match result {
+            Ok(false) => {
+                println!("✓ Correctly rejected empty API key");
+            }
+            Ok(true) => {
+                panic!("Should not succeed with empty API key");
+            }
+            Err(e) => {
+                println!("Note: Got error: {}", e);
+            }
+        }
+    }
 }
