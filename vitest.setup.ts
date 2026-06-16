@@ -34,6 +34,15 @@ Object.defineProperty(window, "__TAURI_INTERNALS__", {
   writable: true,
 });
 
+// Mock Tauri event plugin internals (useAgentSession sets up event listeners)
+Object.defineProperty(window, "__TAURI_EVENT_PLUGIN_INTERNALS__", {
+  value: {
+    registerListener: vi.fn().mockResolvedValue(42),
+    unregisterListener: vi.fn(),
+  },
+  writable: true,
+});
+
 // jsdom localStorage is a proxy without setItem/getItem — provide a real implementation
 const storage = new Map<string, string>();
 Object.defineProperty(window, "localStorage", {
