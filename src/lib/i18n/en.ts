@@ -265,6 +265,7 @@ export const en: Translations = {
   "review.time.hoursAgo": "{count} hr ago",
   "review.time.daysAgo": "{count} days ago",
   // === Template Variables ===
+  "template.button": "Template Vars",
   "template.title": "Fill Template Variables",
   "template.fillAll": "Fill All",
   "template.input.placeholder": "Enter value for {name}…",

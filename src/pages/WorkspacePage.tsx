@@ -100,6 +100,13 @@ export default function WorkspacePage() {
           <DocumentTitleBar onNew={newDocument} onOpen={openDocument} />
         </div>
         <div className="flex items-center gap-1 pr-3">
+          <button
+            className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
+            onClick={() => openModal("templateVars")}
+            type="button"
+          >
+            {t("template.button")}
+          </button>
           <ThemeToggle />
           <button
             className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
