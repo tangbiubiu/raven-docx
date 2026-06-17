@@ -11,6 +11,7 @@ export type AppModal =
   | "commandPalette"
   | "findReplace"
   | "pageSetup"
+  | "headerFooter"
   | "hyperlink"
   | "insertTable"
   | null;

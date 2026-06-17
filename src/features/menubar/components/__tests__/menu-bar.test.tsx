@@ -38,6 +38,8 @@ const defaultProps = {
   onZoomIn: vi.fn(),
   onZoomOut: vi.fn(),
   onToggleOutline: vi.fn(),
+  onPageSetup: vi.fn(),
+  onHeaderFooter: vi.fn(),
 };
 
 describe("MenuBar", () => {

@@ -317,8 +317,7 @@ export function useAgentCommands(): UseAgentCommandsReturn {
             try {
               const coords = view.coordsAtPos(info.from);
               position = { top: coords.bottom + 8, left: coords.left };
-            } catch {
-            }
+            } catch {}
           }
           setPendingSuggestion({
             originalText: info.text,

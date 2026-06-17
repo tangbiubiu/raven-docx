@@ -23,6 +23,8 @@ export type MenuBarCallbacks = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleOutline: () => void;
+  onPageSetup: () => void;
+  onHeaderFooter: () => void;
 };
 
 /** 下拉菜单渲染子组件，从 MenuBar 中抽取以降低认知复杂度 */
@@ -82,6 +84,8 @@ export function MenuBar({
   onZoomIn,
   onZoomOut,
   onToggleOutline,
+  onPageSetup,
+  onHeaderFooter,
 }: MenuBarCallbacks) {
   const { t } = useT();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -171,8 +175,13 @@ export function MenuBar({
       case "format:strikethrough":
         execToggleMark("strike");
         break;
-      default:
+      case "pageLayout:pageSetup":
+        onPageSetup();
         break;
+      case "pageLayout:headerFooter":
+        onHeaderFooter();
+        break;
+      default:
     }
   };
 

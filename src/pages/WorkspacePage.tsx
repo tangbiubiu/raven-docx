@@ -14,6 +14,8 @@ import { StatusBar } from "@/features/editor/components/StatusBar";
 import { Toolbar } from "@/features/formatting/components/toolbar";
 import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
 import { MenuBar } from "@/features/menubar/components/menu-bar";
+import { HeaderFooterEditor } from "@/features/page-layout/components/HeaderFooterEditor";
+import { PageSetupDialog } from "@/features/page-layout/components/PageSetupDialog";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { useAppStore } from "@/stores/useAppStore";
@@ -37,6 +39,7 @@ export default function WorkspacePage() {
   const toggleOutlinePanel = useAppStore((s) => s.toggleOutlinePanel);
   const activeModal = useAppStore((s) => s.activeModal);
   const openModal = useAppStore((s) => s.openModal);
+  const closeModal = useAppStore((s) => s.closeModal);
 
   const isLoaded = useSettingsStore((s) => s.isLoaded);
   const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
@@ -79,6 +82,8 @@ export default function WorkspacePage() {
     onZoomIn: () => setZoom(Math.min(zoom + ZOOM_STEP, ZOOM_MAX)),
     onZoomOut: () => setZoom(Math.max(zoom - ZOOM_STEP, ZOOM_MIN)),
     onToggleOutline: toggleOutlinePanel,
+    onPageSetup: () => openModal("pageSetup"),
+    onHeaderFooter: () => openModal("headerFooter"),
   };
 
   return (
@@ -127,6 +132,22 @@ export default function WorkspacePage() {
 
       {/* CommandPalette */}
       {activeModal === "commandPalette" ? <CommandPalette /> : null}
+
+      {/* PageSetupDialog */}
+      {activeModal === "pageSetup" ? (
+        <PageSetupDialog
+          onClose={closeModal}
+          open={activeModal === "pageSetup"}
+        />
+      ) : null}
+
+      {/* HeaderFooterEditor */}
+      {activeModal === "headerFooter" ? (
+        <HeaderFooterEditor
+          onClose={closeModal}
+          open={activeModal === "headerFooter"}
+        />
+      ) : null}
     </div>
   );
 }

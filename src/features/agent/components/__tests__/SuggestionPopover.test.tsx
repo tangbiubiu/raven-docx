@@ -127,10 +127,10 @@ describe("SuggestionPopover", () => {
   it("不渲染时返回 null（当无 suggestion 时为安全类型检查）", () => {
     const { container } = render(
       <SuggestionPopover
-        suggestion={baseSuggestion}
         onAccept={vi.fn()}
         onReject={vi.fn()}
-      />,
+        suggestion={baseSuggestion}
+      />
     );
     expect(container.firstChild).toBeTruthy();
   });
@@ -138,11 +138,11 @@ describe("SuggestionPopover", () => {
   it("提供 position 时使用像素坐标定位", () => {
     const { container } = render(
       <SuggestionPopover
-        suggestion={baseSuggestion}
-        position={{ top: 200, left: 400 }}
         onAccept={vi.fn()}
         onReject={vi.fn()}
-      />,
+        position={{ top: 200, left: 400 }}
+        suggestion={baseSuggestion}
+      />
     );
 
     const card = container.firstChild as HTMLElement;
@@ -154,10 +154,10 @@ describe("SuggestionPopover", () => {
   it("未提供 position 时使用视口居中回退", () => {
     const { container } = render(
       <SuggestionPopover
-        suggestion={baseSuggestion}
         onAccept={vi.fn()}
         onReject={vi.fn()}
-      />,
+        suggestion={baseSuggestion}
+      />
     );
 
     const card = container.firstChild as HTMLElement;

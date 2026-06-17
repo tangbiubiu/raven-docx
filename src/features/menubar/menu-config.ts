@@ -71,6 +71,14 @@ export const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    id: "pageLayout",
+    labelKey: "pageSetup.title",
+    items: [
+      { labelKey: "pageSetup.title", action: "pageLayout:pageSetup" },
+      { labelKey: "headerFooter.title", action: "pageLayout:headerFooter" },
+    ],
+  },
+  {
     id: "format",
     labelKey: "menu.format",
     items: [
