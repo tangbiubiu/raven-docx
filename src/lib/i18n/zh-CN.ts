@@ -260,4 +260,10 @@ export const zhCN: Translations = {
   "review.time.minutesAgo": "{count} 分钟前",
   "review.time.hoursAgo": "{count} 小时前",
   "review.time.daysAgo": "{count} 天前",
+  // === 模板变量 (Template Variables) ===
+  "template.title": "填充模板变量",
+  "template.fillAll": "填充全部",
+  "template.input.placeholder": "输入 {name} 的值…",
+  "template.noVariables": "文档中未检测到模板变量",
+  "template.success": "模板变量已填充 ✓",
 };

@@ -264,4 +264,10 @@ export const en: Translations = {
   "review.time.minutesAgo": "{count} min ago",
   "review.time.hoursAgo": "{count} hr ago",
   "review.time.daysAgo": "{count} days ago",
+  // === Template Variables ===
+  "template.title": "Fill Template Variables",
+  "template.fillAll": "Fill All",
+  "template.input.placeholder": "Enter value for {name}…",
+  "template.noVariables": "No template variables detected in this document",
+  "template.success": "Template variables filled ✓",
 };

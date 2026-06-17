@@ -3,7 +3,6 @@
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
 import { useEffect, useRef } from "react";
-import { useT } from "@/lib/i18n";
 import { CommandPalette } from "@/features/agent/components/command-palette";
 import { QuickActions } from "@/features/agent/components/quick-actions";
 import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
@@ -12,14 +11,16 @@ import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
 import { StatusBar } from "@/features/editor/components/StatusBar";
-import { CommentPanel } from "@/features/review/components/comment-panel";
 import { Toolbar } from "@/features/formatting/components/toolbar";
 import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
 import { MenuBar } from "@/features/menubar/components/menu-bar";
 import { HeaderFooterEditor } from "@/features/page-layout/components/HeaderFooterEditor";
 import { PageSetupDialog } from "@/features/page-layout/components/PageSetupDialog";
+import { CommentPanel } from "@/features/review/components/comment-panel";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
+import { VariableForm } from "@/features/template/components/variable-form";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
+import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
@@ -132,7 +133,7 @@ export default function WorkspacePage() {
             isNewDocument={isNewDocument}
           />
         </div>
-        {commentPanelOpen && <CommentPanel />}
+        {commentPanelOpen ? <CommentPanel /> : null}
       </main>
 
       {/* 状态栏 */}
@@ -161,6 +162,12 @@ export default function WorkspacePage() {
           open={activeModal === "headerFooter"}
         />
       ) : null}
+
+      {/* VariableForm */}
+      <VariableForm
+        onOpenChange={(open) => !open && closeModal()}
+        open={activeModal === "templateVars"}
+      />
     </div>
   );
 }

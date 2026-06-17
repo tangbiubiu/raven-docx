@@ -16,6 +16,7 @@ export type AppModal =
   | "insertTable"
   | "insertImage"
   | "footnote"
+  | "templateVars"
   | null;
 
 /**
