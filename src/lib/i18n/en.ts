@@ -236,4 +236,23 @@ export const en: Translations = {
   "headerFooter.placeholder": "Enter content…",
   "table.headerRow": "Header Row",
   "table.headerCol": "Header Column",
+
+  // === Review & Comments ===
+  "review.title": "Comments",
+  "review.empty": "No comments",
+  "review.emptyHint": "Select text to add a comment",
+  "review.add": "Add comment",
+  "review.addPlaceholder": "Enter comment…",
+  "review.reply": "Reply",
+  "review.replyPlaceholder": "Enter reply…",
+  "review.resolve": "Resolve",
+  "review.resolved": "Resolved",
+  "review.delete": "Delete",
+  "review.deleteConfirm": "Delete this comment?",
+  "review.toggle": "Toggle comments panel",
+  "review.author.anonymous": "Anonymous",
+  "review.time.justNow": "Just now",
+  "review.time.minutesAgo": "{count} min ago",
+  "review.time.hoursAgo": "{count} hr ago",
+  "review.time.daysAgo": "{count} days ago",
 };

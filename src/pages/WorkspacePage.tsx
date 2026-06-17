@@ -3,6 +3,7 @@
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
 import { useEffect, useRef } from "react";
+import { useT } from "@/lib/i18n";
 import { CommandPalette } from "@/features/agent/components/command-palette";
 import { QuickActions } from "@/features/agent/components/quick-actions";
 import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
@@ -11,6 +12,7 @@ import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
 import { StatusBar } from "@/features/editor/components/StatusBar";
+import { CommentPanel } from "@/features/review/components/comment-panel";
 import { Toolbar } from "@/features/formatting/components/toolbar";
 import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
 import { MenuBar } from "@/features/menubar/components/menu-bar";
@@ -33,10 +35,13 @@ const ZOOM_MAX = 200;
  *  DocumentTitleBar → MenuBar → Toolbar → Main(Outline | Ruler+Editor) → StatusBar
  */
 export default function WorkspacePage() {
+  const { t } = useT();
   const settingsDrawerOpen = useAppStore((s) => s.settingsDrawerOpen);
   const toggleSettingsDrawer = useAppStore((s) => s.toggleSettingsDrawer);
   const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
   const toggleOutlinePanel = useAppStore((s) => s.toggleOutlinePanel);
+  const commentPanelOpen = useAppStore((s) => s.commentPanelOpen);
+  const toggleCommentPanel = useAppStore((s) => s.toggleCommentPanel);
   const activeModal = useAppStore((s) => s.activeModal);
   const openModal = useAppStore((s) => s.openModal);
   const closeModal = useAppStore((s) => s.closeModal);
@@ -97,6 +102,13 @@ export default function WorkspacePage() {
           <ThemeToggle />
           <button
             className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
+            onClick={toggleCommentPanel}
+            type="button"
+          >
+            {t("review.title")}
+          </button>
+          <button
+            className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
             onClick={toggleSettingsDrawer}
             type="button"
           >
@@ -120,6 +132,7 @@ export default function WorkspacePage() {
             isNewDocument={isNewDocument}
           />
         </div>
+        {commentPanelOpen && <CommentPanel />}
       </main>
 
       {/* 状态栏 */}

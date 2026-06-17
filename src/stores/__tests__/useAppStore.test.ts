@@ -12,6 +12,7 @@ describe("useAppStore", () => {
       settingsDrawerOpen: false,
       agentSidebarOpen: true,
       outlinePanelCollapsed: false,
+      commentPanelOpen: false,
       isInitialLoading: true,
     });
   });
@@ -31,6 +32,10 @@ describe("useAppStore", () => {
 
     it("outlinePanelCollapsed 初始为 false", () => {
       expect(useAppStore.getState().outlinePanelCollapsed).toBe(false);
+    });
+
+    it("commentPanelOpen 初始为 false", () => {
+      expect(useAppStore.getState().commentPanelOpen).toBe(false);
     });
 
     it("isInitialLoading 初始为 true", () => {
@@ -93,6 +98,21 @@ describe("useAppStore", () => {
     it("setOutlinePanelCollapsed 直接设置", () => {
       useAppStore.getState().setOutlinePanelCollapsed(true);
       expect(useAppStore.getState().outlinePanelCollapsed).toBe(true);
+    });
+
+    it("toggleCommentPanel 切换开关", () => {
+      expect(useAppStore.getState().commentPanelOpen).toBe(false);
+      useAppStore.getState().toggleCommentPanel();
+      expect(useAppStore.getState().commentPanelOpen).toBe(true);
+      useAppStore.getState().toggleCommentPanel();
+      expect(useAppStore.getState().commentPanelOpen).toBe(false);
+    });
+
+    it("setCommentPanelOpen 直接设置", () => {
+      useAppStore.getState().setCommentPanelOpen(true);
+      expect(useAppStore.getState().commentPanelOpen).toBe(true);
+      useAppStore.getState().setCommentPanelOpen(false);
+      expect(useAppStore.getState().commentPanelOpen).toBe(false);
     });
   });
 

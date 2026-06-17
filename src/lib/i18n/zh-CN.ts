@@ -233,4 +233,23 @@ export const zhCN: Translations = {
   "headerFooter.placeholder": "输入内容…",
   "table.headerRow": "标题行",
   "table.headerCol": "标题列",
+
+  // === 审阅与批注 ===
+  "review.title": "批注",
+  "review.empty": "暂无批注",
+  "review.emptyHint": "选中文字后添加批注",
+  "review.add": "添加批注",
+  "review.addPlaceholder": "输入批注内容…",
+  "review.reply": "回复",
+  "review.replyPlaceholder": "输入回复…",
+  "review.resolve": "解决",
+  "review.resolved": "已解决",
+  "review.delete": "删除",
+  "review.deleteConfirm": "确定删除此批注？",
+  "review.toggle": "批注面板",
+  "review.author.anonymous": "匿名",
+  "review.time.justNow": "刚刚",
+  "review.time.minutesAgo": "{count} 分钟前",
+  "review.time.hoursAgo": "{count} 小时前",
+  "review.time.daysAgo": "{count} 天前",
 };

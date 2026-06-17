@@ -27,6 +27,7 @@ export type AppState = {
   settingsDrawerOpen: boolean;
   agentSidebarOpen: boolean; // 需持久化
   outlinePanelCollapsed: boolean; // 需持久化
+  commentPanelOpen: boolean; // 批注面板状态
 
   /** 应用初始加载 */
   isInitialLoading: boolean;
@@ -40,6 +41,8 @@ export type AppState = {
   setAgentSidebarOpen(open: boolean): void;
   toggleOutlinePanel(): void;
   setOutlinePanelCollapsed(collapsed: boolean): void;
+  toggleCommentPanel(): void;
+  setCommentPanelOpen(open: boolean): void;
   setInitialLoading(loading: boolean): void;
 };
 
@@ -48,6 +51,7 @@ const initialAppState = {
   settingsDrawerOpen: false,
   agentSidebarOpen: true,
   outlinePanelCollapsed: false,
+  commentPanelOpen: false,
   isInitialLoading: true,
 } as const satisfies Partial<AppState>;
 
@@ -86,6 +90,14 @@ export const useAppStore = create<AppState>((set) => ({
 
   setOutlinePanelCollapsed(collapsed) {
     set({ outlinePanelCollapsed: collapsed });
+  },
+
+  toggleCommentPanel() {
+    set((state) => ({ commentPanelOpen: !state.commentPanelOpen }));
+  },
+
+  setCommentPanelOpen(open) {
+    set({ commentPanelOpen: open });
   },
 
   setInitialLoading(loading) {
