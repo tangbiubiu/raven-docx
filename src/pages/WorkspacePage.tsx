@@ -6,11 +6,13 @@ import { useEffect, useRef } from "react";
 import { CommandPalette } from "@/features/agent/components/command-palette";
 import { QuickActions } from "@/features/agent/components/quick-actions";
 import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
+import { useAutoSave } from "@/features/document/hooks/use-auto-save";
 import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
 import { StatusBar } from "@/features/editor/components/StatusBar";
+import { FindReplaceDialog } from "@/features/find-replace/components/find-replace-dialog";
 import { Toolbar } from "@/features/formatting/components/toolbar";
 import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
 import { MenuBar } from "@/features/menubar/components/menu-bar";
@@ -56,6 +58,7 @@ export default function WorkspacePage() {
   const setZoom = useDocumentStore((s) => s.setZoom);
 
   const { newDocument, openDocument, saveDocument } = useDocument();
+  useAutoSave();
 
   // 确保首次启动自动打开仅触发一次
   const autoOpenedRef = useRef(false);
@@ -74,6 +77,39 @@ export default function WorkspacePage() {
         openModal("commandPalette");
       }
     };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openModal]);
+
+  // Global keyboard shortcuts (全局快捷键)
+  useEffect(() => {
+    const handleFindReplace = (e: KeyboardEvent) => {
+      if (e.key === "f" && !e.shiftKey) {
+        e.preventDefault();
+        openModal("findReplace");
+      } else if (e.key === "h" && !e.shiftKey) {
+        e.preventDefault();
+        openModal("findReplace");
+      }
+    };
+
+    const handlePrint = (e: KeyboardEvent) => {
+      if (e.key === "p" && !e.shiftKey) {
+        e.preventDefault();
+        window.print();
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) {
+        return;
+      }
+
+      handleFindReplace(e);
+      handlePrint(e);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [openModal]);
@@ -175,6 +211,9 @@ export default function WorkspacePage() {
         onOpenChange={(open) => !open && closeModal()}
         open={activeModal === "templateVars"}
       />
+
+      {/* FindReplaceDialog */}
+      {activeModal === "findReplace" ? <FindReplaceDialog /> : null}
     </div>
   );
 }

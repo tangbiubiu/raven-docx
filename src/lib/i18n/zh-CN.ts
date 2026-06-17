@@ -267,4 +267,16 @@ export const zhCN: Translations = {
   "template.input.placeholder": "输入 {name} 的值…",
   "template.noVariables": "文档中未检测到模板变量",
   "template.success": "模板变量已填充 ✓",
+  // === 查找替换 ===
+  "findReplace.title": "查找与替换",
+  "findReplace.find": "查找",
+  "findReplace.findPlaceholder": "输入要查找的文本…",
+  "findReplace.replace": "替换",
+  "findReplace.replacePlaceholder": "输入替换文本（可选）…",
+  "findReplace.caseSensitive": "区分大小写",
+  "findReplace.stats": "第 {current} 个，共 {total} 个",
+  "findReplace.noResults": "未找到匹配项",
+  "findReplace.prev": "上一个",
+  "findReplace.next": "下一个",
+  "findReplace.replaceAll": "全部替换",
 };

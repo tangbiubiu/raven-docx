@@ -271,4 +271,16 @@ export const en: Translations = {
   "template.input.placeholder": "Enter value for {name}…",
   "template.noVariables": "No template variables detected in this document",
   "template.success": "Template variables filled ✓",
+  // === Find & Replace ===
+  "findReplace.title": "Find & Replace",
+  "findReplace.find": "Find",
+  "findReplace.findPlaceholder": "Enter text to find…",
+  "findReplace.replace": "Replace",
+  "findReplace.replacePlaceholder": "Enter replacement text (optional)…",
+  "findReplace.caseSensitive": "Case sensitive",
+  "findReplace.stats": "{current} of {total} matches",
+  "findReplace.noResults": "No matches found",
+  "findReplace.prev": "Previous",
+  "findReplace.next": "Next",
+  "findReplace.replaceAll": "Replace All",
 };
