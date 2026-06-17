@@ -14,6 +14,8 @@ export type AppModal =
   | "headerFooter"
   | "hyperlink"
   | "insertTable"
+  | "insertImage"
+  | "footnote"
   | null;
 
 /**

@@ -2,6 +2,7 @@
 // 纯函数层，零 React 依赖。Toolbar 和 MenuBar 共用。
 // Reference: .dev/plan/implementation-plan.md §Phase 2
 
+import { open } from "@tauri-apps/plugin-dialog";
 import { lift, setBlockType, toggleMark, wrapIn } from "prosemirror-commands";
 import { redo, undo } from "prosemirror-history";
 import { liftListItem, sinkListItem } from "prosemirror-schema-list";
@@ -184,7 +185,7 @@ export async function execInsertImage(): Promise<void> {
   }
 
   try {
-    const { open } = await import("@tauri-apps/plugin-dialog");
+    // Tauri plugin: only available in desktop runtime, not in web/test env
     const selected = await open({
       filters: [
         {

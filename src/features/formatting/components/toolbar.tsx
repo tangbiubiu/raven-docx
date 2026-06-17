@@ -12,9 +12,6 @@ import {
 import { Toggle } from "@/components/ui/toggle";
 import {
   execIndent,
-  execInsertImage,
-  execInsertLink,
-  execInsertTable,
   execLift,
   execOutdent,
   execRedo,
@@ -23,6 +20,10 @@ import {
   execUndo,
   execWrapIn,
 } from "@/features/editor/commands";
+import { FootnoteDialog } from "@/features/table/components/FootnoteDialog";
+import { HyperlinkDialog } from "@/features/table/components/HyperlinkDialog";
+import { InsertImageButton } from "@/features/table/components/InsertImageButton";
+import { InsertTableGrid } from "@/features/table/components/InsertTableGrid";
 import { useT } from "@/lib/i18n";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useFormatState } from "../hooks/use-format-state";
@@ -206,7 +207,11 @@ function Separator() {
 
 // === 主组件 ===
 
+import { useState } from "react";
 export function Toolbar() {
+  const [showTableGrid, setShowTableGrid] = useState(false);
+  const [showHyperlinkDialog, setShowHyperlinkDialog] = useState(false);
+  const [showFootnoteDialog, setShowFootnoteDialog] = useState(false);
   const { t } = useT();
   const formatState = useFormatState();
 
@@ -421,37 +426,40 @@ export function Toolbar() {
 
       <Separator />
 
-      {/* 插入：表格/图片/链接 */}
-      <button
-        aria-label={t("menu.insert.table")}
-        className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
-        data-testid="toolbar-insertTable"
-        onClick={() => execInsertTable()}
-        title={t("menu.insert.table")}
-        type="button"
-      >
-        ⊞
-      </button>
-      <button
-        aria-label={t("menu.insert.image")}
-        className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
-        data-testid="toolbar-insertImage"
-        onClick={() => execInsertImage()}
-        title={t("menu.insert.image")}
-        type="button"
-      >
-        🖼
-      </button>
-      <button
-        aria-label={t("menu.insert.link")}
-        className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
-        data-testid="toolbar-insertLink"
-        onClick={() => execInsertLink()}
-        title={t("menu.insert.link")}
-        type="button"
-      >
-        🔗
-      </button>
+      {/* 插入：表格/图片/链接/脚注 */}
+      <div className="flex items-center gap-1">
+        <button
+          aria-label={t("menu.insert.table")}
+          className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
+          data-testid="toolbar-insertTable"
+          onClick={() => setShowTableGrid(true)}
+          title={t("menu.insert.table")}
+          type="button"
+        >
+          ⊞
+        </button>
+        <InsertImageButton />
+        <button
+          aria-label={t("menu.insert.link")}
+          className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
+          data-testid="toolbar-insertLink"
+          onClick={() => setShowHyperlinkDialog(true)}
+          title={t("menu.insert.link")}
+          type="button"
+        >
+          🔗
+        </button>
+        <button
+          aria-label={t("menu.insert.footnote")}
+          className="inline-flex h-7 items-center rounded px-2 text-xs hover:bg-muted"
+          data-testid="toolbar-insertFootnote"
+          onClick={() => setShowFootnoteDialog(true)}
+          title={t("menu.insert.footnote")}
+          type="button"
+        >
+          📝
+        </button>
+      </div>
 
       <Separator />
 
@@ -465,6 +473,29 @@ export function Toolbar() {
       >
         {t("format.clearFormat")}
       </button>
+
+      {/* 弹窗组件 */}
+      {showTableGrid ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-lg bg-white p-4 shadow-lg">
+            <InsertTableGrid onClose={() => setShowTableGrid(false)} />
+          </div>
+        </div>
+      ) : null}
+      {showHyperlinkDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-lg bg-white p-4 shadow-lg">
+            <HyperlinkDialog onClose={() => setShowHyperlinkDialog(false)} />
+          </div>
+        </div>
+      ) : null}
+      {showFootnoteDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-lg bg-white p-4 shadow-lg">
+            <FootnoteDialog onClose={() => setShowFootnoteDialog(false)} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

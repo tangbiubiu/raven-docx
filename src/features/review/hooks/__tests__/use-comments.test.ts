@@ -5,6 +5,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDocumentStore } from "@/stores/useDocumentStore";
+import type { EditorBridge } from "@/stores/useDocumentStore";
 import { useComments } from "../use-comments";
 
 describe("useComments", () => {
@@ -373,7 +374,7 @@ describe("useComments", () => {
             resolveComment: vi.fn(),
             deleteComment: vi.fn(),
           }),
-        },
+        } as unknown as EditorBridge,
         selectionInfo: { from: 0, to: 5, text: "测试文本", paraId: "p1" },
       });
 
@@ -399,7 +400,8 @@ describe("useComments", () => {
             resolveComment: vi.fn(),
             deleteComment: vi.fn(),
           }),
-        },
+        } as unknown as EditorBridge,
+        selectionInfo: { from: 0, to: 5, text: "测试文本", paraId: "p1" },
       });
 
       const { result } = renderHook(() => useComments());
@@ -416,11 +418,10 @@ describe("useComments", () => {
       useDocumentStore.setState({
         editorBridge: {
           getAgent: () => null,
-        },
+        } as unknown as EditorBridge,
+        selectionInfo: { from: 0, to: 5, text: "测试文本", paraId: "p1" },
       });
-
       const { result } = renderHook(() => useComments());
-
       await act(async () => {
         await result.current.addComment("测试批注");
       });

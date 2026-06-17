@@ -134,6 +134,13 @@ export const en: Translations = {
   "agent.context.cursorAt": "Cursor: {position}",
   "agent.context.selection": "{count} characters selected",
 
+  // === 超链接/脚注 ===
+  "hyperlink.text": "Display Text",
+  "hyperlink.textPlaceholder": "Link display text",
+  "hyperlink.insert": "Insert",
+  "footnote.content": "Footnote Content",
+  "footnote.placeholder": "Enter footnote content",
+  "footnote.insert": "Insert",
   // === Settings ===
   "settings.title": "Settings",
   "settings.close": "Done",
@@ -182,6 +189,8 @@ export const en: Translations = {
   "settings.data.resetWarning":
     "This will reset all preferences. Documents will not be deleted",
   "settings.data.clearing": "Clearing…",
+  "table.rows": "Rows",
+  "table.columns": "Columns",
   // === Table ===
 
   "table.insert": "Insert Table",

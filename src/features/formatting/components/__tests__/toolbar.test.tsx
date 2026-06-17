@@ -11,21 +11,56 @@ import { Toolbar } from "../toolbar";
 
 // === Mock 共享命令模块 ===
 
-const mockCommands = vi.hoisted(() => ({
-  execToggleMark: vi.fn(),
-  execSetBlockType: vi.fn(),
-  execWrapIn: vi.fn(),
-  execLift: vi.fn(),
-  execUndo: vi.fn(),
-  execRedo: vi.fn(),
-  execIndent: vi.fn(),
-  execOutdent: vi.fn(),
-  execInsertTable: vi.fn(),
-  execInsertImage: vi.fn(),
-  execInsertLink: vi.fn(),
+// Top-level hoisted constants for vi.mock factories (avoid TDZ)
+const { mockToggleMark, mockSetBlockType, mockWrapIn, mockLift, mockUndo, mockRedo, mockIndent, mockOutdent, mockInsertTable, mockInsertImage, mockInsertLink, mockInsertFootnote } = vi.hoisted(() => ({
+  mockToggleMark: vi.fn(),
+  mockSetBlockType: vi.fn(),
+  mockWrapIn: vi.fn(),
+  mockLift: vi.fn(),
+  mockUndo: vi.fn(),
+  mockRedo: vi.fn(),
+  mockIndent: vi.fn(),
+  mockOutdent: vi.fn(),
+  mockInsertTable: vi.fn(),
+  mockInsertImage: vi.fn(),
+  mockInsertLink: vi.fn(),
+  mockInsertFootnote: vi.fn(),
 }));
 
-vi.mock("@/features/editor/commands", () => mockCommands);
+// TABLE_GRID_REGEX and HYPERLINK_DIALOG_REGEX (top-level to avoid perf issues)
+const TABLE_GRID_REGEX = /选择表格大小/;
+const HYPERLINK_DIALOG_REGEX = /插入超链接/;
+
+vi.mock("@/features/table/components/InsertTableGrid", () => ({
+  InsertTableGrid: () => <div>选择表格大小</div>,
+}));
+
+vi.mock("@/features/table/components/HyperlinkDialog", () => ({
+  HyperlinkDialog: () => <div>插入超链接</div>,
+}));
+
+vi.mock("@/features/table/components/InsertImageButton", () => ({
+  InsertImageButton: () => (
+    <button data-testid="toolbar-insertImage" type="button">
+      插入图片
+    </button>
+  ),
+}));
+
+vi.mock("@/features/editor/commands", () => ({
+  execToggleMark: mockToggleMark,
+  execSetBlockType: mockSetBlockType,
+  execWrapIn: mockWrapIn,
+  execLift: mockLift,
+  execUndo: mockUndo,
+  execRedo: mockRedo,
+  execIndent: mockIndent,
+  execOutdent: mockOutdent,
+  execInsertTable: mockInsertTable,
+  execInsertImage: mockInsertImage,
+  execInsertLink: mockInsertLink,
+  execInsertFootnote: mockInsertFootnote,
+}));
 
 // === Mock prosemirror-commands（useFormatState 依赖） ===
 
@@ -179,7 +214,7 @@ describe("Toolbar", () => {
     render(<Toolbar />);
 
     fireEvent.click(screen.getByLabelText("加粗"));
-    expect(mockCommands.execToggleMark).toHaveBeenCalledWith("bold");
+    expect(mockToggleMark).toHaveBeenCalledWith("bold");
   });
 
   it("点击斜体调用 execToggleMark('italic')", () => {
@@ -188,7 +223,7 @@ describe("Toolbar", () => {
     render(<Toolbar />);
 
     fireEvent.click(screen.getByLabelText("斜体"));
-    expect(mockCommands.execToggleMark).toHaveBeenCalledWith("italic");
+    expect(mockToggleMark).toHaveBeenCalledWith("italic");
   });
 
   it("点击撤销调用 execUndo", () => {
@@ -197,7 +232,7 @@ describe("Toolbar", () => {
     render(<Toolbar />);
 
     fireEvent.click(screen.getByTestId("toolbar-undo"));
-    expect(mockCommands.execUndo).toHaveBeenCalledOnce();
+    expect(mockUndo).toHaveBeenCalledOnce();
   });
 
   it("点击重做调用 execRedo", () => {
@@ -206,34 +241,33 @@ describe("Toolbar", () => {
     render(<Toolbar />);
 
     fireEvent.click(screen.getByTestId("toolbar-redo"));
-    expect(mockCommands.execRedo).toHaveBeenCalledOnce();
+    expect(mockRedo).toHaveBeenCalledOnce();
   });
 
-  it("点击插入表格调用 execInsertTable", () => {
+  it("点击插入表格打开表格网格对话框", () => {
     const { view, dispatchSpy } = createMockView();
     setupMockBridge(view, dispatchSpy);
     render(<Toolbar />);
 
     fireEvent.click(screen.getByTestId("toolbar-insertTable"));
-    expect(mockCommands.execInsertTable).toHaveBeenCalledOnce();
+    expect(screen.getByText(TABLE_GRID_REGEX)).toBeInTheDocument();
   });
 
-  it("点击插入图片调用 execInsertImage", () => {
+  it("插入图片按钮存在", () => {
     const { view, dispatchSpy } = createMockView();
     setupMockBridge(view, dispatchSpy);
     render(<Toolbar />);
 
-    fireEvent.click(screen.getByTestId("toolbar-insertImage"));
-    expect(mockCommands.execInsertImage).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("toolbar-insertImage")).toBeInTheDocument();
   });
 
-  it("点击插入链接调用 execInsertLink", () => {
+  it("点击插入链接打开超链接对话框", () => {
     const { view, dispatchSpy } = createMockView();
     setupMockBridge(view, dispatchSpy);
     render(<Toolbar />);
 
     fireEvent.click(screen.getByTestId("toolbar-insertLink"));
-    expect(mockCommands.execInsertLink).toHaveBeenCalledOnce();
+    expect(screen.getByText(HYPERLINK_DIALOG_REGEX)).toBeInTheDocument();
   });
 
   it("点击增加缩进调用 execIndent", () => {
@@ -242,7 +276,7 @@ describe("Toolbar", () => {
     render(<Toolbar />);
 
     fireEvent.click(screen.getByTestId("toolbar-indent"));
-    expect(mockCommands.execIndent).toHaveBeenCalledOnce();
+    expect(mockIndent).toHaveBeenCalledOnce();
   });
 
   it("点击减少缩进调用 execOutdent", () => {
@@ -251,7 +285,7 @@ describe("Toolbar", () => {
     render(<Toolbar />);
 
     fireEvent.click(screen.getByTestId("toolbar-outdent"));
-    expect(mockCommands.execOutdent).toHaveBeenCalledOnce();
+    expect(mockOutdent).toHaveBeenCalledOnce();
   });
 
   it("选中加粗文字时按钮显示 active 状态", () => {
