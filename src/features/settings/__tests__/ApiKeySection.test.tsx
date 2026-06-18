@@ -19,7 +19,7 @@ describe("ApiKeySection", () => {
       if (cmd === "set_api_key") {
         return null;
       }
-      if (cmd === "pi_test_connection") {
+      if (cmd === "agent_test_connection") {
         return true;
       }
       return null;
@@ -102,7 +102,7 @@ describe("ApiKeySection", () => {
       if (cmd === "plugin:log|log") {
         return;
       }
-      if (cmd === "pi_test_connection") {
+      if (cmd === "agent_test_connection") {
         throw "Connection failed";
       }
       return null;

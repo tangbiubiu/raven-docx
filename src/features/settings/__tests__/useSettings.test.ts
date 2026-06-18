@@ -15,7 +15,7 @@ describe("useSettings", () => {
       if (cmd === "set_api_key") return null;
       if (cmd === "get_api_key_masked") return "sk-a***b12c";
       if (cmd === "delete_api_key") return null;
-      if (cmd === "pi_test_connection") return true;
+      if (cmd === "agent_test_connection") return true;
       if (cmd === "clear_sessions") return null;
       if (cmd === "clear_autosave") return null;
       return null;
@@ -174,7 +174,7 @@ describe("useSettings", () => {
       clearMocks();
       mockIPC((cmd) => {
         if (cmd === "plugin:log|log") return;
-        if (cmd === "pi_test_connection") throw new Error("Connection refused");
+        if (cmd === "agent_test_connection") throw new Error("Connection refused");
         return null;
       });
 

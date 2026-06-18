@@ -4,6 +4,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback } from "react";
+import { commands } from "@/lib/bindings";
 import { logger } from "@/lib/logger";
 import type {
   ApiConfig,
@@ -12,11 +13,10 @@ import type {
 } from "@/stores/useSettingsStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
-// ===== Tauri Command 名称常量（Phase 1.4 实现后生效）=====
+// ===== Tauri Command 名称常量 =====
 const CMD_SET_API_KEY = "set_api_key";
 const CMD_GET_API_KEY_MASKED = "get_api_key_masked";
 const CMD_DELETE_API_KEY = "delete_api_key";
-const CMD_TEST_CONNECTION = "pi_test_connection";
 
 /**
  * 设置读写 Hook。
@@ -84,26 +84,26 @@ export function useSettings() {
 
   /**
    * 测试 API 连接。
-   * 调用 Tauri command `pi_test_connection`。
+   * 调用 Tauri command `agent_test_connection`。
    *
    * @returns `true` 连接成功，`false` 失败
    */
   const testConnection = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await invoke<boolean>(CMD_TEST_CONNECTION, {
-        config: {
-          provider: apiConfig.provider,
-          apiKey: apiConfig.apiKey,
-          baseUrl: apiConfig.baseUrl,
-          model: apiConfig.model,
-        },
-      });
-      return result;
+      const result = await commands.agentTestConnection(
+        apiConfig.apiKey,
+        apiConfig.baseUrl || null,
+      );
+      if (result.status === "ok") {
+        return result.data;
+      }
+      logger.error(`连接测试失败: ${result.error}`);
+      return false;
     } catch (err) {
-      logger.error(`连接测试失败: ${String(err)}`);
+      logger.error(`连接测试调用失败: ${String(err)}`);
       return false;
     }
-  }, [apiConfig]);
+  }, [apiConfig.apiKey, apiConfig.baseUrl]);
 
   /**
    * 从 Keychain 加载 API Key（masked）。
