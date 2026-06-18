@@ -102,7 +102,7 @@ describe("useSettingsStore", () => {
           spellCheck: false,
         },
       };
-      ls.setItem("geex-docx:settings", JSON.stringify(saved));
+      ls.setItem("raven:settings", JSON.stringify(saved));
 
       await useSettingsStore.getState().loadFromStorage();
 
@@ -123,7 +123,7 @@ describe("useSettingsStore", () => {
     });
 
     it("localStorage 数据损坏时使用默认值", async () => {
-      ls.setItem("geex-docx:settings", "invalid json{{{");
+      ls.setItem("raven:settings", "invalid json{{{");
       await useSettingsStore.getState().loadFromStorage();
       expect(useSettingsStore.getState().isLoaded).toBe(true);
       expect(useSettingsStore.getState().apiConfig.provider).toBe("anthropic");
@@ -140,7 +140,7 @@ describe("useSettingsStore", () => {
 
       await useSettingsStore.getState().persist();
 
-      const saved = JSON.parse(ls.getItem("geex-docx:settings") ?? "{}");
+      const saved = JSON.parse(ls.getItem("raven:settings") ?? "{}");
       expect(saved.apiConfig.provider).toBe("anthropic");
       expect(saved.apiConfig.apiKey).toContain("…");
       expect(saved.apiConfig.apiKey).not.toBe("sk-ant-api03-secretkey12345678");
@@ -150,14 +150,14 @@ describe("useSettingsStore", () => {
     it("短 apiKey 完全 mask", async () => {
       useSettingsStore.getState().setApiConfig({ apiKey: "short" });
       await useSettingsStore.getState().persist();
-      const saved = JSON.parse(ls.getItem("geex-docx:settings") ?? "{}");
+      const saved = JSON.parse(ls.getItem("raven:settings") ?? "{}");
       expect(saved.apiConfig.apiKey).toBe("****");
     });
 
     it("空 apiKey 不 mask", async () => {
       useSettingsStore.getState().setApiConfig({ apiKey: "" });
       await useSettingsStore.getState().persist();
-      const saved = JSON.parse(ls.getItem("geex-docx:settings") ?? "{}");
+      const saved = JSON.parse(ls.getItem("raven:settings") ?? "{}");
       expect(saved.apiConfig.apiKey).toBe("");
     });
   });

@@ -76,7 +76,7 @@ interface UseAutoSaveReturn {
 
 策略：
 - `useSettingsStore.editorConfig.autoSave === true` 时启用
-- 文档变更后 30s 防抖 → 序列化到临时目录（`$TMP/geex-docx/drafts/{fileHash}.docx`）
+- 文档变更后 30s 防抖 → 序列化到临时目录（`$TMP/Raven/drafts/{fileHash}.docx`）
 - 正常关闭时删除临时草稿
 - 启动时检查是否存在孤儿草稿 → 提示用户恢复
 
@@ -97,7 +97,7 @@ interface RecentFile {
 }
 ```
 
-存储：`localStorage` key `geex-docx:recent-files`，使用 Tauri 路径。
+存储：`localStorage` key `Raven:recent-files`，使用 Tauri 路径。
 
 ---
 

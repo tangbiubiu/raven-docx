@@ -27,12 +27,57 @@ const MAX_RECENT_FILES: usize = 20;
 /// 获取应用数据目录
 fn app_data_dir() -> Result<PathBuf, String> {
     dirs::data_dir()
-        .map(|d| d.join("com.geex-docx.geex-docx"))
+        .map(|d| d.join("com.example.raven"))
         .ok_or_else(|| "无法获取应用数据目录".to_string())
+}
+
+/// 旧版应用数据目录（geex-docx → raven 迁移用）
+fn old_app_data_dir() -> Option<PathBuf> {
+    dirs::data_dir().map(|d| d.join("com.geex-docx.geex-docx"))
+}
+
+/// 迁移旧版数据到新目录（首次启动时调用）
+/// 如果旧目录存在且新目录不存在，复制旧目录内容到新目录。
+fn migrate_data_if_needed() -> Result<(), String> {
+    let new_dir = app_data_dir()?;
+    if new_dir.exists() {
+        return Ok(()); // 新目录已存在，跳过迁移
+    }
+
+    let old_dir = old_app_data_dir().ok_or_else(|| "无法获取数据目录".to_string())?;
+    if !old_dir.exists() {
+        return Ok(()); // 旧目录不存在，无需迁移
+    }
+
+    log::info!("[migrate] 迁移旧版数据: {:?} → {:?}", old_dir, new_dir);
+    fs::create_dir_all(&new_dir).map_err(|e| format!("创建新目录失败: {}", e))?;
+
+    // 递归复制旧目录内容
+    fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
+        for entry in fs::read_dir(src).map_err(|e| format!("读取目录失败: {}", e))? {
+            let entry = entry.map_err(|e| format!("读取目录条目失败: {}", e))?;
+            let src_path = entry.path();
+            let dst_path = dst.join(entry.file_name());
+
+            if src_path.is_dir() {
+                fs::create_dir_all(&dst_path).map_err(|e| format!("创建目录失败: {}", e))?;
+                copy_dir_recursive(&src_path, &dst_path)?;
+            } else {
+                fs::copy(&src_path, &dst_path).map_err(|e| format!("复制文件失败: {}", e))?;
+            }
+        }
+        Ok(())
+    }
+
+    copy_dir_recursive(&old_dir, &new_dir)?;
+    log::info!("[migrate] 数据迁移完成");
+    Ok(())
 }
 
 /// 获取 state.json 路径
 fn state_path() -> Result<PathBuf, String> {
+    // 首次访问时尝试迁移旧版数据
+    let _ = migrate_data_if_needed();
     let dir = app_data_dir()?;
     fs::create_dir_all(&dir).map_err(|e| format!("创建数据目录失败: {}", e))?;
     Ok(dir.join("state.json"))

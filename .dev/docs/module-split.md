@@ -1,4 +1,4 @@
-# geex-docx 模块拆分方案
+# Raven 模块拆分方案
 
 > **版本**: v0.2.0-draft
 > **最后更新**: 2026-06-09
@@ -12,7 +12,7 @@
 ## 1. 顶层视图
 
 ```
-geex-docx/
+Raven/
 ├── src/                      # React 前端
 │   ├── pages/                # 页面层（单页面：WorkspacePage）
 │   ├── features/             # 业务功能模块（按领域拆分）

@@ -4,8 +4,10 @@
 
  import { useEffect, useRef } from "react";
  import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
+ import { CommandPalette } from "@/features/agent/components/command-palette";
 import { useAutoSave } from "@/features/document/hooks/use-auto-save";
 import { useDocument } from "@/features/document/hooks/useDocument";
+import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";

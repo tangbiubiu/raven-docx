@@ -91,7 +91,7 @@ function useSettings(): UseSettingsReturn;
 持久化策略：
 | 配置 | 存储位置 |
 |------|---------|
-| `apiConfig` (不含 apiKey) | `localStorage` key `geex-docx:settings` |
+| `apiConfig` (不含 apiKey) | `localStorage` key `Raven:settings` |
 | `apiConfig.apiKey` | 系统 Keychain（通过 Tauri command `set_api_key`） |
 | `modelConfig` | `localStorage` 同上 |
 | `editorConfig` | `localStorage` 同上 |

@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 const DARK_CLASS = "dark";
-const STORAGE_KEY = "geex-docx-theme";
+const STORAGE_KEY = "raven-theme";
 
 type Theme = "light" | "dark";
 

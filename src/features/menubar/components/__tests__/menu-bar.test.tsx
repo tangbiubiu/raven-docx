@@ -141,7 +141,7 @@ describe("MenuBar", () => {
   it("Agent 菜单项高亮显示", () => {
     render(<MenuBar {...defaultProps} />);
     fireEvent.click(screen.getByTestId("menu-agent"));
-    const item = screen.getByTestId("menu-item-agent:panel");
+    const item = screen.getByTestId("menu-item-agent:togglePanel");
     // Agent 菜单项应该高亮（有 text-primary 类）
     expect(item.className).toContain("text-primary");
     // 点击应该关闭下拉菜单

@@ -1,4 +1,4 @@
-# geex-docx 数据持久化策略
+# Raven 数据持久化策略
 
 > **版本**: v0.2.0-draft
 > **最后更新**: 2026-06-09
@@ -27,7 +27,7 @@
 
 ```
 # macOS
-~/Library/Application Support/com.geex-docx.geex-docx/
+~/Library/Application Support/com.Raven.Raven/
 ├── state.json              # 应用状态（最近文件、偏好设置）
 ├── sessions/               # Agent 会话
 │   └── <doc_hash>.jsonl    # 每文档一个会话记录
@@ -39,14 +39,14 @@
     └── settings.json        # pi agent 设置
 
 # Windows
-C:\Users\<user>\AppData\Roaming\com.geex-docx.geex-docx\
+C:\Users\<user>\AppData\Roaming\com.Raven.Raven\
 ├── state.json
 ├── sessions/
 ├── autosave/
 └── pi-agent/
 
 # Linux
-~/.local/share/com.geex-docx.geex-docx/
+~/.local/share/com.Raven.Raven/
 ├── state.json
 ├── sessions/
 ├── autosave/
@@ -103,7 +103,7 @@ interface AppState {
 | 原则 | 实现 |
 |------|------|
 | **不落盘明文** | API Key 仅存储于系统 Keychain / Credential Manager |
-| **不跨应用共享** | 使用独立 service name：`com.geex-docx.geex-docx.api-key.<provider>` |
+| **不跨应用共享** | 使用独立 service name：`com.Raven.Raven.api-key.<provider>` |
 | **前端不可见完整 Key** | 前端仅显示 Key 的前 4 位 + "..." + 后 4 位。完整 Key 仅 Rust 端持有 |
 | **不通过 IPC 传输 Key** | Key 写入/读取均在 Rust 端完成，前端仅发送/接收 masked key |
 

@@ -253,9 +253,9 @@ interface AppState {
 
 | 位置 | 当前值 | 应改为 |
 |------|--------|--------|
-| `document.md:97` | `localStorage` key `agentwrite:recent-files` | `geex-docx:recent-files` |
-| `settings.md:101` | `localStorage` key `agentwrite:settings` | `geex-docx:settings` |
-| `stores.md:159` | `localStorage.getItem("agentwrite:settings")` | `geex-docx:settings` |
+| `document.md:97` | `localStorage` key `agentwrite:recent-files` | `Raven:recent-files` |
+| `settings.md:101` | `localStorage` key `agentwrite:settings` | `Raven:settings` |
+| `stores.md:159` | `localStorage.getItem("agentwrite:settings")` | `Raven:settings` |
 | `login-page.md:19` | 品牌名称 "AgentWrite" | 文档已废弃，不处理 |
 
 ---
@@ -354,7 +354,7 @@ interface AppState {
 | M2 | 统一迭代计划命名 | BRD + module-split | 0.5h |
 | M3 | 明确 Agent 上下文注入分级策略 | TSS §4.4 | 1h |
 | M5 | 重新定义 useAppStore 职责 | `stores.md` | 0.5h |
-| N1 | 全局替换 agentwrite → geex-docx | 5 个文件 | 0.5h |
+| N1 | 全局替换 agentwrite → Raven | 5 个文件 | 0.5h |
 
 **小计**: ~3.5h
 

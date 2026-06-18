@@ -1,4 +1,4 @@
-# geex-docx 实施计划
+# Raven 实施计划
 
 > **版本**: v0.2.0-draft
 > **最后更新**: 2026-06-09
@@ -94,10 +94,10 @@ main
 
 ```bash
 # 创建 worktree
-git worktree add -b wt/phase1-stores ../geex-docx-phase1-stores main
+git worktree add -b wt/phase1-stores ../Raven-phase1-stores main
 
 # 开发完成后
-cd ../geex-docx-phase1-stores
+cd ../Raven-phase1-stores
 git add . && git commit -m "feat(phase1): stores + lib infrastructure"
 git push origin wt/phase1-stores
 
@@ -106,7 +106,7 @@ cd <main-repo>
 git merge wt/phase1-stores
 
 # 清理 worktree
-git worktree remove ../geex-docx-phase1-stores
+git worktree remove ../Raven-phase1-stores
 git branch -d wt/phase1-stores
 ```
 
@@ -491,41 +491,41 @@ Phase 2 完成后启用 `tauri-action` 自动构建，每个成功合并的 main
 # === Phase 1 ===
 
 # 创建所有 worktree
-git worktree add -b wt/phase1-stores ../geex-docx-p1-stores main
-git worktree add -b wt/phase1-shell ../geex-docx-p1-shell main
-git worktree add -b wt/phase1-settings ../geex-docx-p1-settings main
-git worktree add -b wt/phase1-tauri-fs ../geex-docx-p1-fs main
+git worktree add -b wt/phase1-stores ../Raven-p1-stores main
+git worktree add -b wt/phase1-shell ../Raven-p1-shell main
+git worktree add -b wt/phase1-settings ../Raven-p1-settings main
+git worktree add -b wt/phase1-tauri-fs ../Raven-p1-fs main
 
 # 开发完成后合并
-cd /path/to/geex-docx
+cd /path/to/Raven
 git merge wt/phase1-stores wt/phase1-shell wt/phase1-settings wt/phase1-tauri-fs
 
 # 清理
-git worktree remove ../geex-docx-p1-stores --force
-git worktree remove ../geex-docx-p1-shell --force
-git worktree remove ../geex-docx-p1-settings --force
-git worktree remove ../geex-docx-p1-tauri-fs --force
+git worktree remove ../Raven-p1-stores --force
+git worktree remove ../Raven-p1-shell --force
+git worktree remove ../Raven-p1-settings --force
+git worktree remove ../Raven-p1-tauri-fs --force
 git branch -d wt/phase1-stores wt/phase1-shell wt/phase1-settings wt/phase1-tauri-fs
 
 # === Phase 2 (在 Phase 1 合并后) ===
-git worktree add -b wt/phase2-editor ../geex-docx-p2-editor main
-git worktree add -b wt/phase2-formatting ../geex-docx-p2-formatting main
-git worktree add -b wt/phase2-document ../geex-docx-p2-document main
-git worktree add -b wt/phase2-outline-ruler ../geex-docx-p2-ruler main
+git worktree add -b wt/phase2-editor ../Raven-p2-editor main
+git worktree add -b wt/phase2-formatting ../Raven-p2-formatting main
+git worktree add -b wt/phase2-document ../Raven-p2-document main
+git worktree add -b wt/phase2-outline-ruler ../Raven-p2-ruler main
 # ... merge 同上
 
 # === Phase 3 ===
-git worktree add -b wt/phase3-pi-backend ../geex-docx-p3-pi main
-git worktree add -b wt/phase3-agent-chat ../geex-docx-p3-chat main
-git worktree add -b wt/phase3-cmd-palette ../geex-docx-p3-cmd main
-git worktree add -b wt/phase3-agent-actions ../geex-docx-p3-actions main
+git worktree add -b wt/phase3-pi-backend ../Raven-p3-pi main
+git worktree add -b wt/phase3-agent-chat ../Raven-p3-chat main
+git worktree add -b wt/phase3-cmd-palette ../Raven-p3-cmd main
+git worktree add -b wt/phase3-agent-actions ../Raven-p3-actions main
 
 # === Phase 4 ===
-git worktree add -b wt/phase4-table-refs ../geex-docx-p4-table main
-git worktree add -b wt/phase4-page-layout ../geex-docx-p4-page main
-git worktree add -b wt/phase4-review ../geex-docx-p4-review main
-git worktree add -b wt/phase4-template ../geex-docx-p4-tpl main
-git worktree add -b wt/phase4-polish ../geex-docx-p4-polish main
+git worktree add -b wt/phase4-table-refs ../Raven-p4-table main
+git worktree add -b wt/phase4-page-layout ../Raven-p4-page main
+git worktree add -b wt/phase4-review ../Raven-p4-review main
+git worktree add -b wt/phase4-template ../Raven-p4-tpl main
+git worktree add -b wt/phase4-polish ../Raven-p4-polish main
 ```
 
 ---

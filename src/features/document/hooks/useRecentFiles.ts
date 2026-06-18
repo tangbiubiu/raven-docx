@@ -2,7 +2,7 @@
 // 管理最近打开的文件路径列表，持久化到 localStorage
 // Reference: .dev/plan/implementation-plan.md §Phase 2.3
 
-const STORAGE_KEY = "geex-docx:recent-files";
+const STORAGE_KEY = "raven:recent-files";
 const MAX_FILES = 10;
 
 /** 获取最近文件列表 */

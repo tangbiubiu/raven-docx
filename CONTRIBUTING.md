@@ -6,8 +6,8 @@ Thank you for your interest in contributing to this project!
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/example/geex-docx.git
-   cd geex-docx
+   git clone https://github.com/example/Raven.git
+   cd Raven
    ```
 
 2. **Install dependencies:**

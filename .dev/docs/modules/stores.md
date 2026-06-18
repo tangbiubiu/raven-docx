@@ -157,7 +157,7 @@ interface SettingsState {
 初始化顺序（需要异步加载 apiKey）：
 ```
 loadFromStorage()
-  → localStorage.getItem("geex-docx:settings") → JSON.parse
+  → localStorage.getItem("Raven:settings") → JSON.parse
   → setApiConfig, setModelConfig, setEditorConfig
   → Tauri read_api_key(apiType) → set apiKey
   → isLoaded = true

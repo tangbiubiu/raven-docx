@@ -66,7 +66,7 @@ export type SettingsState = {
 };
 
 /** localStorage 键名 */
-const STORAGE_KEY = "geex-docx:settings";
+const STORAGE_KEY = "raven:settings";
 
 /** 默认 API 配置 */
 const DEFAULT_API_CONFIG: ApiConfig = {

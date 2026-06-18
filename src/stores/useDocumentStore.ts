@@ -78,7 +78,6 @@ export type DocumentState = {
   headings: OutlineItem[];
 
   // --- 自动保存 ---
-  isAutoSaving: boolean;
   // --- Actions ---
   setDocument(doc: unknown, buffer: ArrayBuffer, path: string | null): void;
   setDirty(dirty: boolean): void;
@@ -228,7 +227,4 @@ export const useDocumentStore = create<DocumentState>((set) => ({
     });
   },
 
-  setAutoSaving(saving) {
-    set({ isAutoSaving: saving });
-  },
 }));

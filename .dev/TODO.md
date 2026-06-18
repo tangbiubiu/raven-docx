@@ -1,7 +1,7 @@
 # 文档一致性修复
 - [x] v0.2.0 决策传播到所有子文档
 - [x] 删除 license/login 残留
-- [x] 统一品牌名称 geex-docx
+- [x] 统一品牌名称 Raven
 - [x] Agent 状态机补充 edge cases
 - [x] 上下文注入分级策略明确
 

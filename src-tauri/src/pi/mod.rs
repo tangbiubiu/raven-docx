@@ -172,7 +172,7 @@ impl AgentManager {
     pub fn pi_agent_dir() -> Result<std::path::PathBuf, String> {
         let app_data = dirs::data_dir()
             .ok_or_else(|| "无法获取应用数据目录".to_string())?
-            .join("geex-docx")
+            .join("raven")
             .join("pi-agent");
         std::fs::create_dir_all(&app_data)
             .map_err(|e| format!("创建 pi-agent 目录失败: {}", e))?;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 
 const AUTO_SAVE_INTERVAL = 30_000; // 30 seconds
-const DRAFT_KEY = "geex-docx:draft";
+const DRAFT_KEY = "raven:draft";
 
 type DraftData = {
   buffer: string;

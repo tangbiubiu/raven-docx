@@ -4,7 +4,11 @@ import ReactDOM from "react-dom/client";
 import { ErrorBoundary } from "react-error-boundary";
 import App from "./app";
 import { logger } from "./lib/logger";
+import { migrateLocalStorage } from "./lib/migrate-storage";
 import "./index.css";
+
+// 迁移旧版 localStorage 键（geex-docx → raven）
+migrateLocalStorage();
 
 // Attach Rust logs to browser console in development mode
 if (import.meta.env.DEV) {

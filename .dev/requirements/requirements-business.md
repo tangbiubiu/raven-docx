@@ -1,4 +1,4 @@
-# geex-docx 业务需求文档 (BRD)
+# Raven 业务需求文档 (BRD)
 
 > **版本**: v0.2.0-draft
 > **最后更新**: 2026-06-09
@@ -21,7 +21,7 @@
 
 **一句话**：像用 Word 一样写文档，像和同事对话一样调用 AI。
 
-**开源**：geex-docx 是开源软件，基于 docx-editor 构建。用户自行配置 LLM API Key 后即可启用 Agent 功能。
+**开源**：Raven 是开源软件，基于 docx-editor 构建。用户自行配置 LLM API Key 后即可启用 Agent 功能。
 
 ---
 
