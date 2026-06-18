@@ -136,11 +136,11 @@ export function AgentSidebar() {
         </div>
 
         {/* 上下文徽章 — 对齐原型 .agent-context-badge */}
-        {contextBadge ? (
+        {contextBadge !== null && (
           <span className="shrink-0 whitespace-nowrap rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[10px] text-primary">
             {contextBadge.text}
           </span>
-        ) : null}
+        )}
 
         {/* 清空 + 关闭按钮 */}
         <div className="flex items-center gap-1">
