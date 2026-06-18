@@ -2,14 +2,14 @@
 // Reference: .dev/proto/workspace.html (menu bar section)
 
 /** 单个菜单项 */
-export type MenuEntry = {
-  labelKey?: string; // i18n key（separator 时可选）
-  shortcut?: string; // 快捷键显示文本
-  action?: string; // 动作名（由调用方 dispatch）
-  disabled?: boolean; // 是否禁用
-  separator?: true; // 分隔线
-  highlight?: boolean; // 是否高亮显示（用于 Agent 等核心功能）
-};
+ export type MenuEntry = {
+   labelKey?: string; // i18n key（separator 时可选）
+   shortcut?: string; // 快捷键显示文本
+   action?: string; // 动作名（由调用方 dispatch）
+   disabled?: boolean; // 是否禁用
+   separator?: true; // 分隔线
+   highlight?: boolean; // 高亮显示（用于 Agent 菜单项）
+ };
 
 /** 菜单组 */
 export type MenuGroup = {
@@ -102,7 +102,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     id: "agent",
     labelKey: "menu.agent",
     items: [
-      { labelKey: "menu.agent.panel", action: "agent:panel", highlight: true },
+      { labelKey: "menu.agent.panel", action: "agent:togglePanel", highlight: true },
     ],
   },
   {

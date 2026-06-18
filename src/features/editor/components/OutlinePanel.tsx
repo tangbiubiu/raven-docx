@@ -14,18 +14,18 @@ export function OutlinePanel() {
   const toggle = useAppStore((s) => s.toggleOutlinePanel);
   const editorBridge = useDocumentStore((s) => s.editorBridge);
   const selectionInfo = useDocumentStore((s) => s.selectionInfo);
-  // 从 store 读取响应式的大纲标题（必须在所有 early return 之前）
   const headings = useDocumentStore((s) => s.headings);
 
   if (collapsed) {
     return (
       <button
-        className="-translate-y-1/2 absolute top-1/2 left-0 z-10 flex h-10 w-5 items-center justify-center rounded-r bg-muted hover:bg-accent"
-        onClick={toggle}
-        title={t("editor.outline.expand")}
         type="button"
+        onClick={toggle}
+        aria-label={t("editor.outline.expand")}
+        className="flex h-full w-[22px] shrink-0 items-center justify-center border-border border-r bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        title={t("editor.outline.expand")}
       >
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] font-medium" style={{ writingMode: "vertical-rl" }}>
           {t("editor.outline.title")}
         </span>
       </button>

@@ -2,11 +2,8 @@
 // 单页面应用的唯一页面，编排所有面板和弹层
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
-import { useEffect, useRef } from "react";
-import { ErrorBoundary } from "react-error-boundary";
-import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
-import { CommandPalette } from "@/features/agent/components/command-palette";
-import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
+ import { useEffect, useRef } from "react";
+ import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
 import { useAutoSave } from "@/features/document/hooks/use-auto-save";
 import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
@@ -32,51 +29,21 @@ const ZOOM_MIN = 50;
 const ZOOM_MAX = 200;
 
 /**
- * AgentSidebar 错误回退 UI
- * 当 AgentSidebar 抛出异常时显示，避免整个工作区崩溃。
- * 使用 react-error-boundary 提供的 resetErrorBoundary 重置状态。
- */
-function AgentSidebarErrorFallback({
-  error,
-  resetErrorBoundary,
-}: {
-  error: Error;
-  resetErrorBoundary: () => void;
-}) {
-  return (
-    <div
-      className="flex w-80 flex-col items-center justify-center gap-2 border-l bg-background p-4 text-center text-muted-foreground text-sm"
-      role="alert"
-    >
-      <p className="font-medium">Agent 面板加载失败</p>
-      <p className="text-xs">{error.message}</p>
-      <button
-        className="text-primary text-xs underline"
-        onClick={resetErrorBoundary}
-        type="button"
-      >
-        重试
-      </button>
-    </div>
-  );
-}
-
-/**
  * WorkspacePage — 编辑器主页面。
  *
  * 布局层次（对齐原型图）：
- *  DocumentTitleBar → MenuBar → Toolbar → Main(Outline | Editor | AgentSidebar) → StatusBar
+ *  DocumentTitleBar → MenuBar → Toolbar → Main(Outline | Ruler+Editor) → StatusBar
  */
 export default function WorkspacePage() {
   const { t } = useT();
+  const settingsDrawerOpen = useAppStore((s) => s.settingsDrawerOpen);
+  const toggleSettingsDrawer = useAppStore((s) => s.toggleSettingsDrawer);
+  const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
   const toggleOutlinePanel = useAppStore((s) => s.toggleOutlinePanel);
   const toggleAgentSidebar = useAppStore((s) => s.toggleAgentSidebar);
   const activeModal = useAppStore((s) => s.activeModal);
   const openModal = useAppStore((s) => s.openModal);
   const closeModal = useAppStore((s) => s.closeModal);
-  const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
-  const toggleSettingsDrawer = useAppStore((s) => s.toggleSettingsDrawer);
-  const settingsDrawerOpen = useAppStore((s) => s.settingsDrawerOpen);
 
   const isLoaded = useSettingsStore((s) => s.isLoaded);
   const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
@@ -113,17 +80,17 @@ export default function WorkspacePage() {
   // Global keyboard shortcuts (全局快捷键)
   useEffect(() => {
     const handleFindReplace = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "f" && !e.shiftKey) {
+      if (e.key === "f" && !e.shiftKey) {
         e.preventDefault();
         openModal("findReplace");
-      } else if (e.key.toLowerCase() === "h" && !e.shiftKey) {
+      } else if (e.key === "h" && !e.shiftKey) {
         e.preventDefault();
         openModal("findReplace");
       }
     };
 
     const handlePrint = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "p" && !e.shiftKey) {
+      if (e.key === "p" && !e.shiftKey) {
         e.preventDefault();
         window.print();
       }
@@ -153,9 +120,9 @@ export default function WorkspacePage() {
     onZoomIn: () => setZoom(Math.min(zoom + ZOOM_STEP, ZOOM_MAX)),
     onZoomOut: () => setZoom(Math.max(zoom - ZOOM_STEP, ZOOM_MIN)),
     onToggleOutline: toggleOutlinePanel,
-    onToggleAgentSidebar: toggleAgentSidebar,
     onPageSetup: () => openModal("pageSetup"),
     onHeaderFooter: () => openModal("headerFooter"),
+    onToggleAgentSidebar: toggleAgentSidebar,
   };
 
   return (
@@ -187,7 +154,7 @@ export default function WorkspacePage() {
       {/* 菜单栏 */}
       <MenuBar {...menuCallbacks} />
 
-      {/* 主内容区 — OutlinePanel + Editor + AgentSidebar 三栏布局 */}
+      {/* 主内容区 — OutlinePanel + Ruler + DocxEditor + AgentSidebar */}
       <main className="flex flex-1 overflow-hidden">
         <OutlinePanel />
         <div className="relative flex flex-1 flex-col overflow-hidden">
@@ -198,12 +165,8 @@ export default function WorkspacePage() {
             isNewDocument={isNewDocument}
           />
         </div>
-        <ErrorBoundary FallbackComponent={AgentSidebarErrorFallback}>
-          <AgentSidebar />
-        </ErrorBoundary>
+        <AgentSidebar />
       </main>
-
-      {/* 状态栏 */}
       <StatusBar />
 
       {/* SettingsDrawer */}

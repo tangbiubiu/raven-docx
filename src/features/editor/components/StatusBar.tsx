@@ -23,7 +23,7 @@ export function StatusBar() {
       className="flex h-7 shrink-0 items-center justify-between border-border border-t bg-muted/60 px-4 text-muted-foreground text-xs"
       data-testid="status-bar"
     >
-      {/* 左侧：保存状态 + 页码 + 字数 + 语言 + 自动保存指示 */}
+      {/* 左侧：保存状态 + 页码 + 字数 + 语言 + 自动保存 */}
       <div className="flex items-center gap-4">
         <span data-testid="dirty-status">
           {isDirty ? t("editor.statusBar.dirty") : t("editor.statusBar.saved")}
@@ -37,10 +37,11 @@ export function StatusBar() {
         <span data-testid="word-count">
           {t("editor.statusBar.wordCount", { count: charCount })}
         </span>
-        <span>{t("editor.statusBar.language")}</span>
+        <span data-testid="language">
+          {t("editor.statusBar.language")}
+        </span>
         {isAutoSaving && (
-          <span className="flex items-center gap-1 text-primary">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary" />
+          <span className="text-primary" data-testid="auto-save-indicator">
             {t("editor.statusBar.autoSaving")}
           </span>
         )}

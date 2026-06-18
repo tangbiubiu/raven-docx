@@ -68,6 +68,7 @@ export type DocumentState = {
 
   // --- 统计 ---
   charCount: number; // 文档字符数（CJK + 拉丁）
+  isAutoSaving: boolean;
 
   // --- 撤销重做 ---
   canUndo: boolean;
@@ -225,5 +226,9 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       totalPages: 1,
       currentPage: 1,
     });
+  },
+
+  setAutoSaving(saving) {
+    set({ isAutoSaving: saving });
   },
 }));

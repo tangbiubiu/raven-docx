@@ -68,9 +68,12 @@ export const zhCN: Translations = {
   "editor.statusBar.zoom": "{zoom}%",
   "editor.statusBar.dirty": "未保存",
   "editor.statusBar.saved": "已保存",
+  "editor.statusBar.language": "中文(中国)",
+  "editor.statusBar.autoSaving": "自动保存中",
   "editor.pane.empty": "打开或新建一个文档",
   "editor.outline.title": "大纲",
   "editor.outline.empty": "暂无可导航标题",
+  "editor.outline.expand": "展开大纲",
 
   // === 格式工具栏 ===
 
@@ -128,8 +131,12 @@ export const zhCN: Translations = {
   "agent.action.makeCasual": "更随意",
   "agent.action.custom": "自定义指令",
   "agent.action.continueWriting": "续写",
+  "agent.action.styleCheck": "风格检查",
+  "agent.action.makeFormal": "转正式",
   "agent.action.formatDoc": "排版优化",
   "agent.action.proofread": "全文校对",
+  "agent.tab.chat": "对话",
+  "agent.tab.comments": "批注",
   "agent.status.idle": "就绪",
   "agent.status.thinking": "思考中…",
   "agent.status.writing": "正在生成…",

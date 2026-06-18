@@ -1,50 +1,60 @@
-// QuickActions.tsx — 快捷操作按钮组 (Quick Action Buttons)
-// 工具栏下方的 4 个快捷 Agent 动作：润色、扩写、摘要、翻译
-// Reference: .dev/plan/phase3-branch-plan.md §3.8
-
-import { useT } from "@/lib/i18n";
-import { useAgentContext } from "../hooks/useAgentContext";
-import { useAgentSession } from "../hooks/useAgentSession";
-
-const QUICK_ACTION_IDS = [
-  "continueWriting",
-  "rewrite",
-  "summarize",
-  "expand",
-  "translate",
-  "styleCheck",
-  "makeFormal",
-  "explain",
-] as const;
-
-export function QuickActions() {
-  const { t } = useT();
-  const { send, isStreaming } = useAgentSession();
-  const { getSelectionContext, buildPrompt } = useAgentContext();
-
-  const handleClick = async (actionId: string) => {
-    const ctx = getSelectionContext();
-    if (!ctx) {
-      return;
-    }
-    const prompt = buildPrompt(actionId, ctx);
-    // 快捷操作使用 steer 模式：如果 Agent 正在处理任务，中断并执行新操作
-    // 不使用 enqueue，因为快捷操作期望立即响应，排队模式需要额外的队列状态管理
-    await send(prompt, isStreaming ? "steer" : "default");
-  };
-
-  return (
-    <div className="flex gap-1 px-2 py-1">
-      {QUICK_ACTION_IDS.map((id) => (
-        <button
-          className="rounded px-2 py-1 text-xs transition-colors hover:bg-accent"
-          key={id}
-          onClick={() => handleClick(id)}
-          type="button"
-        >
-          {t(`agent.action.${id}`)}
-        </button>
-      ))}
-    </div>
-  );
-}
+ // QuickActions.tsx — 快捷操作按钮组 (Quick Action Buttons)
+ // Agent 侧边栏中的 8 个快捷操作：续写、润色、摘要、扩写、翻译、风格检查、转正式、解释
+ // Reference: .dev/proto/workspace.html (agent sidebar section)
+ 
+ import { useT } from "@/lib/i18n";
+ import { useAgentContext } from "../hooks/useAgentContext";
+ import { useAgentSession } from "../hooks/useAgentSession";
+ 
+ type QuickAction = {
+   id: string;
+   icon: string;
+   shortcut?: string;
+   labelKey: string;
+ };
+ 
+ const QUICK_ACTIONS: QuickAction[] = [
+   { id: "continue", icon: "✏️", shortcut: "⌘J", labelKey: "agent.action.continueWriting" },
+   { id: "rewrite", icon: "✨", shortcut: "⌘K", labelKey: "agent.action.rewrite" },
+   { id: "summarize", icon: "📋", shortcut: "⌘⇧S", labelKey: "agent.action.summarize" },
+   { id: "expand", icon: "📝", labelKey: "agent.action.expand" },
+   { id: "translate", icon: "🌐", labelKey: "agent.action.translate" },
+   { id: "styleCheck", icon: "🔍", labelKey: "agent.action.styleCheck" },
+   { id: "makeFormal", icon: "👔", labelKey: "agent.action.makeFormal" },
+   { id: "explain", icon: "💡", labelKey: "agent.action.explain" },
+ ];
+ 
+ export function QuickActions() {
+   const { t } = useT();
+   const { send, isStreaming } = useAgentSession();
+   const { getSelectionContext, buildPrompt } = useAgentContext();
+ 
+   const handleClick = async (actionId: string) => {
+     const ctx = getSelectionContext();
+     if (!ctx) {
+       return;
+     }
+     const prompt = buildPrompt(actionId, ctx);
+     await send(prompt, isStreaming ? "steer" : "default");
+   };
+ 
+   return (
+     <div className="grid grid-cols-2 gap-1 px-2 py-2">
+       {QUICK_ACTIONS.map((action) => (
+         <button
+           className="flex items-center gap-1.5 rounded px-2 py-1.5 text-xs transition-colors hover:bg-accent"
+           key={action.id}
+           onClick={() => handleClick(action.id)}
+           type="button"
+         >
+           <span className="text-sm">{action.icon}</span>
+           <span className="flex-1 text-left">{t(action.labelKey)}</span>
+           {action.shortcut && (
+             <span className="text-muted-foreground text-[10px]">{action.shortcut}</span>
+           )}
+         </button>
+       ))}
+     </div>
+   );
+ }
+ 

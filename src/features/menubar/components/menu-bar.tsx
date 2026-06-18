@@ -16,17 +16,17 @@ import { cn } from "@/lib/utils";
 import type { MenuEntry } from "../menu-config";
 import { MENU_GROUPS } from "../menu-config";
 
-export type MenuBarCallbacks = {
-  onNew: () => void;
-  onOpen: () => void;
-  onSave: () => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onToggleOutline: () => void;
-  onToggleAgentSidebar: () => void;
-  onPageSetup: () => void;
-  onHeaderFooter: () => void;
-};
+ export type MenuBarCallbacks = {
+   onNew: () => void;
+   onOpen: () => void;
+   onSave: () => void;
+   onZoomIn: () => void;
+   onZoomOut: () => void;
+   onToggleOutline: () => void;
+   onPageSetup: () => void;
+   onHeaderFooter: () => void;
+   onToggleAgentSidebar: () => void;
+ };
 
 /** 下拉菜单渲染子组件，从 MenuBar 中抽取以降低认知复杂度 */
 function MenuDropdown({
@@ -54,11 +54,9 @@ function MenuDropdown({
               item.disabled
                 ? "cursor-not-allowed text-muted-foreground/50"
                 : "hover:bg-accent hover:text-accent-foreground",
-              item.highlight === true && !item.disabled
-                ? "font-medium text-primary"
-                : ""
+              item.highlight && "bg-primary/10 text-primary hover:bg-primary/20"
             )}
-            data-testid={item.action ? `menu-item-${item.action}` : ""}
+            data-testid={`menu-item-${item.action ?? String(idx)}`}
             disabled={item.disabled}
             key={item.action ?? `item-${String(idx)}`}
             onClick={() => onAction(item)}
@@ -88,9 +86,9 @@ export function MenuBar({
   onZoomIn,
   onZoomOut,
   onToggleOutline,
-  onToggleAgentSidebar,
   onPageSetup,
   onHeaderFooter,
+  onToggleAgentSidebar,
 }: MenuBarCallbacks) {
   const { t } = useT();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -126,6 +124,7 @@ export function MenuBar({
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [openMenuId]);
+
   const handleAction = (entry: MenuEntry) => {
     setOpenMenuId(null);
     if (entry.disabled || !entry.action) {
@@ -185,7 +184,7 @@ export function MenuBar({
       case "pageLayout:headerFooter":
         onHeaderFooter();
         break;
-      case "agent:panel":
+      case "agent:togglePanel":
         onToggleAgentSidebar();
         break;
       default:
@@ -206,7 +205,8 @@ export function MenuBar({
             className={cn(
               "rounded px-3 py-1.5 text-sm transition-colors",
               "hover:bg-accent hover:text-accent-foreground",
-              openMenuId === group.id ? "bg-accent text-accent-foreground" : ""
+              openMenuId === group.id ? "bg-accent text-accent-foreground" : "",
+              group.id === "agent" && "text-primary font-medium"
             )}
             data-testid={`menu-${group.id}`}
             onClick={() =>
