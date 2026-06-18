@@ -26,16 +26,6 @@ const PROVIDERS: { value: ApiProvider; labelKey: string }[] = [
   { value: "custom", labelKey: "settings.apiKey.custom" },
 ];
 
-/** 模型选项 */
-const MODELS: { value: string; labelKey: string }[] = [
-  { value: "claude-sonnet-4", labelKey: "Claude Sonnet 4" },
-  { value: "claude-opus-4", labelKey: "Claude Opus 4" },
-  { value: "gpt-4o", labelKey: "GPT-4o" },
-  { value: "gpt-4.1", labelKey: "GPT-4.1" },
-  { value: "gemini-2.5-pro", labelKey: "Gemini 2.5 Pro" },
-  { value: "deepseek-v3", labelKey: "DeepSeek V3" },
-];
-
 /**
  * API Key 配置区域。
  * 包含 Provider 选择、Key 输入（密码框）、Base URL、模型选择、连接测试。
@@ -71,8 +61,8 @@ export function ApiKeySection() {
   );
 
   const handleModelChange = useCallback(
-    (value: string) => {
-      saveApiConfig({ model: value });
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      saveApiConfig({ model: e.target.value });
     },
     [saveApiConfig]
   );
@@ -166,23 +156,18 @@ export function ApiKeySection() {
         />
       </div>
 
-      {/* 模型选择 */}
+      {/* 模型输入 */}
       <div className="mb-4">
         <span className="mb-1.5 block font-medium text-muted-foreground text-sm">
           {t("settings.apiKey.model")}
         </span>
-        <Select onValueChange={handleModelChange} value={apiConfig.model}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MODELS.map((m) => (
-              <SelectItem key={m.value} value={m.value}>
-                {m.labelKey}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input
+          className="w-full"
+          onChange={handleModelChange}
+          placeholder="e.g. claude-sonnet-4"
+          type="text"
+          value={apiConfig.model}
+        />
       </div>
 
       {/* 连接测试 */}
