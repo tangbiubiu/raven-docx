@@ -14,13 +14,23 @@ export function OutlinePanel() {
   const toggle = useAppStore((s) => s.toggleOutlinePanel);
   const editorBridge = useDocumentStore((s) => s.editorBridge);
   const selectionInfo = useDocumentStore((s) => s.selectionInfo);
+  // 从 store 读取响应式的大纲标题（必须在所有 early return 之前）
+  const headings = useDocumentStore((s) => s.headings);
 
   if (collapsed) {
-    return null;
+    return (
+      <button
+        className="-translate-y-1/2 absolute top-1/2 left-0 z-10 flex h-10 w-5 items-center justify-center rounded-r bg-muted hover:bg-accent"
+        onClick={toggle}
+        title={t("editor.outline.expand")}
+        type="button"
+      >
+        <span className="text-[10px] text-muted-foreground">
+          {t("editor.outline.title")}
+        </span>
+      </button>
+    );
   }
-
-  // 从 store 读取响应式的大纲标题
-  const headings = useDocumentStore((s) => s.headings);
 
   return (
     <aside

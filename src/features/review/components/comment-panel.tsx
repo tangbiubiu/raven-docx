@@ -9,7 +9,11 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useComments } from "../hooks/use-comments";
 import { CommentCard } from "./comment-card";
 
-export function CommentPanel() {
+export type CommentPanelProps = {
+  embedded?: boolean;
+};
+
+export function CommentPanel({ embedded = false }: CommentPanelProps) {
   const { t } = useT();
   const togglePanel = useAppStore((s) => s.toggleCommentPanel);
 
@@ -45,45 +49,42 @@ export function CommentPanel() {
     ? comments
     : comments.filter((c) => !c.resolved);
 
-  return (
-    <aside
-      className={cn(
-        "flex h-full w-80 flex-col border-border border-l bg-background",
-        "transition-all duration-200"
-      )}
-    >
-      {/* 标题栏 */}
-      <header className="flex items-center justify-between border-border border-b px-4 py-3">
-        <h2 className="font-semibold text-base">
-          {t("review.title")}
-          {commentCount > 0 ? (
-            <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-primary text-xs">
-              {commentCount}
-            </span>
-          ) : null}
-        </h2>
-        <button
-          aria-label={t("review.toggle")}
-          className="rounded p-1 text-muted-foreground hover:bg-accent"
-          onClick={togglePanel}
-          type="button"
-        >
-          <svg
-            aria-hidden="true"
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+  const content = (
+    <>
+      {/* 标题栏 — embedded 模式下隐藏 */}
+      {!embedded && (
+        <header className="flex items-center justify-between border-border border-b px-4 py-3">
+          <h2 className="font-semibold text-base">
+            {t("review.title")}
+            {commentCount > 0 ? (
+              <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-primary text-xs">
+                {commentCount}
+              </span>
+            ) : null}
+          </h2>
+          <button
+            aria-label={t("review.toggle")}
+            className="rounded p-1 text-muted-foreground hover:bg-accent"
+            onClick={togglePanel}
+            type="button"
           >
-            <path
-              d="M6 18L18 6M6 6l12 12"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
-          </svg>
-        </button>
-      </header>
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M6 18L18 6M6 6l12 12"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+              />
+            </svg>
+          </button>
+        </header>
+      )}
 
       {/* 添加批注区 */}
       <div className="border-border border-b p-3">
@@ -165,6 +166,23 @@ export function CommentPanel() {
           </div>
         )}
       </div>
+    </>
+  );
+
+  // embedded 模式：直接渲染内容，无 aside 外壳
+  if (embedded) {
+    return <div className="flex h-full flex-col">{content}</div>;
+  }
+
+  // 独立面板模式：保留 aside 外壳
+  return (
+    <aside
+      className={cn(
+        "flex h-full w-80 flex-col border-border border-l bg-background",
+        "transition-all duration-200"
+      )}
+    >
+      {content}
     </aside>
   );
 }

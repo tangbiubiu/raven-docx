@@ -7,10 +7,14 @@ import { useAgentContext } from "../hooks/useAgentContext";
 import { useAgentSession } from "../hooks/useAgentSession";
 
 const QUICK_ACTION_IDS = [
+  "continueWriting",
   "rewrite",
-  "expand",
   "summarize",
+  "expand",
   "translate",
+  "styleCheck",
+  "makeFormal",
+  "explain",
 ] as const;
 
 export function QuickActions() {
@@ -24,6 +28,8 @@ export function QuickActions() {
       return;
     }
     const prompt = buildPrompt(actionId, ctx);
+    // 快捷操作使用 steer 模式：如果 Agent 正在处理任务，中断并执行新操作
+    // 不使用 enqueue，因为快捷操作期望立即响应，排队模式需要额外的队列状态管理
     await send(prompt, isStreaming ? "steer" : "default");
   };
 

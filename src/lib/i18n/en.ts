@@ -12,6 +12,7 @@ export const en: Translations = {
   "dialog.no": "No",
   "dialog.saveChanges": "Save changes?",
   "dialog.discardChanges": "Discard Changes",
+  "dialog.clear": "Clear",
 
   // === Menu ===
   "menu.file": "File",
@@ -101,8 +102,15 @@ export const en: Translations = {
 
   // === Agent ===
   "agent.title": "Agent Writing Assistant",
+  "agent.welcome": "How can I help you?",
   "agent.panel.tabChat": "Chat",
   "agent.panel.tabComments": "Comments",
+  "agent.tab.chat": "Chat",
+  "agent.tab.comments": "Comments",
+  "agent.action.styleCheck": "Style Check",
+  "editor.statusBar.language": "English (US)",
+  "editor.statusBar.autoSaving": "Auto-saving",
+  "editor.outline.expand": "Expand Outline",
   "agent.input.placeholder": 'Enter a command, e.g. "Polish this text"',
   "agent.input.send": "Send",
   "agent.input.stop": "Stop",
@@ -133,6 +141,7 @@ export const en: Translations = {
   "agent.suggestion.preview": "Preview",
   "agent.context.cursorAt": "Cursor: {position}",
   "agent.context.selection": "{count} characters selected",
+  "agent.freeMode": "Open a document to enable full Agent features",
 
   // === 超链接/脚注 ===
   "hyperlink.text": "Display Text",

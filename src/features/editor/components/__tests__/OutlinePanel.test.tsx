@@ -58,9 +58,11 @@ describe("OutlinePanel", () => {
     expect(scrollToParaId).toHaveBeenCalledWith("target-para");
   });
 
-  it("collapsed 时返回 null", () => {
+  it("collapsed 时显示展开按钮", () => {
     useAppStore.setState({ outlinePanelCollapsed: true });
     const { container } = render(<OutlinePanel />);
-    expect(container.firstChild).toBeNull();
+    const button = container.querySelector("button");
+    expect(button).toBeTruthy();
+    expect(button?.getAttribute("title")).toBe("展开大纲");
   });
 });

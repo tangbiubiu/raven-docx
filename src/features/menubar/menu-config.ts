@@ -8,6 +8,7 @@ export type MenuEntry = {
   action?: string; // 动作名（由调用方 dispatch）
   disabled?: boolean; // 是否禁用
   separator?: true; // 分隔线
+  highlight?: boolean; // 是否高亮显示（用于 Agent 等核心功能）
 };
 
 /** 菜单组 */
@@ -101,7 +102,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     id: "agent",
     labelKey: "menu.agent",
     items: [
-      { labelKey: "menu.agent.panel", action: "agent:panel", disabled: true },
+      { labelKey: "menu.agent.panel", action: "agent:panel", highlight: true },
     ],
   },
   {

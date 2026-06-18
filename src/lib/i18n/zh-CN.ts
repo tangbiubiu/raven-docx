@@ -12,6 +12,7 @@ export const zhCN: Translations = {
   "dialog.no": "否",
   "dialog.saveChanges": "是否保存更改？",
   "dialog.discardChanges": "放弃更改",
+  "dialog.clear": "清空",
 
   // === 菜单 ===
   "menu.file": "文件",
@@ -102,8 +103,15 @@ export const zhCN: Translations = {
 
   // === Agent 交互 ===
   "agent.title": "Agent 写作助手",
+  "agent.welcome": "有什么我可以帮你的？",
   "agent.panel.tabChat": "对话",
   "agent.panel.tabComments": "批注",
+  "agent.tab.chat": "对话",
+  "agent.tab.comments": "批注",
+  "agent.action.styleCheck": "风格检查",
+  "editor.statusBar.language": "中文(中国)",
+  "editor.statusBar.autoSaving": "自动保存中",
+  "editor.outline.expand": "展开大纲",
   "agent.input.placeholder": "输入指令，如\u201C润色这段文字\u201D",
   "agent.input.send": "发送",
   "agent.input.stop": "停止",
@@ -134,6 +142,7 @@ export const zhCN: Translations = {
   "agent.suggestion.preview": "预览",
   "agent.context.cursorAt": "光标：{position}",
   "agent.context.selection": "已选中 {count} 字",
+  "agent.freeMode": "打开文档以启用完整 Agent 功能",
 
   // === 设置 ===
   "settings.title": "设置",

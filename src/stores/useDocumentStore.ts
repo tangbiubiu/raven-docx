@@ -76,6 +76,8 @@ export type DocumentState = {
   // --- 大纲 ---
   headings: OutlineItem[];
 
+  // --- 自动保存 ---
+  isAutoSaving: boolean;
   // --- Actions ---
   setDocument(doc: unknown, buffer: ArrayBuffer, path: string | null): void;
   setDirty(dirty: boolean): void;
@@ -88,6 +90,7 @@ export type DocumentState = {
   setCanUndoRedo(canUndo: boolean, canRedo: boolean): void;
   setHeadings(headings: OutlineItem[]): void;
   setCharCount(count: number): void;
+  setAutoSaving(saving: boolean): void;
   closeDocument(): void; // 清空所有文档状态
   createNewDocument(): void; // 进入新建空白文档模式
 };
@@ -125,6 +128,7 @@ const initialDocumentState = {
   canUndo: false,
   canRedo: false,
   headings: [],
+  isAutoSaving: false,
 } as const satisfies Partial<DocumentState>;
 
 export const useDocumentStore = create<DocumentState>((set) => ({
@@ -182,6 +186,9 @@ export const useDocumentStore = create<DocumentState>((set) => ({
     set({ charCount: count });
   },
 
+  setAutoSaving(saving) {
+    set({ isAutoSaving: saving });
+  },
   closeDocument() {
     set({
       document: null,

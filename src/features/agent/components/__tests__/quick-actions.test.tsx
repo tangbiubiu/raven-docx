@@ -58,13 +58,17 @@ describe("QuickActions", () => {
   });
 
   describe("渲染", () => {
-    it("渲染 4 个快捷按钮", () => {
+    it("渲染 8 个快捷按钮", () => {
       render(<QuickActions />);
 
+      expect(screen.getByText("续写")).toBeInTheDocument();
       expect(screen.getByText("润色")).toBeInTheDocument();
-      expect(screen.getByText("扩写")).toBeInTheDocument();
       expect(screen.getByText("摘要")).toBeInTheDocument();
+      expect(screen.getByText("扩写")).toBeInTheDocument();
       expect(screen.getByText("翻译")).toBeInTheDocument();
+      expect(screen.getByText("风格检查")).toBeInTheDocument();
+      expect(screen.getByText("更正式")).toBeInTheDocument();
+      expect(screen.getByText("解释")).toBeInTheDocument();
     });
   });
 

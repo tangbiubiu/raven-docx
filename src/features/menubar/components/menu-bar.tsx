@@ -23,6 +23,7 @@ export type MenuBarCallbacks = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleOutline: () => void;
+  onToggleAgentSidebar: () => void;
   onPageSetup: () => void;
   onHeaderFooter: () => void;
 };
@@ -52,9 +53,12 @@ function MenuDropdown({
               "flex w-full items-center justify-between rounded px-3 py-1.5 text-sm transition-colors",
               item.disabled
                 ? "cursor-not-allowed text-muted-foreground/50"
-                : "hover:bg-accent hover:text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground",
+              item.highlight === true && !item.disabled
+                ? "font-medium text-primary"
+                : ""
             )}
-            data-testid={`menu-item-${item.action ?? String(idx)}`}
+            data-testid={item.action ? `menu-item-${item.action}` : ""}
             disabled={item.disabled}
             key={item.action ?? `item-${String(idx)}`}
             onClick={() => onAction(item)}
@@ -84,6 +88,7 @@ export function MenuBar({
   onZoomIn,
   onZoomOut,
   onToggleOutline,
+  onToggleAgentSidebar,
   onPageSetup,
   onHeaderFooter,
 }: MenuBarCallbacks) {
@@ -121,7 +126,6 @@ export function MenuBar({
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [openMenuId]);
-
   const handleAction = (entry: MenuEntry) => {
     setOpenMenuId(null);
     if (entry.disabled || !entry.action) {
@@ -180,6 +184,9 @@ export function MenuBar({
         break;
       case "pageLayout:headerFooter":
         onHeaderFooter();
+        break;
+      case "agent:panel":
+        onToggleAgentSidebar();
         break;
       default:
     }

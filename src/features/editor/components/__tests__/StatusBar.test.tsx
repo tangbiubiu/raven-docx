@@ -36,4 +36,21 @@ describe("StatusBar", () => {
     render(<StatusBar />);
     expect(screen.getByText(/120%/)).toBeInTheDocument();
   });
+
+  it("显示语言标识", () => {
+    render(<StatusBar />);
+    expect(screen.getByText(/中文/)).toBeInTheDocument();
+  });
+
+  it("isAutoSaving=true 时显示自动保存中指示器", () => {
+    useDocumentStore.getState().setAutoSaving(true);
+    render(<StatusBar />);
+    expect(screen.getByText(/自动保存中/)).toBeInTheDocument();
+  });
+
+  it("isAutoSaving=false 时不显示自动保存指示器", () => {
+    useDocumentStore.getState().setAutoSaving(false);
+    render(<StatusBar />);
+    expect(screen.queryByText(/自动保存中/)).toBeNull();
+  });
 });

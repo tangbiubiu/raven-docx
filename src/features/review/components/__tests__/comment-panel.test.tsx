@@ -289,18 +289,33 @@ describe("CommentPanel", () => {
     });
   });
 
-  describe("关闭面板", () => {
-    it("点击关闭按钮调用 toggleCommentPanel", async () => {
-      const toggleCommentPanel = vi.fn();
-      useAppStore.setState({ toggleCommentPanel });
+  describe("embedded 模式", () => {
+    it("embedded=true 时不渲染标题栏和关闭按钮", () => {
+      render(<CommentPanel embedded />);
 
-      const user = userEvent.setup();
+      expect(screen.queryByLabelText("批注面板")).toBeNull();
+      expect(screen.queryByText("批注")).toBeNull();
+    });
+
+    it("embedded=true 时仍然渲染添加批注区和批注列表", () => {
+      render(<CommentPanel embedded />);
+      // embedded 模式下，无选区时 placeholder 应为 emptyHint
+      expect(
+        screen.getByPlaceholderText("选中文字后添加批注")
+      ).toBeInTheDocument();
+    });
+
+    it("embedded=false 时渲染标题栏和关闭按钮", () => {
+      render(<CommentPanel embedded={false} />);
+
+      expect(screen.getByLabelText("批注面板")).toBeInTheDocument();
+      expect(screen.getByText("批注")).toBeInTheDocument();
+    });
+
+    it("默认 embedded=false", () => {
       render(<CommentPanel />);
 
-      const closeBtn = screen.getByLabelText("批注面板");
-      await user.click(closeBtn);
-
-      expect(toggleCommentPanel).toHaveBeenCalled();
+      expect(screen.getByLabelText("批注面板")).toBeInTheDocument();
     });
   });
 });

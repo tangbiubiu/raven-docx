@@ -38,6 +38,7 @@ const defaultProps = {
   onZoomIn: vi.fn(),
   onZoomOut: vi.fn(),
   onToggleOutline: vi.fn(),
+  onToggleAgentSidebar: vi.fn(),
   onPageSetup: vi.fn(),
   onHeaderFooter: vi.fn(),
 };
@@ -137,14 +138,15 @@ describe("MenuBar", () => {
     expect(defaultProps.onToggleOutline).toHaveBeenCalledOnce();
   });
 
-  it("Agent 菜单项禁用时不触发", () => {
+  it("Agent 菜单项高亮显示", () => {
     render(<MenuBar {...defaultProps} />);
     fireEvent.click(screen.getByTestId("menu-agent"));
     const item = screen.getByTestId("menu-item-agent:panel");
+    // Agent 菜单项应该高亮（有 text-primary 类）
+    expect(item.className).toContain("text-primary");
+    // 点击应该关闭下拉菜单
     fireEvent.click(item);
-    // disabled 按钮不触发 click handler，下拉仍然展开
-    expect(screen.getByTestId("menu-dropdown-agent")).toBeTruthy();
-    expect(item.getAttribute("disabled")).toBe("");
+    expect(screen.queryByTestId("menu-dropdown-agent")).toBeNull();
   });
 
   it("显示快捷键文本", () => {

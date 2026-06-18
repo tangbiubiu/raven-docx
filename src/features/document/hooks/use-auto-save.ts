@@ -26,6 +26,7 @@ export function useAutoSave(): AutoSaveState {
   const setDocument = useDocumentStore((state) => state.setDocument);
   const setPath = useDocumentStore((state) => state.setPath);
   const setDirty = useDocumentStore((state) => state.setDirty);
+  const setAutoSaving = useDocumentStore((state) => state.setAutoSaving);
 
   // Auto-save enabled by default; toggle could be added to Settings later
   const autoSaveEnabled = true;
@@ -56,8 +57,8 @@ export function useAutoSave(): AutoSaveState {
     if (documentBuffer === null || documentPath === null || isDirty === false) {
       return;
     }
-
     setIsSaving(true);
+    setAutoSaving(true);
     try {
       const uint8Array = new Uint8Array(documentBuffer);
       const base64Buffer = btoa(String.fromCharCode(...uint8Array));
@@ -75,8 +76,9 @@ export function useAutoSave(): AutoSaveState {
       console.error("Failed to auto-save:", error);
     } finally {
       setIsSaving(false);
+      setAutoSaving(false);
     }
-  }, [documentBuffer, documentPath, isDirty, setDirty]);
+  }, [documentBuffer, documentPath, isDirty, setDirty, setAutoSaving]);
 
   // Set up periodic auto-save
   useEffect(() => {

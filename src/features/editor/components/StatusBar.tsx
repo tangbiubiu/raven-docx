@@ -16,13 +16,14 @@ export function StatusBar() {
   const totalPages = useDocumentStore((s) => s.totalPages);
   const isDirty = useDocumentStore((s) => s.isDirty);
   const charCount = useDocumentStore((s) => s.charCount);
+  const isAutoSaving = useDocumentStore((s) => s.isAutoSaving);
 
   return (
     <div
       className="flex h-7 shrink-0 items-center justify-between border-border border-t bg-muted/60 px-4 text-muted-foreground text-xs"
       data-testid="status-bar"
     >
-      {/* 左侧：保存状态 + 页码 + 字数 */}
+      {/* 左侧：保存状态 + 页码 + 字数 + 语言 + 自动保存指示 */}
       <div className="flex items-center gap-4">
         <span data-testid="dirty-status">
           {isDirty ? t("editor.statusBar.dirty") : t("editor.statusBar.saved")}
@@ -36,6 +37,13 @@ export function StatusBar() {
         <span data-testid="word-count">
           {t("editor.statusBar.wordCount", { count: charCount })}
         </span>
+        <span>{t("editor.statusBar.language")}</span>
+        {isAutoSaving && (
+          <span className="flex items-center gap-1 text-primary">
+            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary" />
+            {t("editor.statusBar.autoSaving")}
+          </span>
+        )}
       </div>
 
       {/* 右侧：缩放控制 */}
