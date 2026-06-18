@@ -74,16 +74,13 @@ pub async fn agent_get_status(manager: State<'_, AgentManager>) -> Result<AgentS
 
 /// Test API connection (temporary spawn pi + get_state)
 ///
-/// Verifies if API Key is usable. Temporarily spawns pi process,
-/// sends get_state command, verifies response, then closes.
-/// Does not keep the process.
+/// 验证 pi 能否正常启动并响应 RPC 命令。
+/// pi 使用自身配置（models.json 中的 provider/apiKey/baseUrl），
+/// 不通过 CLI 参数传递凭证。
 #[command]
 #[specta::specta]
-pub async fn agent_test_connection(
-    api_key: String,
-    base_url: Option<String>,
-) -> Result<bool, String> {
+pub async fn agent_test_connection() -> Result<bool, String> {
     use crate::pi::test_api_connection;
-    
-    test_api_connection(api_key, base_url).await
+
+    test_api_connection().await
 }

@@ -791,21 +791,19 @@ impl AgentManager {
 }
 
 
-/// 独立测试函数：验证 API Key 连接
+/// 独立测试函数：验证 pi 连接
+///
+/// 启动 pi rpc 进程，发送 get_state 命令，验证响应。
+/// pi 使用自身配置（~/.pi/agent/models.json 中的 provider/apiKey/baseUrl），
+/// 不通过 CLI 参数传递凭证——pi 不支持 --base-url 参数，
+/// 且 --api-key 需要配合 --model/--provider 使用。
+///
 /// 返回 Ok(true) 表示连接成功，Ok(false) 表示认证失败，Err 表示其他错误
-pub async fn test_api_connection(
-    api_key: String,
-    base_url: Option<String>,
-) -> Result<bool, String> {
+pub async fn test_api_connection() -> Result<bool, String> {
     use std::process::Stdio;
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
     use tokio::process::Command;
     use tokio::time::{timeout, Duration};
-
-    // 输入验证：拒绝空 API Key
-    if api_key.trim().is_empty() {
-        return Err("API Key 不能为空".to_string());
-    }
 
     // 检查是否已安装
     if !AgentManager::check_pi_installed() {
@@ -814,32 +812,30 @@ pub async fn test_api_connection(
 
     let agent_dir = AgentManager::pi_agent_dir()?;
 
-    // 构建命令
+    // 构建命令：与 spawn() 一致，不传 --api-key/--base-url
+    // pi 使用自身 models.json 中配置的 provider（含 apiKey/baseUrl）
     let mut cmd = Command::new(PI_BINARY);
     cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
     cmd.arg("--mode").arg("rpc")
         .arg("--session-dir").arg(&agent_dir)
-        .arg("--api-key").arg(&api_key);
-
-    if let Some(url) = &base_url {
-        cmd.arg("--base-url").arg(url);
-    }
+        .arg("--no-session");
 
     log::info!("[pi-test] spawn 命令: {:?}", cmd);
 
-    // spawn 进程
+    // spawn 进程（捕获 stderr 以便诊断启动失败）
     let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("spawn pi 失败: {}", e))?;
 
-    // 获取 stdin/stdout
+    // 获取 stdin/stdout/stderr
     let mut child_stdin = child.stdin.take()
         .ok_or_else(|| "无法获取 pi stdin".to_string())?;
     let child_stdout = child.stdout.take()
         .ok_or_else(|| "无法获取 pi stdout".to_string())?;
+    let mut child_stderr = child.stderr.take();
 
     // 发送 get_state 命令
     let request_id = "test_connection";
@@ -848,7 +844,7 @@ pub async fn test_api_connection(
         "id": request_id,
     });
     let json_line = format!("{}\n", cmd_json);
-    
+
     child_stdin.write_all(json_line.as_bytes()).await
         .map_err(|e| format!("写入 stdin 失败: {}", e))?;
     child_stdin.flush().await
@@ -857,12 +853,24 @@ pub async fn test_api_connection(
     // 读取响应
     let mut reader = BufReader::new(child_stdout);
     let mut line = String::new();
-    
-    let response_result = timeout(Duration::from_secs(10), async {
+
+    let response_result = timeout(Duration::from_secs(15), async {
         loop {
             line.clear();
             match reader.read_line(&mut line).await {
-                Ok(0) => return Err("pi 进程提前退出".to_string()),
+                Ok(0) => {
+                    // pi 退出，读取 stderr 获取错误信息
+                    let mut err_msg = String::new();
+                    if let Some(stderr) = child_stderr.as_mut() {
+                        use tokio::io::AsyncReadExt;
+                        let _ = stderr.read_to_string(&mut err_msg).await;
+                    }
+                    let err_msg = err_msg.trim();
+                    if err_msg.is_empty() {
+                        return Err("pi 进程提前退出（无 stderr 输出）".to_string());
+                    }
+                    return Err(format!("pi 进程退出: {}", err_msg));
+                }
                 Ok(_) => {
                     // 尝试解析为 RPC 帧
                     if let Ok(frame) = serde_json::from_str::<RpcFrame>(&line) {
@@ -910,7 +918,7 @@ pub async fn test_api_connection(
 
     match response_result {
         Ok(result) => result,
-        Err(_) => Err("连接测试超时".to_string()),
+        Err(_) => Err("连接测试超时（15s）".to_string()),
     }
 }
 

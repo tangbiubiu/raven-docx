@@ -85,15 +85,13 @@ export function useSettings() {
   /**
    * 测试 API 连接。
    * 调用 Tauri command `agent_test_connection`。
+   * pi 使用自身配置（models.json），无需传入 apiKey/baseUrl。
    *
    * @returns `true` 连接成功，`false` 失败
    */
   const testConnection = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await commands.agentTestConnection(
-        apiConfig.apiKey,
-        apiConfig.baseUrl || null,
-      );
+      const result = await commands.agentTestConnection();
       if (result.status === "ok") {
         return result.data;
       }
@@ -103,7 +101,7 @@ export function useSettings() {
       logger.error(`连接测试调用失败: ${String(err)}`);
       return false;
     }
-  }, [apiConfig.apiKey, apiConfig.baseUrl]);
+  }, []);
 
   /**
    * 从 Keychain 加载 API Key（masked）。
