@@ -49,6 +49,10 @@ bun tauri build      # Production build · 生产构建
 | State · 状态管理 | Zustand |
 | Tooling · 工具链 | Bun, Biome (ultracite), Lefthook, commitlint, Vitest |
 
-## License
+## License · 协议
 
-MIT
+MIT © Raven contributors.
+
+This project depends on [`@eigenpal/docx-editor`](https://docx-editor.dev/) packages, licensed under [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0).
+
+本项目依赖 [`@eigenpal/docx-editor`](https://docx-editor.dev/) 系列包，其遵循 [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) 协议。
