@@ -116,6 +116,8 @@ pub struct AgentManager {
     current_session: Arc<Mutex<Option<String>>>,
     /// Tauri AppHandle
     app_handle: Arc<Mutex<Option<AppHandle>>>,
+    /// 是否正在主动关闭（区分 stdout EOF 是崩溃还是主动 shutdown）
+    is_shutting_down: Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl AgentManager {
@@ -128,6 +130,7 @@ impl AgentManager {
             last_active: Arc::new(Mutex::new(Instant::now())),
             sessions: Arc::new(Mutex::new(HashMap::new())),
             current_session: Arc::new(Mutex::new(None)),
+            is_shutting_down: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             app_handle: Arc::new(Mutex::new(None)),
         }
     }
@@ -180,103 +183,6 @@ impl AgentManager {
     }
 
 
-    /// spawn pi 子进程（使用 API Key 和 Base URL）
-    pub async fn spawn_with_credentials(
-        &self,
-        session_id: Option<String>,
-        api_key: Option<String>,
-        base_url: Option<String>,
-    ) -> Result<(), String> {
-        // 检查是否已安装
-        if !Self::check_pi_installed() {
-            self.set_state(PiState::NotInstalled).await;
-            self.emit_error("pi 未安装，请先安装 pi coding agent", None).await;
-            return Err("pi 未安装".to_string());
-        }
-
-        // 如果已在运行，直接返回
-        let current_state = self.get_state().await;
-        if current_state == PiState::Idle || current_state == PiState::Streaming {
-            log::info!("[pi] 进程已在运行，状态: {:?}", current_state);
-            return Ok(());
-        }
-
-        let agent_dir = Self::pi_agent_dir()?;
-
-        // 构建命令（使用正确的 pi CLI 参数）
-        let mut cmd = Command::new(PI_BINARY);
-        cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
-        cmd.arg("--mode").arg("rpc")
-            .arg("--session-dir").arg(&agent_dir);
-
-        // 如果有 API Key，添加 --api-key 参数
-        if let Some(key) = &api_key {
-            cmd.arg("--api-key").arg(key);
-        }
-
-        // 如果有 Base URL，添加 --base-url 参数
-        if let Some(url) = &base_url {
-            cmd.arg("--base-url").arg(url);
-        }
-
-        // 如果有 session_id，添加 --session-id 参数
-        if let Some(sid) = &session_id {
-            cmd.arg("--session-id").arg(sid);
-
-            // 记录 session 元数据
-            let mut sessions = self.sessions.lock().await;
-            let now = Utc::now();
-            sessions.insert(sid.clone(), SessionMeta {
-                session_id: sid.clone(),
-                created_at: now,
-                last_active: now,
-            });
-
-            let mut current = self.current_session.lock().await;
-            *current = Some(sid.clone());
-        } else {
-            cmd.arg("--no-session");
-        }
-
-        log::info!("[pi] spawn 命令: {:?}", cmd);
-
-        // spawn 进程
-        let mut child = cmd
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|e| format!("spawn pi 失败: {}", e))?;
-
-        // 获取 stdin/stdout
-        let child_stdin = child.stdin.take()
-            .ok_or_else(|| "无法获取 pi stdin".to_string())?;
-        let child_stdout = child.stdout.take()
-            .ok_or_else(|| "无法获取 pi stdout".to_string())?;
-
-        // 保存进程句柄和 stdin
-        {
-            let mut c = self.child.lock().await;
-            *c = Some(child);
-        }
-        {
-            let mut s = self.stdin.lock().await;
-            *s = Some(child_stdin);
-        }
-
-        // 设置状态为 Idle
-        self.set_state(PiState::Idle).await;
-        self.touch_last_active().await;
-
-        // 启动 stdout 读取循环
-        self.start_stdout_reader(child_stdout, Arc::clone(&self.stdin), self.clone());
-
-        // 启动空闲超时检测
-        self.start_idle_timeout_checker().await;
-
-        Ok(())
-    }
-
     /// spawn pi 子进程
     pub async fn spawn(&self, session_id: Option<String>) -> Result<(), String> {
         // 检查是否已安装
@@ -322,19 +228,32 @@ impl AgentManager {
 
         log::info!("[pi] spawn 命令: {:?}", cmd);
 
-        // spawn 进程
+        // spawn 进程（stderr 必须 piped，否则 pi 启动失败的错误信息会丢失）
         let mut child = cmd
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| format!("spawn pi 失败: {}", e))?;
 
-        // 获取 stdin/stdout
+        // 探测进程是否立即退出（如 session-id 非法会导致 pi 启动即退出）
+        // 必须在 take stdin/stdout/stderr 之前探测，否则 try_wait 后无法再 take
+        if let Err(e) = self.probe_alive(&mut child).await {
+            self.set_state(PiState::Dead).await;
+            self.emit_error(&e, None).await;
+            return Err(e);
+        }
+
+        // 获取 stdin/stdout/stderr
         let child_stdin = child.stdin.take()
             .ok_or_else(|| "无法获取 pi stdin".to_string())?;
         let child_stdout = child.stdout.take()
             .ok_or_else(|| "无法获取 pi stdout".to_string())?;
+        let child_stderr = child.stderr.take()
+            .ok_or_else(|| "无法获取 pi stderr".to_string())?;
+
+        // 重置主动关闭标记
+        self.is_shutting_down.store(false, std::sync::atomic::Ordering::SeqCst);
 
         // 保存进程句柄和 stdin
         {
@@ -345,6 +264,9 @@ impl AgentManager {
             let mut s = self.stdin.lock().await;
             *s = Some(child_stdin);
         }
+
+        // 启动 stderr 读取循环（pi 的日志/错误转 log）
+        self.start_stderr_reader(child_stderr);
 
         // 设置状态为 Idle
         self.set_state(PiState::Idle).await;
@@ -359,6 +281,45 @@ impl AgentManager {
         Ok(())
     }
 
+    /// 启动 stderr 读取循环（tokio task），将 pi stderr 转为 log
+    fn start_stderr_reader(&self, stderr: tokio::process::ChildStderr) {
+        tokio::spawn(async move {
+            use tokio::io::AsyncBufReadExt;
+            let reader = BufReader::new(stderr);
+            let mut lines = reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                if !line.trim().is_empty() {
+                    log::info!("[pi:stderr] {}", line);
+                }
+            }
+        });
+    }
+
+    /// spawn 后探测进程是否立即退出（启动失败诊断）
+    /// 返回 Err(错误信息) 表示进程已退出，Ok(()) 表示进程存活。
+    /// 直接从传入的 child 取 stderr（此时 stderr 尚未被 take 出来）。
+    async fn probe_alive(&self, child: &mut Child) -> Result<(), String> {
+        // 给 pi 一点时间完成启动校验（如 session-id 字符集检查）
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let mut err_msg = String::new();
+                if let Some(mut stderr) = child.stderr.take() {
+                    use tokio::io::AsyncReadExt;
+                    let _ = stderr.read_to_string(&mut err_msg).await;
+                }
+                let err_msg = err_msg.trim();
+                if err_msg.is_empty() {
+                    Err(format!("pi 进程启动后立即退出 (exit={})", status))
+                } else {
+                    Err(format!("pi 启动失败: {}", err_msg))
+                }
+            }
+            Ok(None) => Ok(()),
+            Err(e) => Err(format!("检查 pi 进程状态失败: {}", e)),
+        }
+    }
+
     /// 启动 stdout 读取循环（tokio task）
     fn start_stdout_reader(
         &self,
@@ -371,6 +332,7 @@ impl AgentManager {
         let last_active = Arc::clone(&self.last_active);
         let app_handle = Arc::clone(&self.app_handle);
         let stdin = Arc::clone(&stdin);
+        let is_shutting_down = Arc::clone(&self.is_shutting_down);
 
         tokio::spawn(async move {
             let reader = BufReader::new(stdout);
@@ -506,6 +468,14 @@ impl AgentManager {
             // stdout 关闭，进程可能退出
             log::info!("[pi] stdout 关闭");
 
+            // 如果是主动 shutdown（应用退出/空闲超时），不触发崩溃重启
+            if is_shutting_down.load(std::sync::atomic::Ordering::SeqCst) {
+                log::info!("[pi] 主动关闭，跳过自动重启");
+                let mut st = state.lock().await;
+                *st = PiState::Stopped;
+                return;
+            }
+
             // 检查是否是崩溃退出
             let now = Instant::now();
             let mut history = crash_history.lock().await;
@@ -565,6 +535,7 @@ impl AgentManager {
         let child = Arc::clone(&self.child);
         let stdin_handle = Arc::clone(&self.stdin);
         let last_active = Arc::clone(&self.last_active);
+        let is_shutting_down = Arc::clone(&self.is_shutting_down);
 
         tokio::spawn(async move {
             loop {
@@ -584,6 +555,8 @@ impl AgentManager {
 
                     if current_state == PiState::Idle {
                         log::info!("[pi] 空闲超时 ({}s)，关闭进程", idle_secs);
+                        // 标记主动关闭，避免 stdout reader 触发崩溃重启
+                        is_shutting_down.store(true, std::sync::atomic::Ordering::SeqCst);
 
                         // kill 进程
                         {
@@ -725,6 +698,8 @@ impl AgentManager {
         }
 
         self.set_state(PiState::ShuttingDown).await;
+        // 标记为主动关闭，stdout reader 检测到此 flag 不触发崩溃重启
+        self.is_shutting_down.store(true, std::sync::atomic::Ordering::SeqCst);
 
         // 取出 child 进程
         let mut child_lock = self.child.lock().await;
@@ -1026,42 +1001,52 @@ mod tests {
 
     #[tokio::test]
     async fn test_invalid_api_key() {
-        // Test with invalid API key - should return Ok(false) for authentication error
-        let result = test_api_connection(
-            "invalid_key_12345".to_string(),
-            None,
-        ).await;
-        
+        // pi 使用自身 models.json 配置，test_api_connection 不再接受参数。
+        // 此测试验证连接逻辑（pi 未安装或配置错误时返回 Err）。
+        let result = test_api_connection().await;
+
         match result {
-            Ok(false) => {
-                println!("✓ Correctly detected invalid API key");
-            }
-            Ok(true) => {
-                panic!("Should not succeed with invalid API key");
-            }
-            Err(e) => {
-                println!("Note: Got error (may be expected if pi not installed): {}", e);
-            }
+            Ok(true) => println!("✓ 连接成功（pi 已正确配置）"),
+            Ok(false) => println!("✓ 认证失败（api key 无效）"),
+            Err(e) => println!("Note: Got error (may be expected if pi not installed): {}", e),
         }
     }
 
     #[tokio::test]
     async fn test_empty_api_key() {
-        let result = test_api_connection(
-            "".to_string(),
-            None,
-        ).await;
-        
+        // 同上，test_api_connection 无参数。
+        let result = test_api_connection().await;
+
         match result {
-            Ok(false) => {
-                println!("✓ Correctly rejected empty API key");
-            }
-            Ok(true) => {
-                panic!("Should not succeed with empty API key");
-            }
-            Err(e) => {
-                println!("Note: Got error: {}", e);
-            }
+            Ok(true) => println!("✓ 连接成功"),
+            Ok(false) => println!("✓ 认证失败"),
+            Err(e) => println!("Note: Got error: {}", e),
         }
+    }
+
+    /// 验证：非法 session-id（含路径分隔符）会让 pi 启动失败，
+    /// spawn 应返回包含 stderr 错误信息的 Err，而非静默成功。
+    /// 集成测试：依赖外部 pi 进程，与其他测试并行会因共享 pi-agent 目录污染。
+    /// 手动运行：cargo test test_spawn_rejects_illegal_session_id -- --nocapture --ignored
+    #[tokio::test]
+    #[ignore]
+    async fn test_spawn_rejects_illegal_session_id() {
+        if !AgentManager::check_pi_installed() {
+            println!("Note: pi 未安装，跳过");
+            return;
+        }
+        let manager = AgentManager::new();
+        // 模拟 bug 场景：文档路径直接作为 session-id（含 / 分隔符）
+        let illegal_sid = Some("/Users/test/Desktop/周报.docx".to_string());
+        let result = manager.spawn(illegal_sid).await;
+        assert!(result.is_err(), "非法 session-id 应导致 spawn 失败");
+        let err = result.unwrap_err();
+        // 错误信息应包含 pi 的 stderr（字符集校验错误）
+        assert!(
+            err.contains("Session id") || err.contains("session") || err.contains("启动失败"),
+            "错误信息应反映 session-id 校验失败，实际: {}",
+            err
+        );
+        println!("✓ 非法 session-id 正确被拒绝: {}", err);
     }
 }

@@ -21,7 +21,7 @@ export type AgentSendMode = "default" | "steer" | "enqueue";
 /**
  * useAgentSession 返回值类型
  */
-export interface UseAgentSessionReturn {
+export type UseAgentSessionReturn = {
   // 状态
   status: AgentSessionStatus;
   error: string | null;
@@ -36,7 +36,7 @@ export interface UseAgentSessionReturn {
 
   // 上下文
   contextBadge: AgentContextBadge | null;
-}
+};
 
 /**
  * useAgentSession — Agent 会话生命周期管理 Hook
@@ -123,7 +123,9 @@ export function useAgentSession(): UseAgentSessionReturn {
     }).then((unlisten) => unlisteners.push(unlisten));
 
     return () => {
-      unlisteners.forEach((u) => u());
+      for (const u of unlisteners) {
+        u();
+      }
     };
   }, [updateMessage, addMessage, finishStreaming, setStatus, setError]);
 
@@ -217,11 +219,18 @@ export function useAgentSession(): UseAgentSessionReturn {
 }
 
 /**
- * 计算文档 hash（用于 session_id）
- * 简化实现：使用路径作为 session_id
+ * 计算文档路径的 hash，用作 pi agent 的 session-id。
+ *
+ * pi 对 session-id 有字符集约束：仅允许 [a-zA-Z0-9._-]，首尾须为字母数字。
+ * 直接传文档路径会因含路径分隔符 `/` 被 pi 拒绝（启动即退出）。
+ * 这里用 SHA-256 取前 16 个 hex 字符，满足约束且足够唯一。
  */
-async function computeDocHash(path: string): Promise<string> {
-  // 简化：直接使用路径作为 session_id
-  // 完整实现应使用 crypto API 计算 hash
-  return path;
+export async function computeDocHash(path: string): Promise<string> {
+  const data = new TextEncoder().encode(path);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  // 转为 hex 字符串，取前 16 位（hex 仅含 [0-9a-f]，完全合法）
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
 }
