@@ -45,3 +45,8 @@ AGENTS.md
 .env
 .pi
 worktree
+.dev
+github
+.rules
+.vscode
+.zed
