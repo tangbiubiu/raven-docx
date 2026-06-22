@@ -4,23 +4,16 @@
   "files": {
     "includes": ["**", "!src/lib/bindings.ts", "!src/components/ui"]
   },
-  "overrides": [
-    {
-      "includes": [
-        "src/stores/**",
-        "src/hooks/**",
-        "src/lib/i18n/**",
-        "src/features/settings/**",
-        "src/features/editor/**",
-        "src/pages/**"
-      ],
-      "linter": {
-        "rules": {
-          "style": {
-            "useFilenamingConvention": "off"
+  "linter": {
+    "rules": {
+      "style": {
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["camelCase", "kebab-case", "PascalCase"]
           }
         }
       }
     }
-  ]
+  }
 }
