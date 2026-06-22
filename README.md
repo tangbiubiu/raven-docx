@@ -1,6 +1,6 @@
 # Raven · 睿文
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 [English](./README-EN.md) | 简体中文
 
@@ -51,6 +51,6 @@ bun tauri build      # 生产构建
 
 ## 协议
 
-MIT © Raven contributors.
+Apache-2.0 © Raven contributors.
 
 本项目依赖 [`@eigenpal/docx-editor`](https://docx-editor.dev/) 系列包，其遵循 [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) 协议。
