@@ -39,13 +39,13 @@ pages/
 └── WorkspacePage.tsx         # 编辑器主页面（唯一路由）
     ├── DocumentTitleBar      # 文档标题栏（文件名 + 修改标记）
     ├── MenuBar               # 菜单栏（文件、编辑、视图、插入、格式、Agent、帮助）
-    ├── Toolbar               # 格式工具栏
+    ├── Ribbon                # 多标签页功能区（开始/插入/布局/引用/审阅/视图）
     ├── MainArea
-    │   ├── OutlinePanel      # 左侧大纲面板（可折叠）
+    │   ├── OutlinePanel      # 左侧大纲面板（可调宽/可折叠/可弹出浮窗）
     │   ├── EditorPane        # DocxEditor 编辑器容器
     │   │   ├── Ruler         # 水平标尺
     │   │   └── <DocxEditor>  # @eigenpal/docx-editor-react
-    │   └── AgentSidebar      # 右侧 Agent 对话侧栏（可拖拽调整宽度）
+    │   └── AgentSidebar      # 右侧 Agent 侧栏（可调宽/可折叠/可弹出浮窗）
     ├── StatusBar             # 底部状态栏（页码、字数、缩放）
     └── SettingsDrawer        # Settings 侧边抽屉面板（从右侧滑出）
 ```
@@ -93,12 +93,46 @@ features/editor/
 ```
 features/formatting/
 ├── components/
-│   ├── Toolbar.tsx             # F-067 格式工具栏
+│   ├── (Toolbar.tsx 已移除,功能拆入 Ribbon 各标签页)
 │   ├── FontPicker.tsx          # F-031 字体选择
 │   ├── FontSizePicker.tsx      # F-032 字号选择
 │   ├── ColorPicker.tsx         # F-033~034 颜色 & 高亮
 │   └── ParagraphPanel.tsx      # F-041~047 段落格式面板
+├── constants.ts                # 共享格式常量（TEXT_MARKS/FONT_FAMILIES 等）
+├── format-apply.ts             # 格式应用工具函数（applyFont/applyFontSize 等）
 └── hooks/useFormatState.ts     # 格式状态同步（根据选区更新按钮状态）
+```
+
+### 3.3.1 编辑器功能区 `features/ribbon/` — F-067(升级)
+
+```
+features/ribbon/
+├── components/
+│   ├── Ribbon.tsx             # Ribbon 容器（tabs bar + panel）
+│   ├── RibbonGroup.tsx        # 组容器（标题 + 子元素）
+│   ├── RibbonButton.tsx       # 普通按钮
+│   ├── RibbonToggleButton.tsx # 可按压切换的按钮
+│   ├── RibbonSeparator.tsx    # 组间分隔线
+│   └── tabs/
+│       ├── HomeTab.tsx        # 开始标签页（撤销/字体/段落/样式/编辑）
+│       ├── InsertTab.tsx      # 插入标签页（表格/图片/链接/脚注/分页）
+│       ├── LayoutTab.tsx      # 布局标签页（页面设置/页眉页脚/缩进）
+│       ├── ReferencesTab.tsx  # 引用标签页（脚注/目录占位）
+│       ├── ReviewTab.tsx      # 审阅标签页（批注/字符统计）
+│       └── ViewTab.tsx        # 视图标签页（大纲/缩放/Agent）
+├── ribbon-config.ts           # 标签页配置
+└── index.ts                   # 模块导出
+```
+
+### 3.3.2 面板布局 `features/layout/`（新增）
+
+```
+features/layout/
+├── components/
+│   ├── PanelResizeHandle.tsx  # 拖拽调宽手柄（左右栏边缘）
+│   └── PanelPopover.tsx       # 弹出浮窗容器（absolute + 点击外部关闭）
+└── hooks/
+    └── useResizablePanel.ts   # 拖拽调宽逻辑（pointer events）
 ```
 
 ### 3.4 表格 `features/table/` — F-080~086
@@ -217,11 +251,10 @@ hooks/
 ### 4.3 `stores/` — 全局状态（Zustand）
 
 ```
-stores/
+├── useAppStore.ts           # 应用级状态（modals、面板宽度/折叠/浮窗、ribbon 标签页,zustand persist 持久化布局态）
 ├── useDocumentStore.ts      # 文档状态（path、isDirty、selection、zoom、pages）
 ├── useAgentStore.ts         # Agent 会话状态（messages、status、pendingAction）
-├── useSettingsStore.ts      # 全局设置（apiConfig、theme、language、editorPrefs）
-└── useAppStore.ts           # 应用级状态（activePanel、toast、modals）
+└── useSettingsStore.ts      # 全局设置（apiConfig、theme、language、editorPrefs）
 ```
 
 ### 4.4 编辑器桥接
