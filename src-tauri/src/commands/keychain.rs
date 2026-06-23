@@ -5,8 +5,15 @@
 const SERVICE_NAME: &str = "com.example.raven.api-key";
 const OLD_SERVICE_NAME: &str = "com.geex-docx.geex-docx.api-key";
 
-/// 允许的 provider 白名单
-const ALLOWED_PROVIDERS: &[&str] = &["anthropic", "openai", "openai-compatible"];
+/// 允许的 provider 白名单（与前端 ApiProvider 类型一致）
+const ALLOWED_PROVIDERS: &[&str] = &[
+    "anthropic",
+    "openai",
+    "openai-compatible",
+    "openai-completions",
+    "openai-responses",
+    "custom",
+];
 
 /// 校验 provider 合法性
 fn validate_provider(provider: &str) -> Result<(), String> {
@@ -137,6 +144,9 @@ mod tests {
         assert!(validate_provider("anthropic").is_ok());
         assert!(validate_provider("openai").is_ok());
         assert!(validate_provider("openai-compatible").is_ok());
+        assert!(validate_provider("openai-completions").is_ok());
+        assert!(validate_provider("openai-responses").is_ok());
+        assert!(validate_provider("custom").is_ok());
     }
 
     #[test]

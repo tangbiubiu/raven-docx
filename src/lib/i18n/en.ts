@@ -71,6 +71,7 @@ export const en: Translations = {
   "editor.statusBar.language": "English (US)",
   "editor.statusBar.autoSaving": "Auto-saving",
   "editor.pane.empty": "Open or create a document",
+  "editor.locked.agentWorking": "Agent working, editor locked",
   "editor.outline.title": "Outline",
   "editor.outline.empty": "No headings to navigate",
   "editor.outline.expand": "Expand outline",

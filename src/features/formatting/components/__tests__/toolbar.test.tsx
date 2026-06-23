@@ -12,7 +12,20 @@ import { Toolbar } from "../toolbar";
 // === Mock 共享命令模块 ===
 
 // Top-level hoisted constants for vi.mock factories (avoid TDZ)
-const { mockToggleMark, mockSetBlockType, mockWrapIn, mockLift, mockUndo, mockRedo, mockIndent, mockOutdent, mockInsertTable, mockInsertImage, mockInsertLink, mockInsertFootnote } = vi.hoisted(() => ({
+const {
+  mockToggleMark,
+  mockSetBlockType,
+  mockWrapIn,
+  mockLift,
+  mockUndo,
+  mockRedo,
+  mockIndent,
+  mockOutdent,
+  mockInsertTable,
+  mockInsertImage,
+  mockInsertLink,
+  mockInsertFootnote,
+} = vi.hoisted(() => ({
   mockToggleMark: vi.fn(),
   mockSetBlockType: vi.fn(),
   mockWrapIn: vi.fn(),

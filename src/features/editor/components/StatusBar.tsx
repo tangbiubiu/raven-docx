@@ -37,9 +37,7 @@ export function StatusBar() {
         <span data-testid="word-count">
           {t("editor.statusBar.wordCount", { count: charCount })}
         </span>
-        <span data-testid="language">
-          {t("editor.statusBar.language")}
-        </span>
+        <span data-testid="language">{t("editor.statusBar.language")}</span>
         {isAutoSaving && (
           <span className="text-primary" data-testid="auto-save-indicator">
             {t("editor.statusBar.autoSaving")}

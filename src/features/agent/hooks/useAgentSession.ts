@@ -4,6 +4,7 @@
 
 import { useEffect } from "react";
 import { commands } from "@/lib/bindings";
+import type { PiEventPayloads, PiEventType } from "@/lib/tauri-events";
 import { onPiEvent } from "@/lib/tauri-events";
 import type {
   AgentContextBadge,
@@ -38,11 +39,128 @@ export type UseAgentSessionReturn = {
   contextBadge: AgentContextBadge | null;
 };
 
+// ============================================================
+// 模块级事件监听器单例（引用计数）
+// ============================================================
+// useAgentSession() 被 AgentSidebar、QuickActions 等多个组件调用，
+// 但 pi 事件监听器只需注册一次。用引用计数管理：
+// 第一个实例 mount 时注册，最后一个实例 unmount 时注销。
+
+let listenerRefCount = 0;
+let listenerCleanup: (() => void) | null = null;
+
+/** 从临时文件重载文档（agent 修改后显示 tracked changes） */
+async function reloadDocument(tempPath: string): Promise<void> {
+  try {
+    const result = await commands.reloadFromTemp(tempPath);
+    if (result.status === "ok") {
+      const buffer = new Uint8Array(result.data).buffer;
+      const docState = useDocumentStore.getState();
+      docState.setDocument(null, buffer, docState.documentPath);
+    }
+  } catch (e) {
+    useAgentStore
+      .getState()
+      .setError(`文档重载失败: ${e instanceof Error ? e.message : String(e)}`);
+  } finally {
+    useAgentStore.setState({ isEditorLocked: false });
+  }
+}
+
+/** 注册 pi 事件监听器（引用计数为 1 时调用） */
+function registerListeners(): void {
+  // 用数组收集异步 unlisten 函数 + cancelled 标志
+  // 处理 onPiEvent 返回 Promise<UnlistenFn> 的生命周期
+  let cancelled = false;
+  const unlisteners: Array<() => void> = [];
+
+  function track<T extends PiEventType>(
+    type: T,
+    cb: (payload: PiEventPayloads[T]) => void
+  ): void {
+    onPiEvent(type, cb).then((unlisten) => {
+      if (cancelled) {
+        unlisten();
+      } else {
+        unlisteners.push(unlisten);
+      }
+    });
+  }
+
+  // text_delta: 流式文本增量
+  track("text_delta", (payload) => {
+    const state = useAgentStore.getState();
+    if (state.currentStreamingId) {
+      const msg = state.messages.find((m) => m.id === state.currentStreamingId);
+      if (msg) {
+        state.updateMessage(msg.id, msg.content + payload.text);
+      }
+    } else {
+      // 如果没有 currentStreamingId，创建新的 agent 消息
+      const agentMsg = createMessage("agent", payload.text, true);
+      state.addMessage(agentMsg);
+      useAgentStore.setState({ currentStreamingId: agentMsg.id });
+    }
+  });
+
+  // agent_end: 流式结束，若文档被修改则重载
+  track("agent_end", (payload) => {
+    const state = useAgentStore.getState();
+    if (state.currentStreamingId) {
+      state.finishStreaming(state.currentStreamingId);
+    }
+    state.setStatus("ready");
+
+    // 文档被修改 → 从临时文件重载
+    if (payload.documentDirty && state.tempDocPath) {
+      reloadDocument(state.tempDocPath);
+    } else {
+      useAgentStore.setState({ isEditorLocked: false });
+    }
+  });
+
+  // error: 错误事件
+  track("error", (payload) => {
+    const state = useAgentStore.getState();
+    state.setError(payload.message);
+    if (state.currentStreamingId) {
+      state.finishStreaming(state.currentStreamingId);
+    }
+    useAgentStore.setState({ isEditorLocked: false });
+  });
+
+  listenerCleanup = () => {
+    cancelled = true;
+    for (const u of unlisteners) {
+      u();
+    }
+    unlisteners.length = 0;
+    listenerCleanup = null;
+  };
+}
+
+/** 引用计数 +1，首次调用注册监听器 */
+function acquireListeners(): void {
+  listenerRefCount += 1;
+  if (listenerRefCount === 1) {
+    registerListeners();
+  }
+}
+
+/** 引用计数 -1，归零时注销监听器 */
+function releaseListeners(): void {
+  listenerRefCount = Math.max(0, listenerRefCount - 1);
+  if (listenerRefCount === 0 && listenerCleanup) {
+    listenerCleanup();
+  }
+}
+
 /**
  * useAgentSession — Agent 会话生命周期管理 Hook
  *
  * 封装 Tauri 命令调用和事件监听，提供完整的 Agent 交互能力。
  * 供 AgentSidebar、CommandPalette、QuickActions 等组件消费。
+ * 事件监听器通过模块级引用计数单例管理，多实例共享一套监听器。
  *
  * @returns UseAgentSessionReturn
  *
@@ -73,61 +191,45 @@ export function useAgentSession(): UseAgentSessionReturn {
   const setStatus = useAgentStore((s) => s.setStatus);
   const setError = useAgentStore((s) => s.setError);
   const addMessage = useAgentStore((s) => s.addMessage);
-  const updateMessage = useAgentStore((s) => s.updateMessage);
   const finishStreaming = useAgentStore((s) => s.finishStreaming);
   const clearMessages = useAgentStore((s) => s.clearMessages);
-
-  const documentPath = useDocumentStore((s) => s.documentPath);
 
   // 计算是否正在流式输出
   const isStreaming = status === "busy" && currentStreamingId !== null;
 
-  // 监听 Tauri Events
+  // 引用计数注册事件监听器（多实例共享一套）
   useEffect(() => {
-    const unlisteners: Array<() => void> = [];
+    acquireListeners();
+    return () => releaseListeners();
+  }, []);
 
-    // text_delta: 流式文本增量
-    onPiEvent("text_delta", (payload) => {
-      const state = useAgentStore.getState();
-      if (state.currentStreamingId) {
-        const msg = state.messages.find(
-          (m) => m.id === state.currentStreamingId
-        );
-        if (msg) {
-          updateMessage(msg.id, msg.content + payload.text);
-        }
-      } else {
-        // 如果没有 currentStreamingId，创建新的 agent 消息
-        const agentMsg = createMessage("agent", payload.text, true);
-        addMessage(agentMsg);
-        useAgentStore.setState({ currentStreamingId: agentMsg.id });
-      }
-    }).then((unlisten) => unlisteners.push(unlisten));
-
-    // agent_end: 流式结束
-    onPiEvent("agent_end", () => {
-      const state = useAgentStore.getState();
-      if (state.currentStreamingId) {
-        finishStreaming(state.currentStreamingId);
-      }
-      setStatus("ready");
-    }).then((unlisten) => unlisteners.push(unlisten));
-
-    // error: 错误事件
-    onPiEvent("error", (payload) => {
-      setError(payload.message);
-      const state = useAgentStore.getState();
-      if (state.currentStreamingId) {
-        finishStreaming(state.currentStreamingId);
-      }
-    }).then((unlisten) => unlisteners.push(unlisten));
-
-    return () => {
-      for (const u of unlisteners) {
-        u();
-      }
-    };
-  }, [updateMessage, addMessage, finishStreaming, setStatus, setError]);
+  /** 保存当前文档 buffer 到临时文件，返回路径（无文档时返回 null） */
+  async function prepareTempDoc(): Promise<string | null> {
+    const docState = useDocumentStore.getState();
+    const hasDocument =
+      Boolean(docState.documentBuffer) || docState.isNewDocument;
+    if (!(hasDocument && docState.editorBridge)) {
+      return null;
+    }
+    const buffer = await docState.editorBridge.save();
+    if (!buffer) {
+      return null;
+    }
+    const name = docState.documentPath ? null : "untitled";
+    const result = await commands.saveBufferToTemp(
+      Array.from(new Uint8Array(buffer)),
+      docState.documentPath,
+      name
+    );
+    if (result.status !== "ok") {
+      return null;
+    }
+    useAgentStore.setState({
+      tempDocPath: result.data,
+      isEditorLocked: true,
+    });
+    return result.data;
+  }
 
   /**
    * 发送 prompt 给 Agent
@@ -149,20 +251,35 @@ export function useAgentSession(): UseAgentSessionReturn {
     setError(null);
 
     try {
+      // 准备临时文档：保存当前 buffer 到临时文件，设为 RAVEN_DOCX_PATH
+      const tempPath = await prepareTempDoc();
+      const docState = useDocumentStore.getState();
+
       // 计算 session_id（文档 hash）
-      const sessionId = documentPath
-        ? await computeDocHash(documentPath)
+      const sessionId = docState.documentPath
+        ? await computeDocHash(docState.documentPath)
         : null;
 
-      const result = await commands.agentSend(prompt, mode, sessionId);
+      const result = await commands.agentSend(
+        prompt,
+        mode,
+        sessionId,
+        tempPath
+      );
       if (result.status === "error") {
         throw new Error(result.error);
       }
       return result.data;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
+      // 凭证未配置时设置特殊状态，前端显示引导 UI
+      if (errorMsg.includes("凭证未配置")) {
+        setStatus("not_configured");
+      }
       setError(errorMsg);
       finishStreaming(agentMsg.id);
+      // 错误时解锁编辑器
+      useAgentStore.setState({ isEditorLocked: false });
       throw err;
     }
   };

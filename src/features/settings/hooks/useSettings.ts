@@ -35,16 +35,21 @@ export function useSettings() {
   /**
    * 保存 API 配置。
    * apiKey 会写入系统 Keychain，其余字段写入 localStorage。
+   * 保存后自动同步凭证到 pi 隔离配置目录（auth.json/models.json/settings.json）。
    */
   const saveApiConfig = useCallback(
     async (config: Partial<ApiConfig>) => {
       setApiConfig(config);
 
+      const effectiveProvider = config.provider ?? apiConfig.provider;
+      const effectiveBaseUrl = config.baseUrl ?? apiConfig.baseUrl;
+      const effectiveModel = config.model ?? apiConfig.model;
+
       // 如果提供了 apiKey 且非空，写入 Keychain
       if (config.apiKey !== undefined) {
         try {
           await invoke(CMD_SET_API_KEY, {
-            provider: config.provider ?? apiConfig.provider,
+            provider: effectiveProvider,
             key: config.apiKey,
           });
           logger.debug("API Key 已写入系统 Keychain");
@@ -53,9 +58,27 @@ export function useSettings() {
         }
       }
 
+      // 同步凭证到 pi 隔离配置目录
+      try {
+        await commands.syncCredentialsToPi(
+          effectiveProvider,
+          effectiveBaseUrl,
+          effectiveModel
+        );
+        logger.debug("凭证已同步到 pi 配置目录");
+      } catch (err) {
+        logger.error(`同步凭证到 pi 失败: ${String(err)}`);
+      }
+
       await persist();
     },
-    [apiConfig.provider, setApiConfig, persist]
+    [
+      apiConfig.provider,
+      apiConfig.baseUrl,
+      apiConfig.model,
+      setApiConfig,
+      persist,
+    ]
   );
 
   /**

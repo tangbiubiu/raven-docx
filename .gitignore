@@ -46,6 +46,10 @@ AGENTS.md
 .pi
 worktree
 .dev
+# 内置 pi 二进制（由 scripts/fetch-pi.ts 按需拉取）
+src-tauri/resources/pi/
+# extension 子包的 lock 文件（由 bun install 按需生成）
+src-tauri/resources/pi-extensions/*/bun.lock
 github
 .rules
 .vscode

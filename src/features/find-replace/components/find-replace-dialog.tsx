@@ -66,11 +66,7 @@ export function FindReplaceDialog() {
       <div className="w-full max-w-md rounded-lg border bg-background p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-lg">{t("findReplace.title")}</h2>
-          <Button
-            onClick={closeModal}
-            size="icon"
-            variant="ghost"
-          >
+          <Button onClick={closeModal} size="icon" variant="ghost">
             <X className="h-4 w-4" />
           </Button>
         </div>

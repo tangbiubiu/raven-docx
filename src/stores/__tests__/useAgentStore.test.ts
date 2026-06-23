@@ -184,6 +184,8 @@ describe("useAgentStore", () => {
       store.setError("test error");
       store.addMessage(createMessage("user", "Hi"));
       store.setContextBadge({ text: "光标: §1", type: "cursor" });
+      store.setEditorLocked(true);
+      store.setTempDocPath("/tmp/test.docx");
 
       store.reset();
 
@@ -193,6 +195,44 @@ describe("useAgentStore", () => {
       expect(state.messages).toEqual([]);
       expect(state.contextBadge).toBeNull();
       expect(state.currentStreamingId).toBeNull();
+      expect(state.isEditorLocked).toBe(false);
+      expect(state.tempDocPath).toBeNull();
+    });
+  });
+
+  describe("文档锁定", () => {
+    it("isEditorLocked 初始为 false", () => {
+      expect(useAgentStore.getState().isEditorLocked).toBe(false);
+    });
+
+    it("tempDocPath 初始为 null", () => {
+      expect(useAgentStore.getState().tempDocPath).toBeNull();
+    });
+
+    it("setEditorLocked 设置锁定状态", () => {
+      useAgentStore.getState().setEditorLocked(true);
+      expect(useAgentStore.getState().isEditorLocked).toBe(true);
+      useAgentStore.getState().setEditorLocked(false);
+      expect(useAgentStore.getState().isEditorLocked).toBe(false);
+    });
+
+    it("setTempDocPath 设置临时文档路径", () => {
+      useAgentStore.getState().setTempDocPath("/tmp/.agent-tmp-test.docx");
+      expect(useAgentStore.getState().tempDocPath).toBe(
+        "/tmp/.agent-tmp-test.docx"
+      );
+      useAgentStore.getState().setTempDocPath(null);
+      expect(useAgentStore.getState().tempDocPath).toBeNull();
+    });
+
+    it("reset 重置锁定状态和临时路径", () => {
+      useAgentStore.getState().setEditorLocked(true);
+      useAgentStore.getState().setTempDocPath("/tmp/test.docx");
+
+      useAgentStore.getState().reset();
+
+      expect(useAgentStore.getState().isEditorLocked).toBe(false);
+      expect(useAgentStore.getState().tempDocPath).toBeNull();
     });
   });
 

@@ -2,20 +2,21 @@
 // 完整的 Agent 交互界面：消息列表、流式渲染、输入框、错误状态
 // Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.8
 
- import { useEffect, useRef, useState } from "react";
- import { useT } from "@/lib/i18n";
- import { cn } from "@/lib/utils";
- import type { AgentMessage } from "@/stores/useAgentStore";
- import { useAppStore } from "@/stores/useAppStore";
- import { useDocumentStore } from "@/stores/useDocumentStore";
- import { CommentPanel } from "@/features/review/components/comment-panel";
- import { useAgentSession } from "../hooks/useAgentSession";
- import { QuickActions } from "./quick-actions";
+import { useEffect, useRef, useState } from "react";
+import { CommentPanel } from "@/features/review/components/comment-panel";
+import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import type { AgentMessage } from "@/stores/useAgentStore";
+import { useAppStore } from "@/stores/useAppStore";
+import { useDocumentStore } from "@/stores/useDocumentStore";
+import { useAgentSession } from "../hooks/useAgentSession";
+import { QuickActions } from "./quick-actions";
 
 export function AgentSidebar() {
   const { t } = useT();
   const open = useAppStore((s) => s.agentSidebarOpen);
   const toggle = useAppStore((s) => s.toggleAgentSidebar);
+  const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
   const documentPath = useDocumentStore((s) => s.documentPath);
 
   const {
@@ -111,26 +112,26 @@ export function AgentSidebar() {
         {/* Tab 切换 */}
         <div className="ml-auto flex gap-0.5">
           <button
-            type="button"
-            onClick={() => setActiveTab("chat")}
             className={cn(
               "rounded px-2 py-0.5 text-[11px] transition-colors",
               activeTab === "chat"
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
+            onClick={() => setActiveTab("chat")}
+            type="button"
           >
             {t("agent.tab.chat")}
           </button>
           <button
-            type="button"
-            onClick={() => setActiveTab("comments")}
             className={cn(
               "rounded px-2 py-0.5 text-[11px] transition-colors",
               activeTab === "comments"
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
+            onClick={() => setActiveTab("comments")}
+            type="button"
           >
             {t("agent.tab.comments")}
           </button>
@@ -138,7 +139,7 @@ export function AgentSidebar() {
 
         {/* 上下文徽章 */}
         {contextBadge && (
-          <span className="shrink-0 whitespace-nowrap rounded-full bg-primary/15 px-2 py-0.5 font-mono text-primary text-[10px]">
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[10px] text-primary">
             {contextBadge.text}
           </span>
         )}
@@ -196,26 +197,10 @@ export function AgentSidebar() {
           {/* 消息列表 */}
           <div className="flex-1 space-y-4 overflow-y-auto p-3">
             {messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-                <div>
-                  <svg
-                    className="mx-auto mb-3 h-12 w-12 opacity-50"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                    />
-                  </svg>
-                  <p className="text-sm">
-                    {t("agent.welcome") || "有什么我可以帮你的？"}
-                  </p>
-                </div>
-              </div>
+              <EmptyState
+                onConfigure={() => setSettingsDrawerOpen(true)}
+                status={status}
+              />
             ) : (
               <>
                 {messages.map((msg) => (
@@ -339,6 +324,7 @@ function StatusIndicator({ status }: { status: string }) {
     ready: "bg-green-400",
     busy: "bg-blue-400 animate-pulse",
     error: "bg-red-400",
+    not_configured: "bg-orange-400",
   };
 
   return (
@@ -372,6 +358,73 @@ function MessageBubble({ message }: { message: AgentMessage }) {
             <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current" />
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** 空状态：凭证未配置引导 / 默认欢迎 */
+function EmptyState({
+  status,
+  onConfigure,
+}: {
+  status: string;
+  onConfigure: () => void;
+}) {
+  const { t } = useT();
+
+  if (status === "not_configured") {
+    return (
+      <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+        <div className="space-y-3">
+          <svg
+            className="mx-auto h-12 w-12 opacity-50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+            />
+          </svg>
+          <p className="text-sm">
+            {t("agent.notConfigured") ||
+              "Raven 需要配置 AI 模型才能使用 Agent 功能"}
+          </p>
+          <button
+            className="rounded bg-primary px-4 py-1.5 text-primary-foreground text-sm hover:bg-primary/90"
+            onClick={onConfigure}
+            type="button"
+          >
+            {t("agent.goConfigure") || "去配置"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+      <div>
+        <svg
+          className="mx-auto mb-3 h-12 w-12 opacity-50"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+          />
+        </svg>
+        <p className="text-sm">
+          {t("agent.welcome") || "有什么我可以帮你的？"}
+        </p>
       </div>
     </div>
   );

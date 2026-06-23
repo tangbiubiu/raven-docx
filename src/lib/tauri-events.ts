@@ -11,6 +11,7 @@ export type PiEventType =
   | "text_delta"
   | "tool_call"
   | "tool_result"
+  | "tool_execution"
   | "agent_end"
   | "error";
 
@@ -21,7 +22,8 @@ export type PiEventPayloads = {
   text_delta: { text: string };
   tool_call: { name: string; args: object };
   tool_result: { name: string; result: object };
-  agent_end: Record<string, never>;
+  tool_execution: { toolName: string; isError: boolean };
+  agent_end: { documentDirty: boolean };
   error: { message: string };
 };
 

@@ -2,12 +2,12 @@
 // 单页面应用的唯一页面，编排所有面板和弹层
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
- import { useEffect, useRef } from "react";
- import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
- import { CommandPalette } from "@/features/agent/components/command-palette";
+import { useEffect, useRef } from "react";
+import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
+import { CommandPalette } from "@/features/agent/components/command-palette";
+import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
 import { useAutoSave } from "@/features/document/hooks/use-auto-save";
 import { useDocument } from "@/features/document/hooks/useDocument";
-import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
@@ -21,6 +21,7 @@ import { PageSetupDialog } from "@/features/page-layout/components/PageSetupDial
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { VariableForm } from "@/features/template/components/variable-form";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
+import { commands } from "@/lib/bindings";
 import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
@@ -52,12 +53,26 @@ export default function WorkspacePage() {
 
   const documentBuffer = useDocumentStore((s) => s.documentBuffer);
   const isNewDocument = useDocumentStore((s) => s.isNewDocument);
+  const documentPath = useDocumentStore((s) => s.documentPath);
   const zoom = useDocumentStore((s) => s.zoom);
   const setZoom = useDocumentStore((s) => s.setZoom);
 
   const { newDocument, openDocument, saveDocument } = useDocument();
   useAutoSave();
 
+  // 文档切换时关闭 pi 进程（丢弃旧对话历史，状态干净）
+  const prevDocPathRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (
+      prevDocPathRef.current !== undefined &&
+      prevDocPathRef.current !== documentPath
+    ) {
+      commands.agentShutdown().catch(() => {
+        // 忽略关闭错误（进程可能已停止）
+      });
+    }
+    prevDocPathRef.current = documentPath;
+  }, [documentPath]);
   // 确保首次启动自动打开仅触发一次
   const autoOpenedRef = useRef(false);
 

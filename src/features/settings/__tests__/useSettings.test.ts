@@ -174,7 +174,8 @@ describe("useSettings", () => {
       clearMocks();
       mockIPC((cmd) => {
         if (cmd === "plugin:log|log") return;
-        if (cmd === "agent_test_connection") throw new Error("Connection refused");
+        if (cmd === "agent_test_connection")
+          throw new Error("Connection refused");
         return null;
       });
 

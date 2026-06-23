@@ -226,5 +226,4 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       currentPage: 1,
     });
   },
-
 }));

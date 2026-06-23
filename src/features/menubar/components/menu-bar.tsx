@@ -16,17 +16,17 @@ import { cn } from "@/lib/utils";
 import type { MenuEntry } from "../menu-config";
 import { MENU_GROUPS } from "../menu-config";
 
- export type MenuBarCallbacks = {
-   onNew: () => void;
-   onOpen: () => void;
-   onSave: () => void;
-   onZoomIn: () => void;
-   onZoomOut: () => void;
-   onToggleOutline: () => void;
-   onPageSetup: () => void;
-   onHeaderFooter: () => void;
-   onToggleAgentSidebar: () => void;
- };
+export type MenuBarCallbacks = {
+  onNew: () => void;
+  onOpen: () => void;
+  onSave: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onToggleOutline: () => void;
+  onPageSetup: () => void;
+  onHeaderFooter: () => void;
+  onToggleAgentSidebar: () => void;
+};
 
 /** 下拉菜单渲染子组件，从 MenuBar 中抽取以降低认知复杂度 */
 function MenuDropdown({
@@ -206,7 +206,7 @@ export function MenuBar({
               "rounded px-3 py-1.5 text-sm transition-colors",
               "hover:bg-accent hover:text-accent-foreground",
               openMenuId === group.id ? "bg-accent text-accent-foreground" : "",
-              group.id === "agent" && "text-primary font-medium"
+              group.id === "agent" && "font-medium text-primary"
             )}
             data-testid={`menu-${group.id}`}
             onClick={() =>

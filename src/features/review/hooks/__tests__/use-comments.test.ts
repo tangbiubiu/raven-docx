@@ -4,8 +4,8 @@
 
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useDocumentStore } from "@/stores/useDocumentStore";
 import type { EditorBridge } from "@/stores/useDocumentStore";
+import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useComments } from "../use-comments";
 
 describe("useComments", () => {

@@ -10,7 +10,8 @@ export type AgentSessionStatus =
   | "connecting"
   | "ready"
   | "busy"
-  | "error";
+  | "error"
+  | "not_configured";
 
 /** Agent 消息角色 */
 export type AgentMessageRole = "user" | "agent" | "system";
@@ -45,6 +46,10 @@ export type AgentState = {
   // --- 流式 ---
   currentStreamingId: string | null; // 正在流式输出的消息 ID
 
+  // --- 文档锁定 ---
+  isEditorLocked: boolean; // agent 工作时锁定编辑器
+  tempDocPath: string | null; // 当前 agent 工作的临时文档路径
+
   // --- Actions ---
   setStatus(status: AgentSessionStatus): void;
   setError(error: string | null): void;
@@ -52,6 +57,8 @@ export type AgentState = {
   updateMessage(id: string, content: string): void; // 流式追加
   finishStreaming(id: string): void;
   setContextBadge(badge: AgentContextBadge | null): void;
+  setEditorLocked(locked: boolean): void;
+  setTempDocPath(path: string | null): void;
   clearMessages(): void;
   reset(): void; // 断开连接时重置
 };
@@ -86,6 +93,8 @@ const initialAgentState = {
   messages: [],
   contextBadge: null,
   currentStreamingId: null,
+  isEditorLocked: false,
+  tempDocPath: null,
 } as const satisfies Partial<AgentState>;
 
 export const useAgentStore = create<AgentState>((set, get) => ({
@@ -126,6 +135,14 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     set({ contextBadge: badge });
   },
 
+  setEditorLocked(locked) {
+    set({ isEditorLocked: locked });
+  },
+
+  setTempDocPath(path) {
+    set({ tempDocPath: path });
+  },
+
   clearMessages() {
     set({ messages: [], currentStreamingId: null });
   },
@@ -137,6 +154,8 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       messages: [],
       contextBadge: null,
       currentStreamingId: null,
+      isEditorLocked: false,
+      tempDocPath: null,
     });
   },
 }));

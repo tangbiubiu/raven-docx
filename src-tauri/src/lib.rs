@@ -19,12 +19,16 @@ pub fn run() {
             commands::keychain::get_api_key_masked,
             commands::keychain::set_api_key,
             commands::keychain::delete_api_key,
+            commands::credentials::sync_credentials_to_pi,
             commands::system::get_system_info,
             commands::pi_agent::agent_spawn,
             commands::pi_agent::agent_send,
             commands::pi_agent::agent_abort,
             commands::pi_agent::agent_get_status,
             commands::pi_agent::agent_test_connection,
+            commands::pi_agent::save_buffer_to_temp,
+            commands::pi_agent::reload_from_temp,
+            commands::pi_agent::agent_shutdown,
         ])
         .error_handling(ErrorHandlingMode::Result);
 

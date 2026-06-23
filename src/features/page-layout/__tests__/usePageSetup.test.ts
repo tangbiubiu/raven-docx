@@ -1,10 +1,11 @@
 // features/page-layout/__tests__/usePageSetup.test.ts — 页面设置 Hook 测试
 // 测试读取和设置页面布局属性
 
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { usePageSetup } from "../hooks/usePageSetup";
 import { PAPER_PRESETS } from "../types";
+
 // vi.mock 被 hoisted，闭包变量需通过 vi.hoisted 声明
 const { mockGetLayout, mockGetAgent } = vi.hoisted(() => ({
   mockGetLayout: vi.fn(),
@@ -21,8 +22,7 @@ vi.mock("@/stores/useDocumentStore", () => {
     };
     return selector ? selector(state) : state;
   });
-  (mockStore as unknown as Record<string, unknown>).getState = () => ({
-  });
+  (mockStore as unknown as Record<string, unknown>).getState = () => ({});
   return { useDocumentStore: mockStore };
 });
 

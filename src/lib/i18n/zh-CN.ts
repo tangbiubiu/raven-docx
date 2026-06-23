@@ -71,6 +71,7 @@ export const zhCN: Translations = {
   "editor.statusBar.language": "中文(中国)",
   "editor.statusBar.autoSaving": "自动保存中",
   "editor.pane.empty": "打开或新建一个文档",
+  "editor.locked.agentWorking": "Agent 工作中，编辑器已锁定",
   "editor.outline.title": "大纲",
   "editor.outline.empty": "暂无可导航标题",
   "editor.outline.expand": "展开大纲",

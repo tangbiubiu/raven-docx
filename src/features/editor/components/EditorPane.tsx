@@ -5,6 +5,7 @@
 import { createEmptyDocument, DocxEditor } from "@eigenpal/docx-editor-react";
 import { useEffect } from "react";
 import { useT } from "@/lib/i18n";
+import { useAgentStore } from "@/stores/useAgentStore";
 import { useEditorBridge } from "../hooks/useEditorBridge";
 export type EditorPaneProps = {
   /** 已打开的文档 OOXML 字节 */
@@ -21,6 +22,7 @@ export type EditorPaneProps = {
  */
 export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
   const { t } = useT();
+  const isEditorLocked = useAgentStore((s) => s.isEditorLocked);
   const {
     editorRef,
     injectBridge,
@@ -54,11 +56,17 @@ export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
   const docBuffer = documentBuffer ?? null;
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
+      {isEditorLocked ? (
+        <div className="bg-primary/10 px-3 py-1 text-center text-primary text-xs">
+          {t("editor.locked.agentWorking")}
+        </div>
+      ) : null}
       <DocxEditor
         document={docProp}
         documentBuffer={docBuffer}
         onChange={handleChange}
         onSelectionChange={handleSelectionChange}
+        readOnly={isEditorLocked}
         ref={editorRef}
         showMarginGuides={false}
         showOutline={false}

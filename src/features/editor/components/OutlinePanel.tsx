@@ -19,13 +19,16 @@ export function OutlinePanel() {
   if (collapsed) {
     return (
       <button
-        type="button"
-        onClick={toggle}
         aria-label={t("editor.outline.expand")}
-        className="flex h-full w-[22px] shrink-0 items-center justify-center border-border border-r bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        className="flex h-full w-[22px] shrink-0 items-center justify-center border-border border-r bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        onClick={toggle}
         title={t("editor.outline.expand")}
+        type="button"
       >
-        <span className="text-[11px] font-medium" style={{ writingMode: "vertical-rl" }}>
+        <span
+          className="font-medium text-[11px]"
+          style={{ writingMode: "vertical-rl" }}
+        >
           {t("editor.outline.title")}
         </span>
       </button>
