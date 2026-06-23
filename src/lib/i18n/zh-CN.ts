@@ -107,6 +107,55 @@ export const zhCN: Translations = {
   "format.outdent": "减少缩进",
   "format.clearFormat": "清除格式",
 
+  // === Ribbon 标签页 ===
+  "ribbon.tab.home": "开始",
+  "ribbon.tab.insert": "插入",
+  "ribbon.tab.layout": "布局",
+  "ribbon.tab.references": "引用",
+  "ribbon.tab.review": "审阅",
+  "ribbon.tab.view": "视图",
+
+  // === Ribbon 组标题 ===
+  "ribbon.group.undo": "撤销",
+  "ribbon.group.font": "字体",
+  "ribbon.group.paragraph": "段落",
+  "ribbon.group.styles": "样式",
+  "ribbon.group.editing": "编辑",
+  "ribbon.group.table": "表格",
+  "ribbon.group.image": "图片",
+  "ribbon.group.link": "链接",
+  "ribbon.group.footnote": "脚注",
+  "ribbon.group.toc": "目录",
+  "ribbon.group.page": "页面",
+  "ribbon.group.pageSetup": "页面设置",
+  "ribbon.group.headerFooter": "页眉页脚",
+  "ribbon.group.indent": "缩进",
+  "ribbon.group.comments": "批注",
+  "ribbon.group.proofing": "校对",
+  "ribbon.group.view": "视图",
+  "ribbon.group.zoom": "缩放",
+  "ribbon.group.agent": "Agent",
+
+  // === Ribbon 按钮(新增项,复用项不重复) ===
+  "ribbon.button.newComment": "新建批注",
+  "ribbon.button.wordCount": "字符统计",
+  "ribbon.button.pageBreak": "分页符",
+  "ribbon.button.ruler": "标尺",
+  "ribbon.button.toc": "目录",
+  "ribbon.charCount.title": "字符统计",
+  "ribbon.charCount.chars": "字符数",
+  "ribbon.charCount.close": "关闭",
+
+  // === 面板布局(可调宽/折叠/弹出) ===
+  "panel.resize.outline": "拖拽调整大纲面板宽度",
+  "panel.resize.agent": "拖拽调整 Agent 面板宽度",
+  "panel.collapse.outline": "折叠大纲面板",
+  "panel.expand.outline": "展开大纲面板",
+  "panel.collapse.agent": "折叠 Agent 面板",
+  "panel.expand.agent": "展开 Agent 面板",
+  "panel.float.outline": "大纲(浮窗)",
+  "panel.float.agent": "Agent(浮窗)",
+
   // === Agent 交互 ===
   "agent.title": "Agent 写作助手",
   "agent.welcome": "有什么我可以帮你的？",

@@ -107,6 +107,55 @@ export const en: Translations = {
   "format.outdent": "Decrease Indent",
   "format.clearFormat": "Clear Formatting",
 
+  // === Ribbon Tabs ===
+  "ribbon.tab.home": "Home",
+  "ribbon.tab.insert": "Insert",
+  "ribbon.tab.layout": "Layout",
+  "ribbon.tab.references": "References",
+  "ribbon.tab.review": "Review",
+  "ribbon.tab.view": "View",
+
+  // === Ribbon Group Titles ===
+  "ribbon.group.undo": "Undo",
+  "ribbon.group.font": "Font",
+  "ribbon.group.paragraph": "Paragraph",
+  "ribbon.group.styles": "Styles",
+  "ribbon.group.editing": "Editing",
+  "ribbon.group.table": "Table",
+  "ribbon.group.image": "Image",
+  "ribbon.group.link": "Link",
+  "ribbon.group.footnote": "Footnote",
+  "ribbon.group.toc": "Table of Contents",
+  "ribbon.group.page": "Page",
+  "ribbon.group.pageSetup": "Page Setup",
+  "ribbon.group.headerFooter": "Header & Footer",
+  "ribbon.group.indent": "Indent",
+  "ribbon.group.comments": "Comments",
+  "ribbon.group.proofing": "Proofing",
+  "ribbon.group.view": "View",
+  "ribbon.group.zoom": "Zoom",
+  "ribbon.group.agent": "Agent",
+
+  // === Ribbon Buttons ===
+  "ribbon.button.newComment": "New Comment",
+  "ribbon.button.wordCount": "Character Count",
+  "ribbon.button.pageBreak": "Page Break",
+  "ribbon.button.ruler": "Ruler",
+  "ribbon.button.toc": "Table of Contents",
+  "ribbon.charCount.title": "Character Count",
+  "ribbon.charCount.chars": "Characters",
+  "ribbon.charCount.close": "Close",
+
+  // === Panel Layout (resizable/collapse/float) ===
+  "panel.resize.outline": "Drag to resize outline panel",
+  "panel.resize.agent": "Drag to resize agent panel",
+  "panel.collapse.outline": "Collapse outline panel",
+  "panel.expand.outline": "Expand outline panel",
+  "panel.collapse.agent": "Collapse agent panel",
+  "panel.expand.agent": "Expand agent panel",
+  "panel.float.outline": "Outline (floating)",
+  "panel.float.agent": "Agent (floating)",
+
   // === Agent ===
   "agent.title": "Agent Writing Assistant",
   "agent.welcome": "How can I help you?",
