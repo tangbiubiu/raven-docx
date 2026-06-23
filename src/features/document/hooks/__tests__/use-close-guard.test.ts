@@ -23,7 +23,6 @@ vi.mock("@/lib/tauri-events", () => ({
     }
   ),
 }));
-
 // mock @/lib/bindings — useCloseGuard 调用 commands.deleteTempFile
 vi.mock("@/lib/bindings", () => ({
   commands: {
@@ -36,6 +35,13 @@ vi.mock("@/lib/bindings", () => ({
   },
 }));
 
+// mock @tauri-apps/api/window — useCloseGuard 调用 getCurrentWindow().close()
+const mockCloseWindow = vi.fn();
+vi.mock("@tauri-apps/api/window", () => ({
+  getCurrentWindow: () => ({ close: mockCloseWindow }),
+}));
+
+import { commands } from "@/lib/bindings";
 import { useCloseGuard } from "../use-close-guard";
 
 describe("useCloseGuard", () => {
@@ -106,7 +112,7 @@ describe("useCloseGuard", () => {
     expect(saveFn).not.toHaveBeenCalled();
   });
 
-  it("handleSave 调用 saveDocument 并关闭对话框", async () => {
+  it("handleSave 调用 saveDocument 并关闭窗口", async () => {
     useDocumentStore
       .getState()
       .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
@@ -134,11 +140,41 @@ describe("useCloseGuard", () => {
 
     expect(saveFn).toHaveBeenCalledOnce();
     expect(result.current.confirmOpen).toBe(false);
-    // 保存后 isDirty 应为 false
     expect(useDocumentStore.getState().isDirty).toBe(false);
+    // 保存成功后应关闭窗口
+    expect(mockCloseWindow).toHaveBeenCalledOnce();
   });
 
-  it("handleDiscard 关闭对话框并标记为不再 dirty", async () => {
+  it("handleSave 保存失败时不关闭窗口", async () => {
+    useDocumentStore
+      .getState()
+      .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
+    useDocumentStore.getState().setDirty(true);
+
+    const saveFn = vi.fn().mockResolvedValue(false);
+    const { result } = renderHook(() =>
+      useCloseGuard({ saveDocument: saveFn })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const event = { preventDefault: vi.fn() };
+    await act(async () => {
+      await capturedHandler?.(event);
+    });
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    // 保存失败 → 不关闭窗口，保持 dirty
+    expect(mockCloseWindow).not.toHaveBeenCalled();
+    expect(useDocumentStore.getState().isDirty).toBe(true);
+  });
+
+  it("handleDiscard 放弃更改并关闭窗口", async () => {
     useDocumentStore
       .getState()
       .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
@@ -159,13 +195,15 @@ describe("useCloseGuard", () => {
     });
 
     expect(result.current.confirmOpen).toBe(true);
-    act(() => {
-      result.current.handleDiscard();
+    await act(async () => {
+      await result.current.handleDiscard();
     });
 
     expect(saveFn).not.toHaveBeenCalled();
     expect(result.current.confirmOpen).toBe(false);
     expect(useDocumentStore.getState().isDirty).toBe(false);
+    // 放弃更改后应关闭窗口
+    expect(mockCloseWindow).toHaveBeenCalledOnce();
   });
 
   it("handleCancel 关闭对话框且保持 dirty", async () => {
@@ -224,7 +262,6 @@ describe("useCloseGuard", () => {
 
     // isDirty=false → 放行关闭 → 删除临时文件
     expect(event.preventDefault).not.toHaveBeenCalled();
-    const { commands } = await import("@/lib/bindings");
     expect(commands.deleteTempFile).toHaveBeenCalledWith(
       "/test/.agent-tmp-doc.docx"
     );
@@ -248,7 +285,6 @@ describe("useCloseGuard", () => {
       await capturedHandler?.(event);
     });
 
-    const { commands } = await import("@/lib/bindings");
     expect(commands.deleteTempFile).not.toHaveBeenCalled();
   });
 
@@ -272,7 +308,6 @@ describe("useCloseGuard", () => {
     });
 
     // 阻止关闭 → 不删除临时文件（用户可能取消，agent 仍需使用）
-    const { commands } = await import("@/lib/bindings");
     expect(commands.deleteTempFile).not.toHaveBeenCalled();
   });
 });

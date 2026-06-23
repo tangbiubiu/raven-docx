@@ -19,6 +19,12 @@ type UseCloseGuardReturn = {
   handleCancel: () => void;
 };
 
+/** 关闭窗口（触发 close-requested 事件，由 onCloseRequested 放行）。 */
+async function closeWindow(): Promise<void> {
+  const { getCurrentWindow } = await import("@tauri-apps/api/window");
+  await getCurrentWindow().close();
+}
+
 /**
  * useCloseGuard — 拦截窗口关闭请求，保护未保存的数据。
  *
@@ -26,10 +32,8 @@ type UseCloseGuardReturn = {
  * 1. 窗口关闭请求触发 → 检查 isDirty
  * 2. isDirty=false → 放行关闭 + 清理 agent 临时文件
  * 3. isDirty=true → preventDefault() 阻止关闭，打开确认对话框
- * 4. 用户选择：保存（写回后关闭流程重新放行）/ 放弃（标记 non-dirty）/ 取消（保持 dirty）
- *
- * 注意：保存和放弃不会自动关闭窗口——用户需再次触发关闭。
- * 这避免在异步保存过程中窗口被销毁的竞态。
+ * 4. 保存成功 / 放弃 → setDirty(false) + closeWindow() 重新触发关闭流程
+ * 5. 取消 → 保持 dirty，用户继续编辑
  */
 export function useCloseGuard({
   saveDocument,
@@ -66,13 +70,18 @@ export function useCloseGuard({
     const ok = await saveDocument();
     if (ok) {
       useDocumentStore.getState().setDirty(false);
+      setConfirmOpen(false);
+      // 保存成功 → 重新触发关闭（isDirty=false → 放行 + 清理临时文件）
+      await closeWindow();
     }
-    setConfirmOpen(false);
+    // 保存失败 → 保持对话框打开，用户可重试或取消
   };
 
   const handleDiscard = (): void => {
     useDocumentStore.getState().setDirty(false);
     setConfirmOpen(false);
+    // 放弃更改 → 重新触发关闭（isDirty=false → 放行 + 清理临时文件）
+    closeWindow();
   };
 
   const handleCancel = (): void => {
