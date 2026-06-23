@@ -14,7 +14,6 @@ import { QuickActions } from "./quick-actions";
 
 export function AgentSidebar() {
   const { t } = useT();
-  const open = useAppStore((s) => s.agentSidebarOpen);
   const toggle = useAppStore((s) => s.toggleAgentSidebar);
   const setSettingsDrawerOpen = useAppStore((s) => s.setSettingsDrawerOpen);
   const documentPath = useDocumentStore((s) => s.documentPath);
@@ -67,42 +66,13 @@ export function AgentSidebar() {
     }
   };
 
-  // 未打开侧边栏时显示折叠按钮
-  if (!open) {
-    return (
-      <button
-        aria-label={t("agent.title")}
-        className="flex w-8 shrink-0 items-center justify-center border-border border-l bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-        onClick={toggle}
-        title={t("agent.title")}
-        type="button"
-      >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
-      </button>
-    );
-  }
-
   // 无文档打开时的自由模式
   const isFreeMode = !documentPath;
 
   return (
     <aside
       aria-label={t("agent.title")}
-      className={cn(
-        "flex w-[380px] shrink-0 flex-col border-border border-l bg-background"
-      )}
+      className="flex h-full w-full flex-col border-border border-l bg-background"
     >
       {/* Agent 标题栏 + Tab 切换 */}
       <div className="flex items-center gap-2 border-border border-b px-3 py-2">

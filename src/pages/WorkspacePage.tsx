@@ -15,11 +15,14 @@ import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
 import { StatusBar } from "@/features/editor/components/StatusBar";
 import { FindReplaceDialog } from "@/features/find-replace/components/find-replace-dialog";
-import { Toolbar } from "@/features/formatting/components/toolbar";
+import { PanelPopover } from "@/features/layout/components/PanelPopover";
+import { PanelResizeHandle } from "@/features/layout/components/PanelResizeHandle";
 import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
 import { MenuBar } from "@/features/menubar/components/menu-bar";
 import { HeaderFooterEditor } from "@/features/page-layout/components/HeaderFooterEditor";
 import { PageSetupDialog } from "@/features/page-layout/components/PageSetupDialog";
+import { Ribbon } from "@/features/ribbon";
+import type { RibbonCallbacks } from "@/features/ribbon/components/Ribbon";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { VariableForm } from "@/features/template/components/variable-form";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
@@ -36,8 +39,8 @@ const ZOOM_MAX = 200;
 /**
  * WorkspacePage — 编辑器主页面。
  *
- * 布局层次（对齐原型图）：
- *  DocumentTitleBar → MenuBar → Toolbar → Main(Outline | Ruler+Editor) → StatusBar
+ * 布局层次：
+ *  DocumentTitleBar → MenuBar → Ribbon → Main(Outline|Float | Ruler+Editor | Agent|Float) → StatusBar
  */
 export default function WorkspacePage() {
   const { t } = useT();
@@ -49,6 +52,16 @@ export default function WorkspacePage() {
   const activeModal = useAppStore((s) => s.activeModal);
   const openModal = useAppStore((s) => s.openModal);
   const closeModal = useAppStore((s) => s.closeModal);
+  const outlinePanelCollapsed = useAppStore((s) => s.outlinePanelCollapsed);
+  const agentSidebarOpen = useAppStore((s) => s.agentSidebarOpen);
+  const outlineWidth = useAppStore((s) => s.outlineWidth);
+  const setOutlineWidth = useAppStore((s) => s.setOutlineWidth);
+  const agentWidth = useAppStore((s) => s.agentWidth);
+  const setAgentWidth = useAppStore((s) => s.setAgentWidth);
+  const outlineFloatOpen = useAppStore((s) => s.outlineFloatOpen);
+  const setOutlineFloatOpen = useAppStore((s) => s.setOutlineFloatOpen);
+  const agentFloatOpen = useAppStore((s) => s.agentFloatOpen);
+  const setAgentFloatOpen = useAppStore((s) => s.setAgentFloatOpen);
 
   const isLoaded = useSettingsStore((s) => s.isLoaded);
   const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
@@ -145,6 +158,19 @@ export default function WorkspacePage() {
     onToggleAgentSidebar: toggleAgentSidebar,
   };
 
+  // Ribbon 回调(扩展 menuCallbacks + 批注/分页符)
+  const ribbonCallbacks: RibbonCallbacks = {
+    ...menuCallbacks,
+    onNewComment: () => {
+      useAppStore.getState().setAgentSidebarOpen(true);
+      useAppStore.getState().setCommentPanelOpen(true);
+    },
+    onInsertPageBreak: () => {
+      const bridge = useDocumentStore.getState().editorBridge;
+      bridge?.applyFormatting?.({ insertPageBreak: true });
+    },
+  };
+
   return (
     <div className="flex h-screen w-screen flex-col bg-background text-foreground">
       {/* 文档标题栏 — 文件操作 + 文档状态 + 主题切换 */}
@@ -174,18 +200,101 @@ export default function WorkspacePage() {
       {/* 菜单栏 */}
       <MenuBar {...menuCallbacks} />
 
-      {/* 主内容区 — OutlinePanel + Ruler + DocxEditor + AgentSidebar */}
-      <main className="flex flex-1 overflow-hidden">
-        <OutlinePanel />
+      {/* Ribbon 功能区(替代旧 Toolbar)/ Ribbon (replaces Toolbar) */}
+      <Ribbon {...ribbonCallbacks} />
+
+      {/* 主内容区 — 可调宽三栏 + 折叠浮窗 / Resizable three-column + collapse popover */}
+      <main className="relative flex flex-1 overflow-hidden">
+        {/* 左栏:大纲(展开态可调宽 / 折叠态竖条 + 浮窗)*/}
+        {outlinePanelCollapsed ? (
+          <>
+            <button
+              aria-label={t("panel.expand.outline")}
+              className="flex h-full w-[22px] shrink-0 items-center justify-center border-border border-r bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              onClick={() => setOutlineFloatOpen(true)}
+              title={t("panel.expand.outline")}
+              type="button"
+            >
+              <span
+                className="text-[11px]"
+                style={{ writingMode: "vertical-rl" }}
+              >
+                {t("editor.outline.title")}
+              </span>
+            </button>
+            {/* 折叠态浮窗 / Collapse popover */}
+            <PanelPopover
+              onClose={() => setOutlineFloatOpen(false)}
+              open={outlineFloatOpen}
+              side="left"
+              width={outlineWidth}
+            >
+              <OutlinePanel />
+            </PanelPopover>
+          </>
+        ) : (
+          <>
+            <div className="shrink-0" style={{ width: outlineWidth }}>
+              <OutlinePanel />
+            </div>
+            <PanelResizeHandle
+              currentWidth={outlineWidth}
+              labelKey="panel.resize.outline"
+              onResize={setOutlineWidth}
+              side="left"
+            />
+          </>
+        )}
+
+        {/* 中栏:标尺 + 编辑器 / Ruler + Editor */}
         <div className="relative flex flex-1 flex-col overflow-hidden">
-          <Toolbar />
           <Ruler />
           <EditorPane
             documentBuffer={documentBuffer}
             isNewDocument={isNewDocument}
           />
         </div>
-        <AgentSidebar />
+
+        {/* 右栏:Agent(展开态可调宽 / 折叠态竖条 + 浮窗)*/}
+        {agentSidebarOpen ? (
+          <>
+            <PanelResizeHandle
+              currentWidth={agentWidth}
+              labelKey="panel.resize.agent"
+              onResize={setAgentWidth}
+              side="right"
+            />
+            <div className="shrink-0" style={{ width: agentWidth }}>
+              <AgentSidebar />
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              aria-label={t("panel.expand.agent")}
+              className="flex h-full w-8 shrink-0 items-center justify-center border-border border-l bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              onClick={() => setAgentFloatOpen(true)}
+              title={t("panel.expand.agent")}
+              type="button"
+            >
+              <span
+                className="text-[11px]"
+                style={{ writingMode: "vertical-rl" }}
+              >
+                {t("agent.title")}
+              </span>
+            </button>
+            {/* 折叠态浮窗 / Collapse popover */}
+            <PanelPopover
+              onClose={() => setAgentFloatOpen(false)}
+              open={agentFloatOpen}
+              side="right"
+              width={agentWidth}
+            >
+              <AgentSidebar />
+            </PanelPopover>
+          </>
+        )}
       </main>
       <StatusBar />
 

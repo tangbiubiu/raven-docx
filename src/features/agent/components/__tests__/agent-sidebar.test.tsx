@@ -10,7 +10,6 @@ import { useDocumentStore } from "@/stores/useDocumentStore";
 import { AgentSidebar } from "../agent-sidebar";
 
 // Regex patterns for accessibility and text matching
-const AGENT_REGEX = /Agent/;
 const AGENT_FEATURE_REGEX = /Agent 功能/;
 // Mock hooks
 vi.mock("../../hooks/useAgentSession", () => ({
@@ -53,12 +52,6 @@ describe("AgentSidebar", () => {
   });
 
   describe("阶段1：核心布局", () => {
-    it("侧边栏关闭时显示折叠按钮", () => {
-      useAppStore.setState({ agentSidebarOpen: false });
-      render(<AgentSidebar />);
-      expect(screen.getByLabelText(AGENT_REGEX)).toBeInTheDocument();
-    });
-
     it("侧边栏打开时显示对话/批注 Tab", () => {
       render(<AgentSidebar />);
       expect(screen.getByText("对话")).toBeInTheDocument();
