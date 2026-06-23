@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 type RibbonButtonProps = {
   /** 按钮内容(图标 + 文字)/ Content */
   children: ReactNode;
-  /** 点击回调 / Click handler */
-  onClick: () => void;
+  /** 点击回调 / Click handler(可选,disabled 按钮可省略) */
+  onClick?: () => void;
   /** 是否禁用 / Disabled */
   disabled?: boolean;
   /** aria-label / title */
