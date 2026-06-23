@@ -57,6 +57,10 @@ async function reloadDocument(tempPath: string): Promise<void> {
       const buffer = new Uint8Array(result.data).buffer;
       const docState = useDocumentStore.getState();
       docState.setDocument(null, buffer, docState.documentPath);
+      // agent 修改了文档内容（tracked changes/comments），
+      // 但这些修改只存在于临时文件中，原文件尚未写回。
+      // 标记 isDirty=true，提示用户保存，避免关闭时丢失 agent 修改。
+      docState.setDirty(true);
     }
   } catch (e) {
     useAgentStore

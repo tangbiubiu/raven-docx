@@ -52,7 +52,8 @@ export function useAutoSave(): AutoSaveState {
     }
   }, [setDocument, setPath, setDirty]);
 
-  // Auto-save implementation
+  // Auto-save implementation — 将当前 buffer 存为 localStorage 草稿（用于崩溃恢复）
+  // 注意：草稿保存 ≠ 文件保存，不清除 isDirty（原文件仍与内容不一致）
   const saveDocument = useCallback(() => {
     if (documentBuffer === null || documentPath === null || isDirty === false) {
       return;
@@ -71,14 +72,13 @@ export function useAutoSave(): AutoSaveState {
 
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
       setLastSaveTime(Date.now());
-      setDirty(false);
     } catch (error) {
       console.error("Failed to auto-save:", error);
     } finally {
       setIsSaving(false);
       setAutoSaving(false);
     }
-  }, [documentBuffer, documentPath, isDirty, setDirty, setAutoSaving]);
+  }, [documentBuffer, documentPath, isDirty, setAutoSaving]);
 
   // Set up periodic auto-save
   useEffect(() => {
