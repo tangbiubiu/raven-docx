@@ -21,9 +21,14 @@ type UseCloseGuardReturn = {
 
 /** 清理临时文件并强制销毁窗口（destroy 不触发 close-requested，避免递归）。 */
 async function cleanupAndDestroy(): Promise<void> {
-  const { tempDocPath } = useAgentStore.getState();
-  if (tempDocPath) {
-    await commands.deleteTempFile(tempDocPath);
+  // 清理临时文件——失败不阻断窗口关闭
+  try {
+    const { tempDocPath } = useAgentStore.getState();
+    if (tempDocPath) {
+      await commands.deleteTempFile(tempDocPath);
+    }
+  } catch {
+    // 临时文件清理失败不阻断关闭
   }
   const { getCurrentWindow } = await import("@tauri-apps/api/window");
   await getCurrentWindow().destroy();
@@ -75,14 +80,19 @@ export function useCloseGuard({
   }, []);
 
   const handleSave = async (): Promise<void> => {
-    const ok = await saveDocument();
-    if (ok) {
+    try {
+      const ok = await saveDocument();
+      if (!ok) {
+        return;
+      }
       useDocumentStore.getState().setDirty(false);
       setConfirmOpen(false);
-      // 保存成功 → 清理临时文件 + 销毁窗口
-      await cleanupAndDestroy();
+    } catch {
+      // 保存失败 → 保持对话框打开，用户可重试或取消
+      return;
     }
-    // 保存失败 → 保持对话框打开，用户可重试或取消
+    // 保存成功 → 清理临时文件 + 销毁窗口（即使清理失败也要关闭）
+    await cleanupAndDestroy();
   };
 
   const handleDiscard = (): void => {
