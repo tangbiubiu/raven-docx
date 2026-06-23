@@ -92,7 +92,7 @@ vi.mock("@/lib/tauri-events", () => ({
   ),
 }));
 
-// mock @/lib/bindings — reloadDocument 调用 commands.reloadFromTemp
+// mock @/lib/bindings — reloadDocument 调用 reloadFromTemp + saveDocx
 vi.mock("@/lib/bindings", () => ({
   commands: {
     reloadFromTemp: vi.fn(
@@ -101,8 +101,17 @@ vi.mock("@/lib/bindings", () => ({
         data: [1, 2, 3, 4], // 模拟 agent 修改后的 docx 字节
       })
     ),
+    saveDocx: vi.fn(
+      async (
+        _path: string,
+        _data: number[]
+      ): Promise<{ status: "ok"; data: undefined }> => ({
+        status: "ok" as const,
+        data: undefined,
+      })
+    ),
   },
-}))
+}));
 
 // 需要在 mock 之后 import
 import { useAgentSession } from "../useAgentSession";
@@ -208,22 +217,15 @@ describe("useAgentSession — 事件监听器生命周期", () => {
 
     hook1.unmount();
     hook2.unmount();
-    for (const r of resolveQueue) {
-      r();
-    }
-    await act(async () => {
-      await Promise.resolve();
-    });
   });
 });
-
 // ============================================================
-// agent_end + documentDirty — reloadDocument 行为测试
+// agent_end + documentDirty — reloadDocument 自动落盘测试
 // ============================================================
-// Bug: agent 修改文档后 reloadDocument 调用 setDocument(null, buffer, path)，
-// setDocument 会设 isDirty=false。但 agent 的修改只在临时文件中，
-// 原文件未更新 → 标题栏显示"已保存"，关闭时不提示保存 → agent 修改丢失。
-// 修复：reloadDocument 后应设 isDirty=true，提示用户保存。
+// Bug: agent 修改文档后 reloadDocument 只更新内存 buffer，原文件未写回。
+// 关闭 Raven 侧边栏/窗口时修改丢失，但 localStorage 草稿保留了 buffer，
+// 导致「再次打开 Raven 修改还在，但 Word/WPS 打开原文件看不到修改」。
+// 修复：reloadDocument 读回 buffer 后自动写回原文件，isDirty=false。
 
 describe("useAgentSession — agent_end documentDirty 重载", () => {
   beforeEach(() => {
@@ -231,19 +233,14 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
     resolveQueue = [];
     useAgentStore.getState().reset();
     useDocumentStore.getState().closeDocument();
-  });
-
-  afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("documentDirty=true 时重载文档后 isDirty 应为 true", async () => {
+  it("documentDirty=true 时自动写回原文件，isDirty 为 false", async () => {
     // 准备：打开一个文档
-    useDocumentStore.getState().setDocument(
-      null,
-      new ArrayBuffer(4),
-      "/test/doc.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
     expect(useDocumentStore.getState().isDirty).toBe(false);
 
     // 挂载 hook 注册监听器
@@ -268,20 +265,71 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
       documentDirty: boolean;
     }) => void;
 
-    // 触发 agent_end（documentDirty=true → reloadDocument）
+    // 触发 agent_end（documentDirty=true → reloadDocument → 自动落盘）
     await act(async () => {
       agentEndCb({ documentDirty: true });
+      await Promise.resolve();
+      await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
 
     // 期望：buffer 已更新为 reloadFromTemp 返回的数据
-    expect(useDocumentStore.getState().documentBuffer).toBeInstanceOf(ArrayBuffer);
+    expect(useDocumentStore.getState().documentBuffer).toBeInstanceOf(
+      ArrayBuffer
+    );
     expect(
-      new Uint8Array(useDocumentStore.getState().documentBuffer ?? new ArrayBuffer(0))
+      new Uint8Array(
+        useDocumentStore.getState().documentBuffer ?? new ArrayBuffer(0)
+      )
     ).toEqual(new Uint8Array([1, 2, 3, 4]));
 
-    // 核心断言：agent 修改了文档，isDirty 应为 true（原文件未写回）
+    // 核心断言：saveDocx 被调用，写回原文件
+    const { commands } = await import("@/lib/bindings");
+    const mockSaveDocx = vi.mocked(commands.saveDocx);
+    expect(mockSaveDocx).toHaveBeenCalledOnce();
+    expect(mockSaveDocx.mock.calls[0]?.[0]).toBe("/test/doc.docx");
+    expect(mockSaveDocx.mock.calls[0]?.[1]).toEqual([1, 2, 3, 4]);
+
+    // 已落盘 → isDirty 应为 false
+    expect(useDocumentStore.getState().isDirty).toBe(false);
+
+    unmount();
+    for (const r of resolveQueue) r();
+  });
+
+  it("documentDirty=true 但 documentPath=null（新建文档）时不写回，isDirty=true", async () => {
+    // 准备：新建文档（无 documentPath）
+    useDocumentStore.getState().setDocument(null, new ArrayBuffer(4), null);
+    useAgentStore.setState({ tempDocPath: "/tmp/.agent-tmp-doc.docx" });
+
+    const { unmount } = renderHook(() => useAgentSession());
+    for (const r of resolveQueue) r();
+    resolveQueue = [];
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const { onPiEvent } = await import("@/lib/tauri-events");
+    const mockOnPiEvent = vi.mocked(onPiEvent);
+    const agentEndCb = mockOnPiEvent.mock.calls.find(
+      (c) => c[0] === "agent_end"
+    )?.[1] as (p: { documentDirty: boolean }) => void;
+
+    await act(async () => {
+      agentEndCb({ documentDirty: true });
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // 新建文档无路径 → 不调用 saveDocx
+    const { commands } = await import("@/lib/bindings");
+    const mockSaveDocx = vi.mocked(commands.saveDocx);
+    expect(mockSaveDocx).not.toHaveBeenCalled();
+
+    // 未落盘 → isDirty=true，提示用户手动另存为
     expect(useDocumentStore.getState().isDirty).toBe(true);
 
     unmount();
@@ -289,11 +337,9 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
   });
 
   it("documentDirty=false 时不重载文档，isDirty 保持 false", async () => {
-    useDocumentStore.getState().setDocument(
-      null,
-      new ArrayBuffer(4),
-      "/test/doc.docx"
-    );
+    useDocumentStore
+      .getState()
+      .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
 
     const { unmount } = renderHook(() => useAgentSession());
     for (const r of resolveQueue) r();

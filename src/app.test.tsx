@@ -16,7 +16,8 @@ vi.mock("@eigenpal/docx-editor-react", () => {
 });
 // Mock tauri-events to prevent useAgentSession from setting up real event listeners
 vi.mock("@/lib/tauri-events", () => ({
-  onPiEvent: () => Promise.resolve(() => {}),
+  onPiEvent: () => Promise.resolve(vi.fn()),
+  onCloseRequested: () => Promise.resolve(vi.fn()),
 }));
 
 describe("App", () => {

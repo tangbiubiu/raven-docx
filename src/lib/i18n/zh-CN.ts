@@ -12,6 +12,8 @@ export const zhCN: Translations = {
   "dialog.no": "否",
   "dialog.saveChanges": "是否保存更改？",
   "dialog.discardChanges": "放弃更改",
+  "dialog.unsavedTitle": "是否保存更改？",
+  "dialog.unsavedMessage": "文档有未保存的更改，关闭窗口将丢失这些修改。",
   "dialog.clear": "清空",
 
   // === 菜单 ===

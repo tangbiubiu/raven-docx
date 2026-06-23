@@ -6,7 +6,9 @@ import { useEffect, useRef } from "react";
 import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
 import { CommandPalette } from "@/features/agent/components/command-palette";
 import { DocumentTitleBar } from "@/features/document/components/document-title-bar";
+import { UnsavedConfirmDialog } from "@/features/document/components/unsaved-confirm-dialog";
 import { useAutoSave } from "@/features/document/hooks/use-auto-save";
+import { useCloseGuard } from "@/features/document/hooks/use-close-guard";
 import { useDocument } from "@/features/document/hooks/useDocument";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
@@ -59,6 +61,7 @@ export default function WorkspacePage() {
 
   const { newDocument, openDocument, saveDocument } = useDocument();
   useAutoSave();
+  const closeGuard = useCloseGuard({ saveDocument });
 
   // 文档切换时关闭 pi 进程（丢弃旧对话历史，状态干净）
   const prevDocPathRef = useRef<string | null | undefined>(undefined);
@@ -218,6 +221,13 @@ export default function WorkspacePage() {
 
       {/* FindReplaceDialog */}
       {activeModal === "findReplace" ? <FindReplaceDialog /> : null}
+      {/* 窗口关闭未保存确认 */}
+      <UnsavedConfirmDialog
+        onCancel={closeGuard.handleCancel}
+        onDiscard={closeGuard.handleDiscard}
+        onSave={closeGuard.handleSave}
+        open={closeGuard.confirmOpen}
+      />
     </div>
   );
 }

@@ -12,6 +12,9 @@ export const en: Translations = {
   "dialog.no": "No",
   "dialog.saveChanges": "Save changes?",
   "dialog.discardChanges": "Discard Changes",
+  "dialog.unsavedTitle": "Save changes?",
+  "dialog.unsavedMessage":
+    "The document has unsaved changes. Closing the window will lose them.",
   "dialog.clear": "Clear",
 
   // === Menu ===

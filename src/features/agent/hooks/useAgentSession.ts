@@ -49,17 +49,36 @@ export type UseAgentSessionReturn = {
 let listenerRefCount = 0;
 let listenerCleanup: (() => void) | null = null;
 
-/** 从临时文件重载文档（agent 修改后显示 tracked changes） */
+/** 从临时文件重载文档（agent 修改后显示 tracked changes）。
+ * 读回 buffer 后自动写回原文件——agent 修改即落盘，
+ * 避免关闭 Raven/窗口时原文件未更新导致修改丢失。
+ */
 async function reloadDocument(tempPath: string): Promise<void> {
   try {
     const result = await commands.reloadFromTemp(tempPath);
-    if (result.status === "ok") {
-      const buffer = new Uint8Array(result.data).buffer;
-      const docState = useDocumentStore.getState();
-      docState.setDocument(null, buffer, docState.documentPath);
-      // agent 修改了文档内容（tracked changes/comments），
-      // 但这些修改只存在于临时文件中，原文件尚未写回。
-      // 标记 isDirty=true，提示用户保存，避免关闭时丢失 agent 修改。
+    if (result.status !== "ok") {
+      return;
+    }
+    const data = result.data;
+    const buffer = new Uint8Array(data).buffer;
+    const docState = useDocumentStore.getState();
+    const { documentPath } = docState;
+
+    // 更新内存 buffer（编辑器重载 tracked changes）
+    docState.setDocument(null, buffer, documentPath);
+
+    // 写回原文件——agent 修改即落盘
+    if (documentPath) {
+      const saveResult = await commands.saveDocx(documentPath, data);
+      if (saveResult.status === "ok") {
+        docState.setDirty(false);
+      } else {
+        // 写回失败：保留 isDirty=true，提示用户手动保存
+        docState.setDirty(true);
+        useAgentStore.getState().setError(`自动保存失败: ${saveResult.error}`);
+      }
+    } else {
+      // 新建文档无路径，无法自动落盘，标记 dirty 提示用户另存为
       docState.setDirty(true);
     }
   } catch (e) {

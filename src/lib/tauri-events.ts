@@ -50,20 +50,33 @@ export function onPiEvent<T extends PiEventType>(
 }
 
 /**
+ * Tauri 窗口关闭请求事件。
+ * 调用 `preventDefault()` 阻止窗口关闭。
+ */
+export type CloseRequestedEvent = {
+  preventDefault(): void;
+};
+
+/**
  * 监听 Tauri 窗口关闭请求。
- * 回调中可执行异步保存操作，Tauri 会等待 Promise resolve。
+ * 回调中可执行异步保存操作；调用 `event.preventDefault()` 阻止关闭。
  *
  * @example
  * ```ts
- * onCloseRequested(async () => {
- *   if (isDirty) await saveDocument();
+ * const unlisten = await onCloseRequested(async (event) => {
+ *   if (isDirty) {
+ *     event.preventDefault();
+ *     // 弹确认对话框...
+ *   }
  * });
  * ```
  */
-export function onCloseRequested(
-  callback: () => Promise<void>
+export async function onCloseRequested(
+  callback: (event: CloseRequestedEvent) => Promise<void>
 ): Promise<UnlistenFn> {
-  return listen("tauri://close-requested", async () => {
-    await callback();
-  });
+  const { getCurrentWindow } = await import("@tauri-apps/api/window");
+  return getCurrentWindow().onCloseRequested(
+    (event: { preventDefault: () => void }) =>
+      callback({ preventDefault: () => event.preventDefault() })
+  );
 }
