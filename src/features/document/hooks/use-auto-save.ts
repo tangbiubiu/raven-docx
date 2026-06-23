@@ -15,6 +15,38 @@ type AutoSaveState = {
   lastSaveTime: number | null;
 };
 
+type RecoverFns = {
+  setDocument: (doc: null, buffer: ArrayBuffer, path: string) => void;
+  setPath: (path: string) => void;
+  setDirty: (dirty: boolean) => void;
+};
+
+/** 从磁盘原文件恢复文档，失败回退到草稿 buffer。 */
+async function recoverDocument(fns: RecoverFns): Promise<void> {
+  const draftJson = localStorage.getItem(DRAFT_KEY);
+  if (!draftJson) return;
+
+  const draft: DraftData = JSON.parse(draftJson);
+  if (!draft.path) return;
+
+  const draftBuffer = Uint8Array.from(atob(draft.buffer), (c) =>
+    c.charCodeAt(0)
+  ).buffer;
+
+  try {
+    const { readFile } = await import("@tauri-apps/plugin-fs");
+    const data = await readFile(draft.path);
+    fns.setDocument(null, data.buffer as ArrayBuffer, draft.path);
+    fns.setPath(draft.path);
+    fns.setDirty(false);
+  } catch {
+    // 磁盘文件不存在/不可读 → 回退到草稿 buffer（崩溃恢复）
+    fns.setDocument(null, draftBuffer as ArrayBuffer, draft.path);
+    fns.setPath(draft.path);
+    fns.setDirty(true);
+  }
+}
+
 /**
  * Hook for managing automatic document saving
  * Implements periodic auto-save and draft recovery
@@ -34,22 +66,27 @@ export function useAutoSave(): AutoSaveState {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<number | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Recover draft on mount
+  // 启动恢复：优先从磁盘读原文件，失败才回退到草稿 buffer。
   useEffect(() => {
-    try {
-      const draftJson = localStorage.getItem(DRAFT_KEY);
-      if (!draftJson) return;
-      const draft: DraftData = JSON.parse(draftJson);
-      const buffer = Uint8Array.from(atob(draft.buffer), (c) =>
-        c.charCodeAt(0)
-      ).buffer;
-      setDocument(null, buffer as ArrayBuffer, draft.path);
-      setPath(draft.path);
-      setDirty(false);
-    } catch {
-      // Draft recovery failed, ignore
-    }
+    let cancelled = false;
+
+    recoverDocument({
+      setDocument: (doc, buffer, path) => {
+        if (!cancelled) setDocument(doc, buffer, path);
+      },
+      setPath: (path) => {
+        if (!cancelled) setPath(path);
+      },
+      setDirty: (dirty) => {
+        if (!cancelled) setDirty(dirty);
+      },
+    }).catch(() => {
+      // 草稿解析失败，忽略
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [setDocument, setPath, setDirty]);
 
   // Auto-save implementation — 将当前 buffer 存为 localStorage 草稿（用于崩溃恢复）

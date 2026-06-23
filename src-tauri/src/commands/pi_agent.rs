@@ -153,10 +153,106 @@ pub async fn agent_shutdown(manager: State<'_, AgentManager>) -> Result<(), Stri
     manager.shutdown().await
 }
 
+/// 删除 agent 临时文档文件（窗口关闭/文档切换时清理）。
+/// 文件不存在视为成功（幂等，可能已被清理）。
+/// 仅删除 .docx 文件，拒绝路径遍历。
+#[command]
+#[specta::specta]
+pub fn delete_temp_file(path: String) -> Result<(), String> {
+    use std::path::Path;
+
+    if path.is_empty() {
+        return Err("路径不能为空".to_string());
+    }
+
+    let p = Path::new(&path);
+
+    // 拒绝路径遍历
+    if p
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err("路径包含非法的父目录引用".to_string());
+    }
+
+    // 仅允许 .docx
+    match p.extension().and_then(|e| e.to_str()) {
+        Some(ext) if ext.eq_ignore_ascii_case("docx") => {}
+        _ => return Err("仅支持 .docx 文件".to_string()),
+    }
+
+    // 文件不存在 → 幂等成功
+    if !p.exists() {
+        return Ok(());
+    }
+
+    std::fs::remove_file(p).map_err(|e| format!("删除临时文件失败: {}", e))
+}
+
 /// 检查路径父目录是否可写（粗略判断：存在且是目录）
 fn is_writable_dir(dir: Option<&std::path::Path>) -> bool {
     match dir {
         Some(d) => d.is_dir(),
         None => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::io::Write;
+
+    /// 创建临时 .docx 文件
+    fn make_docx(dir: &std::path::Path, name: &str) -> std::path::PathBuf {
+        let path = dir.join(name);
+        let mut f = fs::File::create(&path).unwrap();
+        f.write_all(&[0x50, 0x4b, 0x03, 0x04]).unwrap();
+        path
+    }
+
+    #[test]
+    fn test_delete_temp_file_success() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = make_docx(dir.path(), ".agent-tmp-test.docx");
+        assert!(path.exists());
+
+        let result = delete_temp_file(path.to_string_lossy().to_string());
+        assert!(result.is_ok());
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn test_delete_temp_file_not_found_is_ok() {
+        // 文件不存在应幂等成功（可能已被清理）
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(".agent-tmp-gone.docx");
+        assert!(!path.exists());
+
+        let result = delete_temp_file(path.to_string_lossy().to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_delete_temp_file_rejects_non_docx() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("secret.txt");
+        fs::write(&path, b"data").unwrap();
+
+        let result = delete_temp_file(path.to_string_lossy().to_string());
+        assert!(result.is_err());
+        assert!(path.exists(), "非 docx 文件不应被删除");
+    }
+
+    #[test]
+    fn test_delete_temp_file_rejects_path_traversal() {
+        let result = delete_temp_file("../../../etc/passwd.docx".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_delete_temp_file_rejects_empty() {
+        let result = delete_temp_file("".to_string());
+        assert!(result.is_err());
     }
 }

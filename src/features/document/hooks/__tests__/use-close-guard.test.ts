@@ -3,6 +3,7 @@
 
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useAgentStore } from "@/stores/useAgentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 
 // 控制 onCloseRequested 回调的捕获
@@ -23,12 +24,25 @@ vi.mock("@/lib/tauri-events", () => ({
   ),
 }));
 
+// mock @/lib/bindings — useCloseGuard 调用 commands.deleteTempFile
+vi.mock("@/lib/bindings", () => ({
+  commands: {
+    deleteTempFile: vi.fn(
+      async (_path: string): Promise<{ status: "ok"; data: null }> => ({
+        status: "ok" as const,
+        data: null,
+      })
+    ),
+  },
+}));
+
 import { useCloseGuard } from "../use-close-guard";
 
 describe("useCloseGuard", () => {
   beforeEach(() => {
     capturedHandler = null;
     useDocumentStore.getState().closeDocument();
+    useAgentStore.getState().reset();
     vi.clearAllMocks();
   });
 
@@ -184,5 +198,81 @@ describe("useCloseGuard", () => {
     expect(result.current.confirmOpen).toBe(false);
     // 取消 → 仍 dirty，用户可继续编辑
     expect(useDocumentStore.getState().isDirty).toBe(true);
+  });
+
+  // ============================================================
+  // 临时文件清理 — 窗口关闭放行时删除 agent 临时文件
+  // ============================================================
+
+  it("放行关闭时删除 agent 临时文件", async () => {
+    useDocumentStore
+      .getState()
+      .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
+    useAgentStore.setState({ tempDocPath: "/test/.agent-tmp-doc.docx" });
+
+    const saveFn = vi.fn().mockResolvedValue(true);
+    renderHook(() => useCloseGuard({ saveDocument: saveFn }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const event = { preventDefault: vi.fn() };
+    await act(async () => {
+      await capturedHandler?.(event);
+    });
+
+    // isDirty=false → 放行关闭 → 删除临时文件
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    const { commands } = await import("@/lib/bindings");
+    expect(commands.deleteTempFile).toHaveBeenCalledWith(
+      "/test/.agent-tmp-doc.docx"
+    );
+  });
+
+  it("无临时文件时放行关闭不报错", async () => {
+    useDocumentStore
+      .getState()
+      .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
+    // tempDocPath 为 null
+
+    const saveFn = vi.fn().mockResolvedValue(true);
+    renderHook(() => useCloseGuard({ saveDocument: saveFn }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const event = { preventDefault: vi.fn() };
+    await act(async () => {
+      await capturedHandler?.(event);
+    });
+
+    const { commands } = await import("@/lib/bindings");
+    expect(commands.deleteTempFile).not.toHaveBeenCalled();
+  });
+
+  it("isDirty=true 阻止关闭时不删除临时文件", async () => {
+    useDocumentStore
+      .getState()
+      .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
+    useDocumentStore.getState().setDirty(true);
+    useAgentStore.setState({ tempDocPath: "/test/.agent-tmp-doc.docx" });
+
+    const saveFn = vi.fn().mockResolvedValue(true);
+    renderHook(() => useCloseGuard({ saveDocument: saveFn }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const event = { preventDefault: vi.fn() };
+    await act(async () => {
+      await capturedHandler?.(event);
+    });
+
+    // 阻止关闭 → 不删除临时文件（用户可能取消，agent 仍需使用）
+    const { commands } = await import("@/lib/bindings");
+    expect(commands.deleteTempFile).not.toHaveBeenCalled();
   });
 });

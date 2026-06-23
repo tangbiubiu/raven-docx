@@ -29,6 +29,7 @@ fn main() {
             commands::pi_agent::save_buffer_to_temp,
             commands::pi_agent::reload_from_temp,
             commands::pi_agent::agent_shutdown,
+            commands::pi_agent::delete_temp_file,
         ])
         .error_handling(ErrorHandlingMode::Result);
 
