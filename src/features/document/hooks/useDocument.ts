@@ -2,9 +2,9 @@
 // 封装新建/打开/保存/另存为/关闭等文档生命周期操作
 // Reference: .dev/plan/implementation-plan.md §Phase 2.3
 
+import { commands } from "@/lib/bindings";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { addRecentFile } from "./useRecentFiles";
-
 /** Tauri 环境检测 */
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -46,22 +46,25 @@ async function saveFileDialog(): Promise<string | null> {
 }
 
 /**
- * 读取文件为 ArrayBuffer（Tauri fs 插件）。
+ * 读取 .docx 文件为 ArrayBuffer（Rust 命令 openDocx）。
  * 非 Tauri 环境返回 null。
  */
 async function readFileAsBuffer(path: string): Promise<ArrayBuffer | null> {
   if (!isTauri()) return null;
   try {
-    const { readFile } = await import("@tauri-apps/plugin-fs");
-    const data = await readFile(path);
-    return data.buffer as ArrayBuffer;
+    const result = await commands.openDocx(path);
+    if (result.status === "ok") {
+      return new Uint8Array(result.data).buffer;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
 /**
- * 写入 ArrayBuffer 到文件（Tauri fs 插件）。
+ * 写入 ArrayBuffer 到文件（Rust 命令 saveDocx）。
+ * 用 Rust 命令而非 fs 插件，绕过前端 scope 沙箱限制。
  * 非 Tauri 环境返回 false。
  */
 async function writeFileFromBuffer(
@@ -70,9 +73,11 @@ async function writeFileFromBuffer(
 ): Promise<boolean> {
   if (!isTauri()) return false;
   try {
-    const { writeFile } = await import("@tauri-apps/plugin-fs");
-    await writeFile(path, new Uint8Array(buffer));
-    return true;
+    const result = await commands.saveDocx(
+      path,
+      Array.from(new Uint8Array(buffer))
+    );
+    return result.status === "ok";
   } catch {
     return false;
   }

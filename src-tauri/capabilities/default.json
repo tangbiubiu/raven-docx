@@ -12,7 +12,6 @@
     "process:allow-restart",
     "dialog:default",
     "fs:default",
-    "fs:allow-write-file",
     "updater:default"
   ]
 }
