@@ -3,11 +3,21 @@
 // Reference: .dev/plan/implementation-plan.md §Phase 2
 
 import {
+  applyTableStyle,
   insertTable,
+  mergeCells,
+  setCellBorder,
+  setCellFillColor,
+  setCellVerticalAlign,
   setFontFamily,
   setFontSize,
   setHighlight,
+  setImageWrapType,
+  setRowHeight,
+  setTableProperties,
   setTextColor,
+  splitCell,
+  toggleHeaderRow,
 } from "@eigenpal/docx-editor-core/prosemirror/commands";
 import { open } from "@tauri-apps/plugin-dialog";
 import { lift, setBlockType, toggleMark, wrapIn } from "prosemirror-commands";
@@ -226,4 +236,109 @@ export async function execInsertImage(): Promise<void> {
   } catch {
     view.dispatch(view.state.tr.insertText("[插入图片]"));
   }
+}
+
+// === Table commands (Phase 4) / 表格命令 ===
+
+/** 合并选中的单元格 / Merge selected cells */
+export function execMergeCells(): void {
+  apply(mergeCells);
+}
+
+/** 拆分当前单元格 / Split the current cell */
+export function execSplitCell(): void {
+  apply(splitCell);
+}
+
+/** 设置单元格边框 / Set cell border on a side */
+export function execSetCellBorder(
+  side: "top" | "bottom" | "left" | "right" | "all",
+  spec: {
+    style: string;
+    size?: number;
+    color?: { rgb: string };
+  } | null,
+  clearOthers?: boolean
+): void {
+  apply(setCellBorder(side, spec, clearOthers));
+}
+
+/** 设置单元格底纹颜色(rgb 带 # 前缀,自动剥离;传 null 清除)/ Set cell fill color */
+export function execSetCellFillColor(color: string | null): void {
+  apply(setCellFillColor(color));
+}
+
+/** 应用表格样式 / Apply a named table style */
+export function execApplyTableStyle(styleData: {
+  styleId: string;
+  tableBorders?: Record<string, unknown>;
+  conditionals?: Record<string, unknown>;
+  look?: Record<string, boolean>;
+}): void {
+  apply(applyTableStyle(styleData));
+}
+
+/** 设置单元格垂直对齐 / Set cell vertical alignment */
+export function execSetCellVerticalAlign(
+  align: "top" | "center" | "bottom"
+): void {
+  apply(setCellVerticalAlign(align));
+}
+
+/** 切换表头行 / Toggle the header row */
+export function execToggleHeaderRow(): void {
+  apply(toggleHeaderRow());
+}
+
+/** 设置行高(twips,1/20 pt)/ Set row height */
+export function execSetRowHeight(
+  height: number | null,
+  rule?: "auto" | "atLeast" | "exact"
+): void {
+  apply(setRowHeight(height, rule));
+}
+
+/** 设置表格属性(宽度/对齐)/ Set table properties */
+export function execSetTableProperties(props: {
+  width?: number | null;
+  widthType?: string | null;
+  justification?: "left" | "center" | "right" | null;
+}): void {
+  apply(setTableProperties(props));
+}
+
+// === Image commands (Phase 4) / 图片命令 ===
+
+/** OOXML 环绕类型(含方向便利值)/ Image wrap target */
+export type ImageWrapTarget =
+  | "inline"
+  | "square"
+  | "tight"
+  | "through"
+  | "topAndBottom"
+  | "behind"
+  | "inFront"
+  | "squareLeft"
+  | "squareRight";
+
+/** 设置图片环绕类型 / Set image wrap type for the image at the current selection */
+export function execSetImageWrapType(target: ImageWrapTarget): void {
+  const view = getView();
+  if (!view) {
+    return;
+  }
+  const { $from } = view.state.selection;
+  // 向上遍历祖先节点,找到 image 节点的文档位置
+  let pos: number | null = null;
+  for (let d = $from.depth; d > 0; d--) {
+    const node = $from.node(d);
+    if (node && node.type.name === "image") {
+      pos = $from.before(d);
+      break;
+    }
+  }
+  if (pos === null) {
+    return;
+  }
+  apply(setImageWrapType(pos, target));
 }

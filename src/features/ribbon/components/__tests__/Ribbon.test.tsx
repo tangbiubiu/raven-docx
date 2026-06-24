@@ -16,26 +16,6 @@ vi.mock("@/lib/logger", () => ({
 }));
 // Phase 7.2: mock 懒加载的标签页，避免动态 import 在测试中的异步复杂性
 vi.mock("../tabs/HomeTab", () => ({
-  HomeTab: () => <div data-testid="home-panel" />,
-}));
-vi.mock("../tabs/InsertTab", () => ({
-  InsertTab: () => <div data-testid="insert-panel" />,
-}));
-vi.mock("../tabs/LayoutTab", () => ({
-  LayoutTab: () => <div data-testid="layout-panel" />,
-}));
-vi.mock("../tabs/ReferencesTab", () => ({
-  ReferencesTab: () => <div data-testid="references-panel" />,
-}));
-vi.mock("../tabs/ReviewTab", () => ({
-  ReviewTab: () => <div data-testid="review-panel" />,
-}));
-vi.mock("../tabs/ViewTab", () => ({
-  ViewTab: () => <div data-testid="view-panel" />,
-}));
-
-// mock 各 Tab 组件,避免引入大量真实依赖
-vi.mock("../tabs/HomeTab", () => ({
   HomeTab: () => <div data-testid="home-panel">home</div>,
 }));
 vi.mock("../tabs/InsertTab", () => ({
@@ -52,6 +32,21 @@ vi.mock("../tabs/ReviewTab", () => ({
 }));
 vi.mock("../tabs/ViewTab", () => ({
   ViewTab: () => <div data-testid="view-panel">view</div>,
+}));
+// Phase 4: mock 上下文标签页 / Contextual tab mocks
+vi.mock("../tabs/TableToolsTab", () => ({
+  TableToolsTab: () => <div data-testid="tableTools-panel">tableTools</div>,
+}));
+vi.mock("../tabs/PictureFormatTab", () => ({
+  PictureFormatTab: () => (
+    <div data-testid="pictureFormat-panel">pictureFormat</div>
+  ),
+}));
+// Phase 4: mock useDocumentStore 避免触发真实选区检测
+vi.mock("@/stores/useDocumentStore", () => ({
+  useDocumentStore: Object.assign(() => null, {
+    getState: () => ({ editorBridge: null, selectionInfo: null }),
+  }),
 }));
 
 // useMediaQuery mock: 默认宽屏(matches=true)
@@ -78,7 +73,11 @@ describe("Ribbon", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseMediaQuery.mockReturnValue(true);
-    useAppStore.setState({ activeRibbonTab: "home" });
+    useAppStore.setState({
+      activeRibbonTab: "home",
+      selectionContext: { type: "none" },
+      activeContextualTab: null,
+    });
   });
 
   it("渲染所有标签页按钮", () => {
@@ -198,5 +197,83 @@ describe("Ribbon", () => {
     expect(
       screen.getByText("ribbon.tab.home").closest("button")
     ).toHaveAttribute("data-active", "true");
+  });
+
+  // === Phase 4: 上下文标签页 / Contextual tabs ===
+
+  it("无上下文时不渲染上下文标签页", () => {
+    render(<Ribbon {...defaultProps} />);
+    expect(screen.queryByText("ribbon.tab.tableTools")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("ribbon.tab.pictureFormat")
+    ).not.toBeInTheDocument();
+  });
+
+  it("选区在表格内时显示表格工具标签页", () => {
+    useAppStore.setState({
+      selectionContext: { type: "table" },
+      activeContextualTab: "tableTools",
+    });
+    render(<Ribbon {...defaultProps} />);
+    expect(screen.getByText("ribbon.tab.tableTools")).toBeInTheDocument();
+    // 上下文标签页带 data-contextual 标记
+    const ctxBtn = screen.getByText("ribbon.tab.tableTools").closest("button");
+    expect(ctxBtn).toHaveAttribute("data-contextual", "true");
+    expect(ctxBtn).toHaveAttribute("data-active", "true");
+  });
+
+  it("选区在图片内时显示图片格式标签页", () => {
+    useAppStore.setState({
+      selectionContext: { type: "image" },
+      activeContextualTab: "pictureFormat",
+    });
+    render(<Ribbon {...defaultProps} />);
+    expect(screen.getByText("ribbon.tab.pictureFormat")).toBeInTheDocument();
+    const ctxBtn = screen
+      .getByText("ribbon.tab.pictureFormat")
+      .closest("button");
+    expect(ctxBtn).toHaveAttribute("data-contextual", "true");
+    expect(ctxBtn).toHaveAttribute("data-active", "true");
+  });
+
+  it("点击上下文标签页激活对应面板", async () => {
+    useAppStore.setState({
+      selectionContext: { type: "table" },
+      activeContextualTab: null,
+    });
+    render(<Ribbon {...defaultProps} />);
+    fireEvent.click(screen.getByText("ribbon.tab.tableTools"));
+    await waitFor(() => {
+      expect(screen.getByTestId("tableTools-panel")).toBeInTheDocument();
+    });
+  });
+
+  it("点击固定标签页退出上下文标签页", () => {
+    useAppStore.setState({
+      selectionContext: { type: "table" },
+      activeContextualTab: "tableTools",
+    });
+    render(<Ribbon {...defaultProps} />);
+    // 点击开始标签页
+    fireEvent.click(screen.getByText("ribbon.tab.home"));
+    expect(useAppStore.getState().activeContextualTab).toBeNull();
+    // 上下文标签页按钮不再激活
+    const ctxBtn = screen.getByText("ribbon.tab.tableTools").closest("button");
+    expect(ctxBtn).toHaveAttribute("data-active", "false");
+  });
+
+  it("上下文标签页放在固定标签页之后", () => {
+    useAppStore.setState({
+      selectionContext: { type: "image" },
+      activeContextualTab: null,
+    });
+    render(<Ribbon {...defaultProps} />);
+    const tablist = screen.getByRole("tablist");
+    const buttons = tablist.querySelectorAll("button[role='tab']");
+    const labels = Array.from(buttons).map((b) => b.textContent);
+    // 固定标签页在前,图片格式标签页在最后
+    // biome-ignore lint/style/useAtIndex: target lib is ES2020, .at() not available
+    expect(labels[labels.length - 1]).toBe("ribbon.tab.pictureFormat");
+    expect(labels[0]).toBe("ribbon.tab.home");
   });
 });

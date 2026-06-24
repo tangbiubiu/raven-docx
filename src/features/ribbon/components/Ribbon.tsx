@@ -4,11 +4,17 @@
 // Phase 7.4: roving tabindex + 方向键切换时焦点跟随 + Home/End 跳转首末
 // Phase 7.5: forced-colors 适配（按钮在系统高对比度下可见边框）
 // Phase 7.6: tab 按钮加 id 供 aria-labelledby 关联
+// Phase 4: 上下文标签页(选中表格/图片时出现)/ Contextual tabs for table/image selection
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@/features/ribbon/hooks/use-media-query";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { type RibbonTab, useAppStore } from "@/stores/useAppStore";
+import {
+  type ContextualTab,
+  type RibbonTab,
+  useAppStore,
+} from "@/stores/useAppStore";
+import { useDocumentStore } from "@/stores/useDocumentStore";
 import { RIBBON_TABS } from "../ribbon-config";
 import { RibbonErrorBoundary } from "./RibbonErrorBoundary";
 
@@ -47,6 +53,15 @@ const LazyReviewTab = lazy(() =>
 const LazyViewTab = lazy(() =>
   import("./tabs/ViewTab").then((m) => ({ default: m.ViewTab }))
 );
+// Phase 4: 上下文标签页懒加载 / Contextual tabs lazy-loaded
+const LazyTableToolsTab = lazy(() =>
+  import("./tabs/TableToolsTab").then((m) => ({ default: m.TableToolsTab }))
+);
+const LazyPictureFormatTab = lazy(() =>
+  import("./tabs/PictureFormatTab").then((m) => ({
+    default: m.PictureFormatTab,
+  }))
+);
 
 const TAB_COMPONENTS: Record<
   RibbonTab,
@@ -60,6 +75,29 @@ const TAB_COMPONENTS: Record<
   view: LazyViewTab,
 };
 
+// Phase 4: 上下文标签页组件映射 / Contextual tab component map
+const CONTEXTUAL_TAB_COMPONENTS: Record<
+  ContextualTab,
+  React.ComponentType<RibbonCallbacks>
+> = {
+  tableTools: LazyTableToolsTab,
+  pictureFormat: LazyPictureFormatTab,
+};
+
+// Phase 4: 上下文标签页配置(标签文案 + 触发条件)/ Contextual tab config
+const CONTEXTUAL_TABS: {
+  id: ContextualTab;
+  labelKey: string;
+  contextType: "table" | "image";
+}[] = [
+  { id: "tableTools", labelKey: "ribbon.tab.tableTools", contextType: "table" },
+  {
+    id: "pictureFormat",
+    labelKey: "ribbon.tab.pictureFormat",
+    contextType: "image",
+  },
+];
+
 /** 响应式折叠断点:<768px 时隐藏面板,点击标签弹出浮层 / Responsive breakpoint */
 const MOBILE_BREAKPOINT = "(min-width: 768px)";
 
@@ -72,14 +110,83 @@ function TabLoading() {
     </div>
   );
 }
+
+/**
+ * Phase 4: 从 ProseMirror 选区推断上下文类型。
+ * 向上遍历祖先节点:命中 table → 'table';命中 image → 'image'。
+ * 返回 null 表示无法推断(无编辑器桥接),此时不覆盖既有上下文。
+ * / Infer selection context type from the ProseMirror selection.
+ * Returns null when no editor view is available (do not override).
+ */
+function inferSelectionContext(): "none" | "table" | "image" | null {
+  const bridge = useDocumentStore.getState().editorBridge;
+  const view = bridge?.getEditorView();
+  if (!view) {
+    return null;
+  }
+  const { $from } = view.state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    const node = $from.node(d);
+    if (!node) {
+      continue;
+    }
+    if (node.type.name === "table") {
+      return "table";
+    }
+    if (node.type.name === "image") {
+      return "image";
+    }
+  }
+  return "none";
+}
+
 export function Ribbon(callbacks: RibbonCallbacks) {
   const { t } = useT();
   const activeTab = useAppStore((s) => s.activeRibbonTab);
   const setActiveTab = useAppStore((s) => s.setActiveRibbonTab);
+  // Phase 4: 选区上下文 + 当前激活的上下文标签页
+  const selectionContext = useAppStore((s) => s.selectionContext);
+  const activeContextualTab = useAppStore((s) => s.activeContextualTab);
+  const setSelectionContext = useAppStore((s) => s.setSelectionContext);
+  const setActiveContextualTab = useAppStore((s) => s.setActiveContextualTab);
   // Phase 7.4: 标签按钮引用，方向键切换后移动焦点
   const tabBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const focusTab = (tabId: RibbonTab) => {
+  // Phase 4: 订阅选区变化,检测表格/图片上下文并同步到 store。
+  // 仅当能从编辑器桥接读到 ProseMirror view 时才更新(infer 返回 null 时跳过,
+  // 避免覆盖由外部设置的上下文,如测试或 useEditorBridge 直接写入)。
+  const selectionInfo = useDocumentStore((s) => s.selectionInfo);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: selectionInfo is the change signal that triggers re-detection
+  useEffect(() => {
+    const nextType = inferSelectionContext();
+    if (nextType === null) {
+      return;
+    }
+    if (nextType !== selectionContext.type) {
+      setSelectionContext({ type: nextType });
+    }
+  }, [selectionInfo, selectionContext.type, setSelectionContext]);
+
+  // Phase 4: 当上下文标签页存在时,自动激活它(选区进入表格/图片)
+  useEffect(() => {
+    if (selectionContext.type === "table") {
+      setActiveContextualTab("tableTools");
+    } else if (selectionContext.type === "image") {
+      setActiveContextualTab("pictureFormat");
+    }
+    // 上下文消失时由 setSelectionContext 清除 activeContextualTab
+  }, [selectionContext.type, setActiveContextualTab]);
+
+  // Phase 4: 当前应显示的上下文标签页(基于选区上下文)
+  const visibleContextualTabs = CONTEXTUAL_TABS.filter(
+    (ct) => ct.contextType === selectionContext.type
+  );
+
+  // Phase 4: 当前激活的标签页 id(固定或上下文)/ Active tab id (fixed or contextual)
+  const activeTabId = activeContextualTab ?? activeTab;
+  const isContextualActive = activeContextualTab !== null;
+
+  const focusTab = (tabId: string) => {
     // React 状态更新后下一帧聚焦
     requestAnimationFrame(() => {
       tabBtnRefs.current[tabId]?.focus();
@@ -87,22 +194,28 @@ export function Ribbon(callbacks: RibbonCallbacks) {
   };
 
   const onTabKeyDown = (e: React.KeyboardEvent) => {
-    const idx = RIBBON_TABS.findIndex((tab) => tab.id === activeTab);
+    // Phase 4: 合并固定 + 上下文标签页进行方向键导航
+    const allTabs: string[] = [
+      ...RIBBON_TABS.map((tab) => tab.id),
+      ...visibleContextualTabs.map((ct) => ct.id),
+    ];
+    const currentId = activeContextualTab ?? activeTab;
+    const idx = allTabs.indexOf(currentId);
     let nextIdx: number | null = null;
     if (e.key === "ArrowRight") {
-      nextIdx = (idx + 1) % RIBBON_TABS.length;
+      nextIdx = (idx + 1) % allTabs.length;
     } else if (e.key === "ArrowLeft") {
-      nextIdx = (idx - 1 + RIBBON_TABS.length) % RIBBON_TABS.length;
+      nextIdx = (idx - 1 + allTabs.length) % allTabs.length;
     } else if (e.key === "Home") {
       nextIdx = 0;
     } else if (e.key === "End") {
-      nextIdx = RIBBON_TABS.length - 1;
+      nextIdx = allTabs.length - 1;
     }
     if (nextIdx !== null) {
       e.preventDefault();
-      const nextTab = RIBBON_TABS[nextIdx].id;
-      handleTabClick(nextTab);
-      focusTab(nextTab);
+      const nextId = allTabs[nextIdx];
+      handleTabClick(nextId);
+      focusTab(nextId);
     }
   };
 
@@ -110,7 +223,10 @@ export function Ribbon(callbacks: RibbonCallbacks) {
   // 窄屏浮层打开状态 / Mobile popover open state
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
 
-  const ActivePanel = TAB_COMPONENTS[activeTab];
+  // Phase 4: 当前激活的面板组件(固定或上下文)/ Active panel component
+  const ActivePanel = isContextualActive
+    ? CONTEXTUAL_TAB_COMPONENTS[activeContextualTab]
+    : TAB_COMPONENTS[activeTab];
 
   // 切换标签时:宽屏直接显示,窄屏关闭浮层(需再点才展开)
   useEffect(() => {
@@ -133,8 +249,18 @@ export function Ribbon(callbacks: RibbonCallbacks) {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [isDesktop, mobilePanelOpen]);
 
-  const handleTabClick = (tabId: RibbonTab) => {
-    setActiveTab(tabId);
+  // Phase 4: 统一处理固定/上下文标签页点击
+  const handleTabClick = (tabId: string) => {
+    const isContextual = (["tableTools", "pictureFormat"] as string[]).includes(
+      tabId
+    );
+    if (isContextual) {
+      setActiveContextualTab(tabId as ContextualTab);
+    } else {
+      // 点击固定标签页时退出上下文标签页
+      setActiveContextualTab(null);
+      setActiveTab(tabId as RibbonTab);
+    }
     // 窄屏:点击标签弹出浮层面板
     if (!isDesktop) {
       setMobilePanelOpen(true);
@@ -149,7 +275,7 @@ export function Ribbon(callbacks: RibbonCallbacks) {
   };
 
   const panelContent = (
-    <RibbonErrorBoundary tabId={activeTab}>
+    <RibbonErrorBoundary tabId={activeTabId}>
       <Suspense fallback={<TabLoading />}>
         <ActivePanel {...callbacks} />
       </Suspense>
@@ -161,7 +287,7 @@ export function Ribbon(callbacks: RibbonCallbacks) {
     if (isDesktop) {
       return (
         <div
-          aria-labelledby={`ribbon-tab-${activeTab}`}
+          aria-labelledby={`ribbon-tab-${activeTabId}`}
           className="flex h-[88px] items-stretch gap-1 overflow-x-auto px-2 py-1"
           role="tabpanel"
         >
@@ -186,7 +312,7 @@ export function Ribbon(callbacks: RibbonCallbacks) {
           role="dialog"
         >
           <div
-            aria-labelledby={`ribbon-tab-${activeTab}`}
+            aria-labelledby={`ribbon-tab-${activeTabId}`}
             className="flex items-stretch gap-1 py-1"
             role="tabpanel"
           >
@@ -207,17 +333,17 @@ export function Ribbon(callbacks: RibbonCallbacks) {
       >
         {RIBBON_TABS.map((tab) => (
           <button
-            aria-selected={activeTab === tab.id}
+            aria-selected={!isContextualActive && activeTab === tab.id}
             className={cn(
               "relative rounded-t px-3 py-1.5 text-xs transition-colors",
               "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary after:opacity-0 after:transition-opacity",
               // Phase 7.5: 高对比度模式下显示边框确保可见
               "forced-colors:border forced-colors:border-[ButtonBorder]",
-              activeTab === tab.id
+              !isContextualActive && activeTab === tab.id
                 ? "bg-background font-medium text-foreground after:opacity-100"
                 : "text-muted-foreground hover:bg-accent/50"
             )}
-            data-active={activeTab === tab.id}
+            data-active={!isContextualActive && activeTab === tab.id}
             id={`ribbon-tab-${tab.id}`}
             key={tab.id}
             onClick={() => handleTabClick(tab.id)}
@@ -225,12 +351,44 @@ export function Ribbon(callbacks: RibbonCallbacks) {
               tabBtnRefs.current[tab.id] = el;
             }}
             role="tab"
-            tabIndex={activeTab === tab.id ? 0 : -1}
+            tabIndex={!isContextualActive && activeTab === tab.id ? 0 : -1}
             type="button"
           >
             {t(tab.labelKey)}
           </button>
         ))}
+        {/* Phase 4: 上下文标签页(高亮色区分)/ Contextual tabs with highlight */}
+        {visibleContextualTabs.map((ct) => {
+          const isActive = activeContextualTab === ct.id;
+          return (
+            <button
+              aria-selected={isActive}
+              className={cn(
+                "relative rounded-t px-3 py-1.5 text-xs transition-colors",
+                "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:opacity-0 after:transition-opacity",
+                "forced-colors:border forced-colors:border-[ButtonBorder]",
+                // 上下文标签页用高亮色区分 / Highlight color for contextual tabs
+                "bg-primary/10 font-medium text-primary",
+                isActive
+                  ? "after:bg-primary after:opacity-100"
+                  : "hover:bg-primary/20"
+              )}
+              data-active={isActive}
+              data-contextual="true"
+              id={`ribbon-tab-${ct.id}`}
+              key={ct.id}
+              onClick={() => handleTabClick(ct.id)}
+              ref={(el) => {
+                tabBtnRefs.current[ct.id] = el;
+              }}
+              role="tab"
+              tabIndex={isActive ? 0 : -1}
+              type="button"
+            >
+              {t(ct.labelKey)}
+            </button>
+          );
+        })}
       </div>
 
       {/* 面板区域 / Panel area */}
