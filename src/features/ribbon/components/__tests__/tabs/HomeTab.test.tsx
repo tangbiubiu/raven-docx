@@ -22,6 +22,27 @@ vi.mock("@/stores/useDocumentStore", () => ({
   ),
 }));
 
+const mockAppStore = vi.hoisted(() => ({
+  openModal: vi.fn(),
+}));
+vi.mock("@/stores/useAppStore", () => ({
+  useAppStore: vi.fn((selector?: (s: typeof mockAppStore) => unknown) =>
+    typeof selector === "function" ? selector(mockAppStore) : mockAppStore
+  ),
+}));
+
+vi.mock("@/stores/useFormatPainterStore", () => ({
+  useFormatPainterStore: vi.fn((selector?: (s: unknown) => unknown) => {
+    const state = {
+      marks: null,
+      active: false,
+      setFormatPainter: vi.fn(),
+      clearFormatPainter: vi.fn(),
+    };
+    return typeof selector === "function" ? selector(state) : state;
+  }),
+}));
+
 const mockCmds = vi.hoisted(() => ({
   execUndo: vi.fn(),
   execRedo: vi.fn(),
@@ -105,5 +126,27 @@ describe("HomeTab", () => {
     const boldBtn = screen.getByTestId("ribbon-bold");
     expect(boldBtn).toHaveAttribute("data-pressed", "true");
     mockDocState.selectionFormat = null;
+  });
+
+  it("渲染文字颜色/高亮 ColorPicker 触发按钮", () => {
+    render(<HomeTab {...props} />);
+    expect(screen.getByTestId("ribbon-textColor")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-highlight")).toBeInTheDocument();
+  });
+
+  it("渲染格式刷按钮", () => {
+    render(<HomeTab {...props} />);
+    expect(screen.getByTestId("ribbon-formatPainter")).toBeInTheDocument();
+  });
+
+  it("渲染查找按钮", () => {
+    render(<HomeTab {...props} />);
+    expect(screen.getByTestId("ribbon-find")).toBeInTheDocument();
+  });
+
+  it("点击查找按钮调用 openModal('findReplace')", () => {
+    render(<HomeTab {...props} />);
+    screen.getByTestId("ribbon-find").click();
+    expect(mockAppStore.openModal).toHaveBeenCalledWith("findReplace");
   });
 });

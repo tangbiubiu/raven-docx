@@ -13,6 +13,12 @@ import { useDocumentStore } from "@/stores/useDocumentStore";
  */
 export function useFormatState() {
   const editorBridge = useDocumentStore((s) => s.editorBridge);
+  // 响应式选区格式值:订阅 selectionFormat 的对应字段,随选区变化重渲染。
+  // Reactive selection format values: subscribe to selectionFormat fields.
+  const fontFamily = useDocumentStore((s) => s.selectionFormat?.fontFamily);
+  const fontSize = useDocumentStore((s) => s.selectionFormat?.fontSize);
+  const textColor = useDocumentStore((s) => s.selectionFormat?.textColor);
+  const highlight = useDocumentStore((s) => s.selectionFormat?.highlight);
 
   /** 获取 EditorView，不存在则返回 null */
   const getView = (): EditorView | null => {
@@ -139,5 +145,11 @@ export function useFormatState() {
     isAlignActive,
     getHeadingLevel,
     getListType,
+    // 响应式选区格式值(从 selectionFormat 读取,随选区变化更新)
+    // Reactive selection format values (from selectionFormat, update on selection change)
+    fontFamily,
+    fontSize,
+    textColor,
+    highlight,
   };
 }

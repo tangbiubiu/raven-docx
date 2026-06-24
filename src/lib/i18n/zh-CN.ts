@@ -106,6 +106,21 @@ export const zhCN: Translations = {
   "format.indent": "增加缩进",
   "format.outdent": "减少缩进",
   "format.clearFormat": "清除格式",
+  "format.moreColors": "更多颜色…",
+  "format.find": "查找",
+  "format.formatPainter": "格式刷",
+
+  // === 颜色色板名称 / Color swatch names ===
+  "color.black": "黑色",
+  "color.white": "白色",
+  "color.red": "红色",
+  "color.orange": "橙色",
+  "color.yellow": "黄色",
+  "color.green": "绿色",
+  "color.blue": "蓝色",
+  "color.purple": "紫色",
+  "color.pink": "粉色",
+  "color.gray": "灰色",
 
   // === Ribbon 标签页 ===
   "ribbon.tab.home": "开始",
