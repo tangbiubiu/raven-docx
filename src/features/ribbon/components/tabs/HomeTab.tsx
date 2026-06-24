@@ -10,14 +10,13 @@ import {
   AlignRight,
   Bold,
   Eraser,
-  Highlighter,
   Indent,
   Italic,
   List,
   ListOrdered,
   Outdent,
-  Palette,
   Redo,
+  Search,
   Strikethrough,
   Subscript,
   Superscript,
@@ -55,8 +54,12 @@ import {
   applyTextColor,
   clearFormatting,
 } from "@/features/formatting/format-apply";
+import { useFormatState } from "@/features/formatting/hooks/use-format-state";
 import { useT } from "@/lib/i18n";
+import { useAppStore } from "@/stores/useAppStore";
 import type { RibbonCallbacks } from "../Ribbon";
+import { ColorPicker } from "../ColorPicker";
+import { FormatPainter } from "../FormatPainter";
 import { RibbonButton } from "../RibbonButton";
 import {
   AlignToggleButton,
@@ -100,6 +103,9 @@ export function HomeTab(_props: RibbonCallbacks) {
   const fontFamilyValue = useFontFamilyValue();
   const fontSizeValue = useFontSizeValue();
   const headingValue = useHeadingValue();
+  // 文字颜色/高亮的响应式回显值 / Reactive text color / highlight echo values
+  const { textColor, highlight } = useFormatState();
+  const openModal = useAppStore((s) => s.openModal);
 
   return (
     <>
@@ -183,31 +189,20 @@ export function HomeTab(_props: RibbonCallbacks) {
             ))}
           </SelectContent>
         </Select>
-        <label
-          className="relative inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-accent"
-          title={t("format.textColor")}
-        >
-          <Palette className="pointer-events-none size-4 text-muted-foreground" />
-          <input
-            aria-label={t("format.textColor")}
-            className="absolute inset-0 cursor-pointer opacity-0"
-            onChange={(e) => applyTextColor(e.target.value)}
-            type="color"
-          />
-        </label>
-        <label
-          className="relative inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-accent"
-          title={t("format.highlight")}
-        >
-          <Highlighter className="pointer-events-none size-4 text-muted-foreground" />
-          <input
-            aria-label={t("format.highlight")}
-            className="absolute inset-0 cursor-pointer opacity-0"
-            onChange={(e) => applyHighlight(e.target.value)}
-            type="color"
-            value="#ffff00"
-          />
-        </label>
+        <ColorPicker
+          label={t("format.textColor")}
+          onChange={applyTextColor}
+          testId="ribbon-textColor"
+          value={textColor}
+        />
+        <ColorPicker
+          label={t("format.highlight")}
+          onChange={applyHighlight}
+          testId="ribbon-highlight"
+          value={highlight}
+        />
+        {/* 格式刷 / Format painter */}
+        <FormatPainter />
       </RibbonGroup>
 
       <RibbonSeparator />
@@ -311,6 +306,14 @@ export function HomeTab(_props: RibbonCallbacks) {
           testId="ribbon-clearFormat"
         >
           <Eraser className="size-5" />
+        </RibbonButton>
+        <RibbonButton
+          label={t("format.find")}
+          onClick={() => openModal("findReplace")}
+          shortcut="⌘F"
+          testId="ribbon-find"
+        >
+          <Search className="size-5" />
         </RibbonButton>
       </RibbonGroup>
     </>

@@ -106,6 +106,21 @@ export const en: Translations = {
   "format.indent": "Increase Indent",
   "format.outdent": "Decrease Indent",
   "format.clearFormat": "Clear Formatting",
+  "format.moreColors": "More Colors…",
+  "format.find": "Find",
+  "format.formatPainter": "Format Painter",
+
+  // === Color swatch names ===
+  "color.black": "Black",
+  "color.white": "White",
+  "color.red": "Red",
+  "color.orange": "Orange",
+  "color.yellow": "Yellow",
+  "color.green": "Green",
+  "color.blue": "Blue",
+  "color.purple": "Purple",
+  "color.pink": "Pink",
+  "color.gray": "Gray",
 
   // === Ribbon Tabs ===
   "ribbon.tab.home": "Home",
