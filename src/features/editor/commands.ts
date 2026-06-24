@@ -227,3 +227,49 @@ export async function execInsertImage(): Promise<void> {
     view.dispatch(view.state.tr.insertText("[插入图片]"));
   }
 }
+
+// === Paragraph formatting (Phase 3) / 段落格式 ===
+// 注意:不修改上方现有 import 语句;此处为 Phase 3 新增命令单独导入。
+// Note: existing imports above are untouched; Phase 3 commands imported here.
+import {
+  setIndentFirstLine,
+  setIndentLeft,
+  setIndentRight,
+  setLineSpacing,
+  setSpaceAfter,
+  setSpaceBefore,
+} from "@eigenpal/docx-editor-core/prosemirror/commands";
+
+/** 设置行距(倍数:1.0/1.15/1.5/2.0)/ Set line spacing (multiple) */
+export function execSetLineSpacing(value: number): void {
+  apply(setLineSpacing(value));
+}
+
+/** 设置段前/段后间距(twips,1pt = 20 twips)/ Set paragraph spacing before/after (twips) */
+export function execSetParagraphSpacing(before: number, after: number): void {
+  apply(setSpaceBefore(before));
+  apply(setSpaceAfter(after));
+}
+
+/**
+ * 设置缩进(twips)/ Set indentation (twips).
+ * 仅传入的字段会被设置;未传入的字段保持不变。
+ * - left: 左缩进 / left indent
+ * - right: 右缩进 / right indent
+ * - firstLine: 首行缩进(正数缩进)/ first-line indent (positive = indent)
+ */
+export function execSetIndentation(opts: {
+  left?: number;
+  right?: number;
+  firstLine?: number;
+}): void {
+  if (opts.left !== undefined) {
+    apply(setIndentLeft(opts.left));
+  }
+  if (opts.right !== undefined) {
+    apply(setIndentRight(opts.right));
+  }
+  if (opts.firstLine !== undefined) {
+    apply(setIndentFirstLine(opts.firstLine));
+  }
+}

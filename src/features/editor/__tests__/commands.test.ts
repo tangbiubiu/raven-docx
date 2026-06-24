@@ -14,6 +14,13 @@ const mockCmds = vi.hoisted(() => {
     setTextColor: vi.fn((_attrs: unknown) => mkCmd()),
     setHighlight: vi.fn((_color: string) => mkCmd()),
     insertTable: vi.fn((_rows: number, _cols: number) => mkCmd()),
+    // Phase 3: 段落格式 / paragraph formatting
+    setLineSpacing: vi.fn((_value: number) => mkCmd()),
+    setSpaceBefore: vi.fn((_twips: number) => mkCmd()),
+    setSpaceAfter: vi.fn((_twips: number) => mkCmd()),
+    setIndentLeft: vi.fn((_twips: number) => mkCmd()),
+    setIndentRight: vi.fn((_twips: number) => mkCmd()),
+    setIndentFirstLine: vi.fn((_twips: number) => mkCmd()),
   };
 });
 vi.mock("@eigenpal/docx-editor-core/prosemirror/commands", () => mockCmds);
@@ -35,6 +42,9 @@ import {
   execSetFontFamily,
   execSetFontSize,
   execSetHighlight,
+  execSetIndentation,
+  execSetLineSpacing,
+  execSetParagraphSpacing,
   execSetTextColor,
 } from "@/features/editor/commands";
 
@@ -105,6 +115,84 @@ describe("commands — 格式命令封装", () => {
         // tr.insertText 是占位实现遗留;真实命令不应调用它
         expect(tr?.insertText).toBeUndefined();
       }
+    });
+  });
+  // === Phase 3: 段落格式 / paragraph formatting ===
+
+  describe("execSetLineSpacing", () => {
+    it("调用 setLineSpacing 命令并 dispatch(倍数 1.5)", () => {
+      execSetLineSpacing(1.5);
+      expect(mockCmds.setLineSpacing).toHaveBeenCalledWith(1.5);
+      const cmd = mockCmds.setLineSpacing.mock.results[0]?.value;
+      expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+    });
+
+    it("支持 1.0/1.15/1.5/2.0 倍数", () => {
+      for (const v of [1.0, 1.15, 1.5, 2.0]) {
+        mockCmds.setLineSpacing.mockClear();
+        execSetLineSpacing(v);
+        expect(mockCmds.setLineSpacing).toHaveBeenCalledWith(v);
+      }
+    });
+
+    it("无 editor view 时静默返回(不抛错)", () => {
+      // exec* 内部 getView() 返回 null 即提前 return;此处仅断言可安全调用。
+      expect(() => execSetLineSpacing(1.0)).not.toThrow();
+    });
+  });
+
+  describe("execSetParagraphSpacing", () => {
+    it("分别调用 setSpaceBefore / setSpaceAfter(twips)", () => {
+      execSetParagraphSpacing(120, 240);
+      expect(mockCmds.setSpaceBefore).toHaveBeenCalledWith(120);
+      expect(mockCmds.setSpaceAfter).toHaveBeenCalledWith(240);
+      const beforeCmd = mockCmds.setSpaceBefore.mock.results[0]?.value;
+      const afterCmd = mockCmds.setSpaceAfter.mock.results[0]?.value;
+      expect(beforeCmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+      expect(afterCmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+    });
+
+    it("段前为 0 仍调用 setSpaceBefore", () => {
+      execSetParagraphSpacing(0, 60);
+      expect(mockCmds.setSpaceBefore).toHaveBeenCalledWith(0);
+      expect(mockCmds.setSpaceAfter).toHaveBeenCalledWith(60);
+    });
+  });
+
+  describe("execSetIndentation", () => {
+    it("仅 left 时调用 setIndentLeft", () => {
+      execSetIndentation({ left: 567 });
+      expect(mockCmds.setIndentLeft).toHaveBeenCalledWith(567);
+      expect(mockCmds.setIndentRight).not.toHaveBeenCalled();
+      expect(mockCmds.setIndentFirstLine).not.toHaveBeenCalled();
+      const cmd = mockCmds.setIndentLeft.mock.results[0]?.value;
+      expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+    });
+
+    it("仅 right 时调用 setIndentRight", () => {
+      execSetIndentation({ right: 567 });
+      expect(mockCmds.setIndentRight).toHaveBeenCalledWith(567);
+      expect(mockCmds.setIndentLeft).not.toHaveBeenCalled();
+    });
+
+    it("仅 firstLine 时调用 setIndentFirstLine", () => {
+      execSetIndentation({ firstLine: 480 });
+      expect(mockCmds.setIndentFirstLine).toHaveBeenCalledWith(480);
+      expect(mockCmds.setIndentLeft).not.toHaveBeenCalled();
+    });
+
+    it("三参数同时设置均调用对应命令", () => {
+      execSetIndentation({ left: 100, right: 200, firstLine: 300 });
+      expect(mockCmds.setIndentLeft).toHaveBeenCalledWith(100);
+      expect(mockCmds.setIndentRight).toHaveBeenCalledWith(200);
+      expect(mockCmds.setIndentFirstLine).toHaveBeenCalledWith(300);
+    });
+
+    it("空对象时不调用任何缩进命令", () => {
+      execSetIndentation({});
+      expect(mockCmds.setIndentLeft).not.toHaveBeenCalled();
+      expect(mockCmds.setIndentRight).not.toHaveBeenCalled();
+      expect(mockCmds.setIndentFirstLine).not.toHaveBeenCalled();
     });
   });
 });
