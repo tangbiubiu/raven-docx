@@ -12,6 +12,32 @@ vi.mock("@/lib/utils", () => ({
     args.filter(Boolean).join(" "),
 }));
 
+// mock 各 Tab 组件,避免引入大量真实依赖
+vi.mock("../tabs/HomeTab", () => ({
+  HomeTab: () => <div data-testid="home-panel">home</div>,
+}));
+vi.mock("../tabs/InsertTab", () => ({
+  InsertTab: () => <div data-testid="insert-panel">insert</div>,
+}));
+vi.mock("../tabs/LayoutTab", () => ({
+  LayoutTab: () => <div data-testid="layout-panel">layout</div>,
+}));
+vi.mock("../tabs/ReferencesTab", () => ({
+  ReferencesTab: () => <div data-testid="references-panel">references</div>,
+}));
+vi.mock("../tabs/ReviewTab", () => ({
+  ReviewTab: () => <div data-testid="review-panel">review</div>,
+}));
+vi.mock("../tabs/ViewTab", () => ({
+  ViewTab: () => <div data-testid="view-panel">view</div>,
+}));
+
+// useMediaQuery mock: 默认宽屏(matches=true)
+const mockUseMediaQuery = vi.fn((_q: string) => true);
+vi.mock("@/features/ribbon/hooks/use-media-query", () => ({
+  useMediaQuery: (q: string) => mockUseMediaQuery(q),
+}));
+
 const defaultProps = {
   onNew: vi.fn(),
   onOpen: vi.fn(),
@@ -29,6 +55,7 @@ const defaultProps = {
 describe("Ribbon", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseMediaQuery.mockReturnValue(true);
     useAppStore.setState({ activeRibbonTab: "home" });
   });
 
@@ -54,5 +81,44 @@ describe("Ribbon", () => {
     expect(
       screen.getByText("ribbon.tab.insert").closest("button")
     ).toHaveAttribute("data-active", "true");
+  });
+
+  it("宽屏显示面板区域", () => {
+    mockUseMediaQuery.mockReturnValue(true);
+    render(<Ribbon {...defaultProps} />);
+    expect(screen.getByTestId("home-panel")).toBeInTheDocument();
+  });
+
+  it("窄屏(<768px)隐藏面板区域", () => {
+    mockUseMediaQuery.mockReturnValue(false);
+    render(<Ribbon {...defaultProps} />);
+    expect(screen.queryByTestId("home-panel")).not.toBeInTheDocument();
+  });
+
+  it("窄屏点击标签弹出浮层面板", () => {
+    mockUseMediaQuery.mockReturnValue(false);
+    render(<Ribbon {...defaultProps} />);
+    expect(screen.queryByTestId("home-panel")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("ribbon.tab.home"));
+    expect(screen.getByTestId("home-panel")).toBeInTheDocument();
+  });
+
+  it("窄屏浮层中点击其他标签切换并保持浮层打开", () => {
+    mockUseMediaQuery.mockReturnValue(false);
+    render(<Ribbon {...defaultProps} />);
+    fireEvent.click(screen.getByText("ribbon.tab.home"));
+    expect(screen.getByTestId("home-panel")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("ribbon.tab.insert"));
+    expect(screen.queryByTestId("home-panel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("insert-panel")).toBeInTheDocument();
+  });
+
+  it("窄屏浮层 Escape 关闭", () => {
+    mockUseMediaQuery.mockReturnValue(false);
+    render(<Ribbon {...defaultProps} />);
+    fireEvent.click(screen.getByText("ribbon.tab.home"));
+    expect(screen.getByTestId("home-panel")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("home-panel")).not.toBeInTheDocument();
   });
 });

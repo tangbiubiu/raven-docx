@@ -21,7 +21,7 @@ export function RibbonGroup({
   return (
     <div className={cn("flex flex-col", className)}>
       <div className="flex flex-1 items-end gap-0.5 pb-1">{children}</div>
-      <div className="border-border border-t pt-0.5 text-center text-[10px] text-muted-foreground">
+      <div className="border-border border-t pt-0.5 text-center text-[11px] text-muted-foreground uppercase tracking-wide">
         {t(labelKey)}
       </div>
     </div>

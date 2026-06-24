@@ -1,4 +1,27 @@
 // src/features/ribbon/components/tabs/HomeTab.tsx — 开始标签页 / Home tab
+
+import type { LucideIcon } from "lucide-react";
+import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Eraser,
+  Highlighter,
+  Indent,
+  Italic,
+  List,
+  ListOrdered,
+  Outdent,
+  Palette,
+  Redo,
+  Strikethrough,
+  Subscript,
+  Superscript,
+  Underline,
+  Undo,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -39,6 +62,32 @@ import { RibbonGroup } from "../RibbonGroup";
 import { RibbonSeparator } from "../RibbonSeparator";
 import { RibbonToggleButton } from "../RibbonToggleButton";
 
+/** 文本标记 → lucide 图标映射 / text mark → lucide icon */
+const MARK_ICONS: Record<string, LucideIcon> = {
+  bold: Bold,
+  italic: Italic,
+  underline: Underline,
+  strikethrough: Strikethrough,
+  superscript: Superscript,
+  subscript: Subscript,
+};
+
+/** 对齐 → lucide 图标映射 / alignment → lucide icon */
+const ALIGN_ICONS: Record<string, LucideIcon> = {
+  left: AlignLeft,
+  center: AlignCenter,
+  right: AlignRight,
+  justify: AlignJustify,
+};
+
+/** 文本标记快捷键 / text mark shortcuts */
+const MARK_SHORTCUTS: Record<string, string> = {
+  bold: "⌘B",
+  italic: "⌘I",
+  underline: "⌘U",
+  strikethrough: "⌘⇧S",
+};
+
 export function HomeTab(_props: RibbonCallbacks) {
   const { t } = useT();
   const formatState = useFormatState();
@@ -56,16 +105,18 @@ export function HomeTab(_props: RibbonCallbacks) {
         <RibbonButton
           label={t("menu.edit.undo")}
           onClick={execUndo}
+          shortcut="⌘Z"
           testId="ribbon-undo"
         >
-          ↩
+          <Undo className="size-5" />
         </RibbonButton>
         <RibbonButton
           label={t("menu.edit.redo")}
           onClick={execRedo}
+          shortcut="⌘⇧Z"
           testId="ribbon-redo"
         >
-          ↪
+          <Redo className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -73,28 +124,35 @@ export function HomeTab(_props: RibbonCallbacks) {
 
       {/* 字体组 / Font group */}
       <RibbonGroup labelKey="ribbon.group.font">
-        {TEXT_MARKS.map((mark) => (
-          <RibbonToggleButton
-            key={mark.key}
-            label={t(mark.i18n)}
-            onPressedChange={() => execToggleMark(mark.markName)}
-            pressed={formatState.isActive(mark.markName)}
-            testId={`ribbon-${mark.key}`}
-          >
-            <span>{t(mark.i18n)}</span>
-          </RibbonToggleButton>
-        ))}
-        {SUPER_SUB_MARKS.map((mark) => (
-          <RibbonToggleButton
-            key={mark.key}
-            label={t(mark.i18n)}
-            onPressedChange={() => execToggleMark(mark.markName)}
-            pressed={formatState.isActive(mark.markName)}
-            testId={`ribbon-${mark.key}`}
-          >
-            <span>{t(mark.i18n)}</span>
-          </RibbonToggleButton>
-        ))}
+        {TEXT_MARKS.map((mark) => {
+          const Icon = MARK_ICONS[mark.key] ?? Bold;
+          return (
+            <RibbonToggleButton
+              key={mark.key}
+              label={t(mark.i18n)}
+              onPressedChange={() => execToggleMark(mark.markName)}
+              pressed={formatState.isActive(mark.markName)}
+              shortcut={MARK_SHORTCUTS[mark.key]}
+              testId={`ribbon-${mark.key}`}
+            >
+              <Icon className="size-4" />
+            </RibbonToggleButton>
+          );
+        })}
+        {SUPER_SUB_MARKS.map((mark) => {
+          const Icon = MARK_ICONS[mark.key] ?? Superscript;
+          return (
+            <RibbonToggleButton
+              key={mark.key}
+              label={t(mark.i18n)}
+              onPressedChange={() => execToggleMark(mark.markName)}
+              pressed={formatState.isActive(mark.markName)}
+              testId={`ribbon-${mark.key}`}
+            >
+              <Icon className="size-4" />
+            </RibbonToggleButton>
+          );
+        })}
         <Select onValueChange={applyFont}>
           <SelectTrigger className="h-7 w-[90px] text-xs" size="sm">
             <SelectValue placeholder={t("format.font")} />
@@ -121,47 +179,63 @@ export function HomeTab(_props: RibbonCallbacks) {
             ))}
           </SelectContent>
         </Select>
-        <input
-          aria-label={t("format.textColor")}
-          className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
-          onChange={(e) => applyTextColor(e.target.value)}
+        <label
+          className="relative inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-accent"
           title={t("format.textColor")}
-          type="color"
-        />
-        <input
-          aria-label={t("format.highlight")}
-          className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
-          onChange={(e) => applyHighlight(e.target.value)}
+        >
+          <Palette className="pointer-events-none size-4 text-muted-foreground" />
+          <input
+            aria-label={t("format.textColor")}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            onChange={(e) => applyTextColor(e.target.value)}
+            type="color"
+          />
+        </label>
+        <label
+          className="relative inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded hover:bg-accent"
           title={t("format.highlight")}
-          type="color"
-          value="#ffff00"
-        />
+        >
+          <Highlighter className="pointer-events-none size-4 text-muted-foreground" />
+          <input
+            aria-label={t("format.highlight")}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            onChange={(e) => applyHighlight(e.target.value)}
+            type="color"
+            value="#ffff00"
+          />
+        </label>
       </RibbonGroup>
 
       <RibbonSeparator />
 
       {/* 段落组 / Paragraph group */}
       <RibbonGroup labelKey="ribbon.group.paragraph">
-        {ALIGNMENTS.map((align) => (
-          <RibbonToggleButton
-            key={align.key}
-            label={t(align.i18n)}
-            onPressedChange={() => {
-              execSetBlockType("paragraph", { alignment: align.alignment });
-            }}
-            pressed={formatState.isAlignActive(align.alignment)}
-            testId={`ribbon-${align.key}`}
-          />
-        ))}
+        {ALIGNMENTS.map((align) => {
+          const Icon = ALIGN_ICONS[align.alignment] ?? AlignLeft;
+          return (
+            <RibbonToggleButton
+              key={align.key}
+              label={t(align.i18n)}
+              onPressedChange={() => {
+                execSetBlockType("paragraph", { alignment: align.alignment });
+              }}
+              pressed={formatState.isAlignActive(align.alignment)}
+              testId={`ribbon-${align.key}`}
+            >
+              <Icon className="size-4" />
+            </RibbonToggleButton>
+          );
+        })}
         <RibbonToggleButton
           label={t("format.orderedList")}
           onPressedChange={() =>
             listType === "ordered" ? execLift() : execWrapIn("ordered_list")
           }
           pressed={listType === "ordered"}
+          shortcut="⌘⇧7"
           testId="ribbon-orderedList"
         >
-          <span>{t("format.orderedList")}</span>
+          <ListOrdered className="size-4" />
         </RibbonToggleButton>
         <RibbonToggleButton
           label={t("format.unorderedList")}
@@ -169,23 +243,26 @@ export function HomeTab(_props: RibbonCallbacks) {
             listType === "unordered" ? execLift() : execWrapIn("bullet_list")
           }
           pressed={listType === "unordered"}
+          shortcut="⌘⇧8"
           testId="ribbon-unorderedList"
         >
-          <span>{t("format.unorderedList")}</span>
+          <List className="size-4" />
         </RibbonToggleButton>
         <RibbonButton
           label={t("format.indent")}
           onClick={execIndent}
+          shortcut="⌘]"
           testId="ribbon-indent"
         >
-          →
+          <Indent className="size-4" />
         </RibbonButton>
         <RibbonButton
           label={t("format.outdent")}
           onClick={execOutdent}
+          shortcut="⌘["
           testId="ribbon-outdent"
         >
-          ←
+          <Outdent className="size-4" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -224,9 +301,10 @@ export function HomeTab(_props: RibbonCallbacks) {
         <RibbonButton
           label={t("format.clearFormat")}
           onClick={clearFormatting}
+          shortcut="⌘\\"
           testId="ribbon-clearFormat"
         >
-          {t("format.clearFormat")}
+          <Eraser className="size-5" />
         </RibbonButton>
       </RibbonGroup>
     </>

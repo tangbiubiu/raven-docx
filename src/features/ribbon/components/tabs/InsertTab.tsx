@@ -1,4 +1,5 @@
 // src/features/ribbon/components/tabs/InsertTab.tsx — 插入标签页 / Insert tab
+import { FileText, Footprints, Link, Table } from "lucide-react";
 import { useState } from "react";
 import { FootnoteDialog } from "@/features/table/components/FootnoteDialog";
 import { HyperlinkDialog } from "@/features/table/components/HyperlinkDialog";
@@ -24,7 +25,7 @@ export function InsertTab({ onInsertPageBreak }: RibbonCallbacks) {
           onClick={() => setShowTableGrid(true)}
           testId="ribbon-insertTable"
         >
-          ⊞ {t("menu.insert.table")}
+          <Table className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -42,7 +43,7 @@ export function InsertTab({ onInsertPageBreak }: RibbonCallbacks) {
           onClick={() => setShowHyperlinkDialog(true)}
           testId="ribbon-insertLink"
         >
-          🔗 {t("menu.insert.link")}
+          <Link className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -54,7 +55,7 @@ export function InsertTab({ onInsertPageBreak }: RibbonCallbacks) {
           onClick={() => setShowFootnoteDialog(true)}
           testId="ribbon-insertFootnote"
         >
-          📝 {t("menu.insert.footnote")}
+          <Footprints className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -66,7 +67,7 @@ export function InsertTab({ onInsertPageBreak }: RibbonCallbacks) {
           onClick={onInsertPageBreak}
           testId="ribbon-pageBreak"
         >
-          {t("ribbon.button.pageBreak")}
+          <FileText className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 

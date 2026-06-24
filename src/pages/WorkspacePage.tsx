@@ -24,6 +24,7 @@ import { HeaderFooterEditor } from "@/features/page-layout/components/HeaderFoot
 import { PageSetupDialog } from "@/features/page-layout/components/PageSetupDialog";
 import { Ribbon } from "@/features/ribbon";
 import type { RibbonCallbacks } from "@/features/ribbon/components/Ribbon";
+import { useRibbonShortcuts } from "@/features/ribbon/hooks/use-ribbon-shortcuts";
 import { SettingsDrawer } from "@/features/settings/components/SettingsDrawer";
 import { VariableForm } from "@/features/template/components/variable-form";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
@@ -79,6 +80,8 @@ export default function WorkspacePage() {
 
   const { newDocument, openDocument, saveDocument } = useDocument();
   useAutoSave();
+  // Ribbon 快捷键(清除格式/缩进/列表 — 编辑器未覆盖项)/ Ribbon shortcuts (editor-uncovered)
+  useRibbonShortcuts();
   const closeGuard = useCloseGuard({ saveDocument });
 
   // 文档切换时关闭 pi 进程（丢弃旧对话历史，状态干净）
