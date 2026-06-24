@@ -1,4 +1,5 @@
 // src/features/ribbon/components/RibbonToggleButton.tsx — 可按压切换的 Ribbon 按钮(图标 + tooltip + 动效)/ Ribbon toggle button
+// Phase 7.5: forced-colors 模式下确保可见边框
 import type { ReactNode } from "react";
 import { Toggle } from "@/components/ui/toggle";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,7 +33,9 @@ export function RibbonToggleButton({
         "hover:scale-105 hover:bg-accent hover:text-accent-foreground",
         "active:scale-95",
         "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100",
-        pressed ? "bg-accent text-accent-foreground" : ""
+        pressed ? "bg-accent text-accent-foreground" : "",
+        // Phase 7.5: 高对比度模式下显示边框确保可见
+        "forced-colors:border forced-colors:border-[ButtonBorder]"
       )}
       data-pressed={pressed}
       data-testid={testId}

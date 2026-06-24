@@ -10,18 +10,16 @@ vi.mock("@/lib/utils", () => ({
   cn: (...args: (string | boolean | undefined)[]) =>
     args.filter(Boolean).join(" "),
 }));
+// Phase 7.1: HomeTab 不再依赖 useFormatState，改为细粒度订阅 selectionFormat。
+// mock 须调用 selector，否则所有 toggle 按钮会拿到 truthy 整对象而非字段值。
+const mockDocState = {
+  editorBridge: null,
+  selectionFormat: null,
+};
 vi.mock("@/stores/useDocumentStore", () => ({
-  useDocumentStore: vi.fn(() => ({ editorBridge: null })),
-}));
-vi.mock("@/features/formatting/hooks/use-format-state", () => ({
-  useFormatState: () => ({
-    isActive: () => false,
-    isAlignActive: () => false,
-    getHeadingLevel: () => {
-      // mock: 无标题 / no heading
-    },
-    getListType: () => null,
-  }),
+  useDocumentStore: vi.fn((selector?: (s: typeof mockDocState) => unknown) =>
+    typeof selector === "function" ? selector(mockDocState) : mockDocState
+  ),
 }));
 
 const mockCmds = vi.hoisted(() => ({
@@ -93,5 +91,19 @@ describe("HomeTab", () => {
     render(<HomeTab {...props} />);
     screen.getByTestId("ribbon-bold").click();
     expect(mockCmds.execToggleMark).toHaveBeenCalledWith("bold");
+  });
+
+  it("点击上标调用 execToggleMark", () => {
+    render(<HomeTab {...props} />);
+    screen.getByTestId("ribbon-superscript").click();
+    expect(mockCmds.execToggleMark).toHaveBeenCalledWith("superscript");
+  });
+
+  it("selectionFormat 有值时加粗按钮显示按下态", () => {
+    mockDocState.selectionFormat = { bold: true } as never;
+    render(<HomeTab {...props} />);
+    const boldBtn = screen.getByTestId("ribbon-bold");
+    expect(boldBtn).toHaveAttribute("data-pressed", "true");
+    mockDocState.selectionFormat = null;
   });
 });
