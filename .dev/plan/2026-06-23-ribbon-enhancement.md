@@ -207,10 +207,10 @@ Wave 1 (串行,阻塞)
 
 Wave 2 (三路并行,文件不重叠)
   ├─ Phase 1: Ribbon 子组件 + 6 Tab + command-palette + WorkspacePage (图标/视觉/快捷键)
-  ├─ Phase 6: PanelResizeHandle + PanelPopover (拖拽/浮窗打磨)
+  ├─ Phase 6: PanelResizeHandle + PanelPopover (拖拽/浮窗打磨,纯组件内部行为)
   └─ Phase 7: ErrorBoundary + store selector (性能/a11y,贯穿性独立工作)
        ↑ Phase 1 改 Ribbon/*.tsx,Phase 6 改 layout/*.tsx,Phase 7 新建 ErrorBoundary — 文件不冲突
-       ⚠️ WorkspacePage.tsx 被 Phase 1(快捷键)和 Phase 6(布局 JSX)共享 — 由同一 subagent 统一改,或分不相邻代码区
+       ⚠️ WorkspacePage.tsx 仅 Phase 1 改(快捷键/命令面板) — Phase 6 已收敛为纯组件内部改动,不碰 WorkspacePage,无并行冲突
 
 Wave 3 (四路并行,各改不同 Tab 文件)
   ├─ Phase 2: HomeTab + use-format-state.ts + ColorPicker/FormatPainter (开始标签页功能)
@@ -354,9 +354,10 @@ Wave 3 (四路并行,各改不同 Tab 文件)
 **目标:** 拖拽/折叠/浮窗体验提升。
 
 **Files:**
-- Modify: `src/features/layout/components/PanelResizeHandle.tsx`
-- Modify: `src/features/layout/components/PanelPopover.tsx`
-- Modify: `src/pages/WorkspacePage.tsx`
+- Modify: `src/features/layout/components/PanelResizeHandle.tsx` (6.1/6.2/6.3/6.5)
+- Modify: `src/features/layout/components/PanelPopover.tsx` (6.4/6.6)
+
+> **文件范围说明(审查修正):** 原 Plan 列出 `WorkspacePage.tsx`,但实际 6 个 Task 均为组件内部行为(样式/动画/键盘监听/双击),不涉及 WorkspacePage 布局 JSX 或 props 传递。移除此处以消除与 Phase 1 的并行冲突(Phase 1 改 WorkspacePage 快捷键/命令面板注册)。若实现中发现确需 WorkspacePage 配合,提到 Phase 1 worktree 统一处理。
 
 **Tasks:**
 
