@@ -1,105 +1,47 @@
 // format-apply.ts — 格式应用工具函数 / Format application helpers
-// 从 toolbar.tsx 提取,供 Ribbon HomeTab 和旧 Toolbar 共用。
+// 薄委派层:将 Ribbon UI 的格式操作委派到 commands.ts 的 exec* 封装,
+// 后者调用 docx-editor-core 的 ProseMirror 命令(操作当前选区)。
+// Reference: .dev/plan/2026-06-23-ribbon-enhancement.md §Phase 0
+import {
+  execSetFontFamily,
+  execSetFontSize,
+  execSetHighlight,
+  execSetTextColor,
+} from "@/features/editor/commands";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { FONT_FAMILIES } from "./constants";
 
-/** 通过 bridge.applyFormatting 设置字体 */
+/**
+ * 设置字体族 / Set font family (value 来自 FONT_FAMILIES)
+ *
+ * TODO(语义债):FONT_FAMILIES 的 font 字段是 CSS fallback 列表
+ * (如 "system-ui, sans-serif"),而 OOXML fontFamily mark 的 ascii 属性
+ * 语义上应为单一字体名。此问题为既有数据,Phase 0 仅做命令接线,
+ * 不改 FONT_FAMILIES 语义 —— 后续需统一字体名映射。
+ */
 export function applyFont(fontValue: string): void {
-  const bridge = useDocumentStore.getState().editorBridge;
-  if (!bridge) {
-    return;
-  }
   const family = FONT_FAMILIES.find((f) => f.value === fontValue);
-  if (!family) {
-    return;
-  }
-
-  // 通过 ProseMirror mark 设置字体
-  const view = bridge.getEditorView();
-  if (!view) {
-    return;
-  }
-  const { state, dispatch } = view;
-  const fontFamilyMark = state.schema.marks.fontFamily;
-  if (fontFamilyMark && family.font) {
-    const { from, to, empty } = state.selection;
-    if (empty) {
-      return;
-    }
-    dispatch(
-      state.tr.addMark(from, to, fontFamilyMark.create({ ascii: family.font }))
-    );
+  if (family?.font) {
+    execSetFontFamily(family.font);
   }
 }
 
-/** 通过 ProseMirror mark 设置字号 */
+/** 设置字号(half-points)/ Set font size */
 export function applyFontSize(sizeHalfPt: number): void {
-  const bridge = useDocumentStore.getState().editorBridge;
-  if (!bridge) {
-    return;
-  }
-  const view = bridge.getEditorView();
-  if (!view) {
-    return;
-  }
-  const { state, dispatch } = view;
-  const fontSizeMark = state.schema.marks.fontSize;
-  if (fontSizeMark) {
-    const { from, to, empty } = state.selection;
-    if (empty) {
-      return;
-    }
-    dispatch(
-      state.tr.addMark(from, to, fontSizeMark.create({ size: sizeHalfPt }))
-    );
-  }
+  execSetFontSize(sizeHalfPt);
 }
 
-/** 通过 ProseMirror mark 设置文字颜色 */
+/** 设置文字颜色(自动剥离 # 前缀)/ Set text color */
 export function applyTextColor(color: string): void {
-  const bridge = useDocumentStore.getState().editorBridge;
-  if (!bridge) {
-    return;
-  }
-  const view = bridge.getEditorView();
-  if (!view) {
-    return;
-  }
-  const { state, dispatch } = view;
-  const colorMark = state.schema.marks.color;
-  if (colorMark) {
-    const { from, to, empty } = state.selection;
-    if (empty) {
-      return;
-    }
-    // OOXML color uses rgb without #
-    const rgb = color.replace("#", "");
-    dispatch(state.tr.addMark(from, to, colorMark.create({ rgb })));
-  }
+  execSetTextColor(color);
 }
 
-/** 通过 ProseMirror mark 设置高亮 */
+/** 设置文本高亮(颜色名)/ Set text highlight */
 export function applyHighlight(color: string): void {
-  const bridge = useDocumentStore.getState().editorBridge;
-  if (!bridge) {
-    return;
-  }
-  const view = bridge.getEditorView();
-  if (!view) {
-    return;
-  }
-  const { state, dispatch } = view;
-  const highlightMark = state.schema.marks.highlight;
-  if (highlightMark) {
-    const { from, to, empty } = state.selection;
-    if (empty) {
-      return;
-    }
-    dispatch(state.tr.addMark(from, to, highlightMark.create({ color })));
-  }
+  execSetHighlight(color);
 }
 
-/** 清除选区格式 */
+/** 清除选区格式 / Clear formatting */
 export function clearFormatting(): void {
   const bridge = useDocumentStore.getState().editorBridge;
   if (!bridge) {

@@ -2,6 +2,13 @@
 // 纯函数层，零 React 依赖。Toolbar 和 MenuBar 共用。
 // Reference: .dev/plan/implementation-plan.md §Phase 2
 
+import {
+  insertTable,
+  setFontFamily,
+  setFontSize,
+  setHighlight,
+  setTextColor,
+} from "@eigenpal/docx-editor-core/prosemirror/commands";
 import { open } from "@tauri-apps/plugin-dialog";
 import { lift, setBlockType, toggleMark, wrapIn } from "prosemirror-commands";
 import { redo, undo } from "prosemirror-history";
@@ -45,6 +52,29 @@ export function execToggleMark(markName: string): void {
     return;
   }
   toggleMark(mark)(view.state, view.dispatch);
+}
+
+// === 字体/字号/颜色/高亮(基于 docx-editor-core PM 命令)===
+
+/** 设置字体族(ascii + hAnsi 同步设置)/ Set font family */
+export function execSetFontFamily(fontName: string): void {
+  apply(setFontFamily(fontName));
+}
+
+/** 设置字号(half-points,OOXML w:sz 刻度,24 = 12pt)/ Set font size */
+export function execSetFontSize(sizeHalfPt: number): void {
+  apply(setFontSize(sizeHalfPt));
+}
+
+/** 设置文字颜色(rgb 不带 # 前缀,自动剥离)/ Set text color */
+export function execSetTextColor(rgb: string): void {
+  const normalized = rgb.replace("#", "");
+  apply(setTextColor({ rgb: normalized }));
+}
+
+/** 设置文本高亮(颜色名,如 'yellow')/ Set text highlight */
+export function execSetHighlight(color: string): void {
+  apply(setHighlight(color));
 }
 
 // === Block 类型 ===
@@ -147,15 +177,9 @@ export function execOutdent(): void {
 
 // === 插入 ===
 
-/** 插入表格（占位实现，Phase 4 完整化） */
-export function execInsertTable(_rows = 3, _cols = 3): void {
-  const view = getView();
-  if (!view) {
-    return;
-  }
-  view.dispatch(
-    view.state.tr.insertText(`\n[表格 ${_rows}×${_cols} — 即将实现]\n`)
-  );
+/** 插入表格(rows × cols,默认 3×3)/ Insert table */
+export function execInsertTable(rows = 3, cols = 3): void {
+  apply(insertTable(rows, cols));
 }
 
 /** 插入链接 */
