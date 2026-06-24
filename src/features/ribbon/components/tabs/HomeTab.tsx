@@ -162,7 +162,7 @@ export function HomeTab(_props: RibbonCallbacks) {
             </MarkToggleButton>
           );
         })}
-        <Select onValueChange={applyFont} value={fontFamilyValue || undefined}>
+        <Select onValueChange={applyFont} value={fontFamilyValue ?? ""}>
           <SelectTrigger className="h-7 w-[90px] text-xs" size="sm">
             <SelectValue placeholder={t("format.font")} />
           </SelectTrigger>
@@ -176,7 +176,7 @@ export function HomeTab(_props: RibbonCallbacks) {
         </Select>
         <Select
           onValueChange={(v) => applyFontSize(Number.parseInt(v, 10) * 2)}
-          value={fontSizeValue || undefined}
+          value={fontSizeValue ?? ""}
         >
           <SelectTrigger className="h-7 w-[60px] text-xs" size="sm">
             <SelectValue placeholder={t("format.fontSize")} />
