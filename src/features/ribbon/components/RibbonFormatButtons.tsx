@@ -3,6 +3,7 @@
 // 替代 HomeTab 内联 useFormatState().isActive() 调用（该路径不响应选区变化）。
 
 import type { ReactNode } from "react";
+import { FONT_FAMILIES } from "@/features/formatting/constants";
 import { execToggleMark } from "@/features/editor/commands";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { RibbonToggleButton } from "./RibbonToggleButton";
@@ -117,9 +118,21 @@ export function ListToggleButton({
   );
 }
 
-/** 受控字体 Select 的当前值 hook（细粒度订阅）*/
+/**
+ * 受控字体 Select 的当前值 hook（细粒度订阅 + ascii→value 反向映射）。
+ * selectionFormat.fontFamily 存的是 mark 的 ascii 原始值（如 "Calibri"），
+ * SelectItem value 是语义 key（如 "calibri"），此处做大小写不敏感反向匹配。
+ * - ascii 为空 → "default"
+ * - 未知字体 → ""（Select 显示 placeholder）
+ */
 export function useFontFamilyValue(): string {
-  return useDocumentStore((s) => s.selectionFormat?.fontFamily ?? "");
+  const ascii = useDocumentStore((s) => s.selectionFormat?.fontFamily ?? "");
+  if (!ascii) return "default";
+  return (
+    FONT_FAMILIES.find(
+      (f) => f.font?.toLowerCase() === ascii.toLowerCase(),
+    )?.value ?? ""
+  );
 }
 
 /** 受控字号 Select 的当前值 hook（半磅 → pt 显示，细粒度订阅）*/

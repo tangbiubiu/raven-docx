@@ -43,12 +43,15 @@ export const ALIGNMENTS: {
   { key: "alignJustify", i18n: "format.alignJustify", alignment: "justify" },
 ];
 
-/** 字体列表 */
+/** 字体列表 — font 字段为单一字体名(对应 OOXML w:ascii),优先选 docx-editor-core 字体表中有 Google 等价的字体 */
 export const FONT_FAMILIES = [
   { value: "default", label: "系统默认", font: "" },
-  { value: "sans", label: "无衬线", font: "system-ui, sans-serif" },
-  { value: "serif", label: "衬线体", font: "Georgia, serif" },
-  { value: "mono", label: "等宽体", font: "Menlo, monospace" },
+  { value: "calibri", label: "Calibri", font: "Calibri" },
+  { value: "arial", label: "Arial", font: "Arial" },
+  { value: "times", label: "Times New Roman", font: "Times New Roman" },
+  { value: "georgia", label: "Georgia", font: "Georgia" },
+  { value: "courier", label: "Courier New", font: "Courier New" },
+  { value: "cambria", label: "Cambria", font: "Cambria" },
 ];
 
 /** 字号列表（半磅） */

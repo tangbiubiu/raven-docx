@@ -13,11 +13,6 @@ import { FONT_FAMILIES } from "./constants";
 
 /**
  * 设置字体族 / Set font family (value 来自 FONT_FAMILIES)
- *
- * TODO(语义债):FONT_FAMILIES 的 font 字段是 CSS fallback 列表
- * (如 "system-ui, sans-serif"),而 OOXML fontFamily mark 的 ascii 属性
- * 语义上应为单一字体名。此问题为既有数据,Phase 0 仅做命令接线,
- * 不改 FONT_FAMILIES 语义 —— 后续需统一字体名映射。
  */
 export function applyFont(fontValue: string): void {
   const family = FONT_FAMILIES.find((f) => f.value === fontValue);

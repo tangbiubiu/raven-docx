@@ -31,16 +31,14 @@ describe("format-apply — 委派到 exec* 命令", () => {
   });
 
   describe("applyFont", () => {
-    it('value="sans" → execSetFontFamily("system-ui, sans-serif")', () => {
-      applyFont("sans");
-      expect(mockExec.execSetFontFamily).toHaveBeenCalledWith(
-        "system-ui, sans-serif"
-      );
+    it('value="calibri" → execSetFontFamily("Calibri")', () => {
+      applyFont("calibri");
+      expect(mockExec.execSetFontFamily).toHaveBeenCalledWith("Calibri");
     });
 
-    it('value="serif" → execSetFontFamily("Georgia, serif")', () => {
-      applyFont("serif");
-      expect(mockExec.execSetFontFamily).toHaveBeenCalledWith("Georgia, serif");
+    it('value="georgia" → execSetFontFamily("Georgia")', () => {
+      applyFont("georgia");
+      expect(mockExec.execSetFontFamily).toHaveBeenCalledWith("Georgia");
     });
 
     it('value="default"(空字体) → 不调用 execSetFontFamily', () => {
