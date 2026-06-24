@@ -20,7 +20,7 @@ export type AppModal =
   | "templateVars"
   | null;
 
-/** Ribbon 标签页 ID / Ribbon tab id */
+/** Ribbon 固定标签页 ID / Ribbon fixed tab id */
 export type RibbonTab =
   | "home"
   | "insert"
@@ -28,6 +28,17 @@ export type RibbonTab =
   | "references"
   | "review"
   | "view";
+
+/** Ribbon 上下文标签页 ID(选中表格/图片时出现)/ Ribbon contextual tab id */
+export type ContextualTab = "tableTools" | "pictureFormat";
+
+/** 选区上下文类型 / Selection context type */
+export type SelectionContextType = "none" | "table" | "image";
+
+/** 选区上下文(驱动上下文标签页显示)/ Selection context */
+export type SelectionContext = {
+  type: SelectionContextType;
+};
 
 /** 面板宽度范围常量 / Panel width range constants */
 export const OUTLINE_WIDTH_MIN = 160;
@@ -63,6 +74,11 @@ export type AppState = {
   /** 应用初始加载 */
   isInitialLoading: boolean;
 
+  /** 选区上下文(不持久化,驱动上下文标签页显示)/ Selection context */
+  selectionContext: SelectionContext;
+  /** 当前激活的上下文标签页(不持久化;为 null 时显示固定标签页)/ Active contextual tab */
+  activeContextualTab: ContextualTab | null;
+
   // --- Actions ---
   openModal(id: AppModal): void;
   closeModal(): void;
@@ -80,6 +96,10 @@ export type AppState = {
   setAgentWidth(width: number): void;
   setOutlineFloatOpen(open: boolean): void;
   setAgentFloatOpen(open: boolean): void;
+  /** 设置选区上下文 / Set selection context */
+  setSelectionContext(ctx: SelectionContext): void;
+  /** 设置当前激活的上下文标签页(null = 回到固定标签页)/ Set active contextual tab */
+  setActiveContextualTab(tab: ContextualTab | null): void;
 };
 
 const initialAppState = {
@@ -94,6 +114,8 @@ const initialAppState = {
   outlinePanelCollapsed: false,
   commentPanelOpen: false,
   isInitialLoading: true,
+  selectionContext: { type: "none" } as SelectionContext,
+  activeContextualTab: null as ContextualTab | null,
 } as const satisfies Partial<AppState>;
 
 export const useAppStore = create<AppState>()(
@@ -164,6 +186,15 @@ export const useAppStore = create<AppState>()(
         }),
       setOutlineFloatOpen: (open) => set({ outlineFloatOpen: open }),
       setAgentFloatOpen: (open) => set({ agentFloatOpen: open }),
+      setSelectionContext: (ctx) =>
+        set(() => {
+          // 上下文消失时,清除激活的上下文标签页(回到固定标签页)
+          if (ctx.type === "none") {
+            return { selectionContext: ctx, activeContextualTab: null };
+          }
+          return { selectionContext: ctx };
+        }),
+      setActiveContextualTab: (tab) => set({ activeContextualTab: tab }),
     }),
     {
       name: "raven:app-layout",
