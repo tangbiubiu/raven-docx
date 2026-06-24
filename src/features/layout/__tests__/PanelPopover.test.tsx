@@ -8,6 +8,8 @@ vi.mock("@/lib/utils", () => ({
     args.filter(Boolean).join(" "),
 }));
 
+const TRANSFORM_RE = /transition-transform/;
+const DURATION_200_RE = /duration-200/;
 describe("PanelPopover", () => {
   it("open=false 时不渲染内容", () => {
     const { container } = render(
@@ -37,5 +39,29 @@ describe("PanelPopover", () => {
     );
     fireEvent.pointerDown(screen.getByTestId("panel-popover-overlay"));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  // 6.4 浮窗滑入动画
+  it("6.4 左侧浮窗含滑入动画类", () => {
+    render(
+      <PanelPopover onClose={vi.fn()} open={true} side="left" width={220}>
+        <div>大纲</div>
+      </PanelPopover>
+    );
+    const popover = screen.getByTestId("panel-popover");
+    expect(popover.className).toMatch(TRANSFORM_RE);
+    expect(popover.className).toMatch(DURATION_200_RE);
+  });
+
+  // 6.6 Escape 关闭
+  it("6.6 按 Escape 触发 onClose", () => {
+    const onClose = vi.fn();
+    render(
+      <PanelPopover onClose={onClose} open={true} side="left" width={220}>
+        <div>大纲</div>
+      </PanelPopover>
+    );
+    fireEvent.keyDown(screen.getByTestId("panel-popover"), { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
