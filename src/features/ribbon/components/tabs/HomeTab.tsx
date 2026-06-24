@@ -1,5 +1,7 @@
 // src/features/ribbon/components/tabs/HomeTab.tsx — 开始标签页 / Home tab
 
+// Phase 7.1: 切换按钮改用细粒度 store 订阅（RibbonFormatButtons），
+// 替代 useFormatState() 直接读 PM view（不响应选区变化）。
 import type { LucideIcon } from "lucide-react";
 import {
   AlignCenter,
@@ -35,7 +37,6 @@ import {
   execOutdent,
   execRedo,
   execSetBlockType,
-  execToggleMark,
   execUndo,
   execWrapIn,
 } from "@/features/editor/commands";
@@ -54,13 +55,19 @@ import {
   applyTextColor,
   clearFormatting,
 } from "@/features/formatting/format-apply";
-import { useFormatState } from "@/features/formatting/hooks/use-format-state";
 import { useT } from "@/lib/i18n";
 import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
+import {
+  AlignToggleButton,
+  ListToggleButton,
+  MarkToggleButton,
+  useFontFamilyValue,
+  useFontSizeValue,
+  useHeadingValue,
+} from "../RibbonFormatButtons";
 import { RibbonGroup } from "../RibbonGroup";
 import { RibbonSeparator } from "../RibbonSeparator";
-import { RibbonToggleButton } from "../RibbonToggleButton";
 
 /** 文本标记 → lucide 图标映射 / text mark → lucide icon */
 const MARK_ICONS: Record<string, LucideIcon> = {
@@ -90,13 +97,9 @@ const MARK_SHORTCUTS: Record<string, string> = {
 
 export function HomeTab(_props: RibbonCallbacks) {
   const { t } = useT();
-  const formatState = useFormatState();
-  const listType = formatState.getListType();
-
-  const headingValue = () => {
-    const level = formatState.getHeadingLevel();
-    return level ? `heading${level}` : "paragraph";
-  };
+  const fontFamilyValue = useFontFamilyValue();
+  const fontSizeValue = useFontSizeValue();
+  const headingValue = useHeadingValue();
 
   return (
     <>
@@ -127,33 +130,33 @@ export function HomeTab(_props: RibbonCallbacks) {
         {TEXT_MARKS.map((mark) => {
           const Icon = MARK_ICONS[mark.key] ?? Bold;
           return (
-            <RibbonToggleButton
+            <MarkToggleButton
+              field={mark.key as "bold" | "italic" | "underline" | "strike"}
               key={mark.key}
               label={t(mark.i18n)}
-              onPressedChange={() => execToggleMark(mark.markName)}
-              pressed={formatState.isActive(mark.markName)}
+              markName={mark.markName}
               shortcut={MARK_SHORTCUTS[mark.key]}
               testId={`ribbon-${mark.key}`}
             >
               <Icon className="size-4" />
-            </RibbonToggleButton>
+            </MarkToggleButton>
           );
         })}
         {SUPER_SUB_MARKS.map((mark) => {
           const Icon = MARK_ICONS[mark.key] ?? Superscript;
           return (
-            <RibbonToggleButton
+            <MarkToggleButton
+              field={mark.key as "superscript" | "subscript"}
               key={mark.key}
               label={t(mark.i18n)}
-              onPressedChange={() => execToggleMark(mark.markName)}
-              pressed={formatState.isActive(mark.markName)}
+              markName={mark.markName}
               testId={`ribbon-${mark.key}`}
             >
               <Icon className="size-4" />
-            </RibbonToggleButton>
+            </MarkToggleButton>
           );
         })}
-        <Select onValueChange={applyFont}>
+        <Select onValueChange={applyFont} value={fontFamilyValue || undefined}>
           <SelectTrigger className="h-7 w-[90px] text-xs" size="sm">
             <SelectValue placeholder={t("format.font")} />
           </SelectTrigger>
@@ -167,6 +170,7 @@ export function HomeTab(_props: RibbonCallbacks) {
         </Select>
         <Select
           onValueChange={(v) => applyFontSize(Number.parseInt(v, 10) * 2)}
+          value={fontSizeValue || undefined}
         >
           <SelectTrigger className="h-7 w-[60px] text-xs" size="sm">
             <SelectValue placeholder={t("format.fontSize")} />
@@ -213,41 +217,43 @@ export function HomeTab(_props: RibbonCallbacks) {
         {ALIGNMENTS.map((align) => {
           const Icon = ALIGN_ICONS[align.alignment] ?? AlignLeft;
           return (
-            <RibbonToggleButton
+            <AlignToggleButton
+              alignment={
+                align.alignment as "left" | "center" | "right" | "justify"
+              }
               key={align.key}
               label={t(align.i18n)}
-              onPressedChange={() => {
-                execSetBlockType("paragraph", { alignment: align.alignment });
-              }}
-              pressed={formatState.isAlignActive(align.alignment)}
+              onToggle={() =>
+                execSetBlockType("paragraph", { alignment: align.alignment })
+              }
               testId={`ribbon-${align.key}`}
             >
               <Icon className="size-4" />
-            </RibbonToggleButton>
+            </AlignToggleButton>
           );
         })}
-        <RibbonToggleButton
+        <ListToggleButton
           label={t("format.orderedList")}
-          onPressedChange={() =>
-            listType === "ordered" ? execLift() : execWrapIn("ordered_list")
+          listType="ordered"
+          onToggle={(pressed) =>
+            pressed ? execLift() : execWrapIn("ordered_list")
           }
-          pressed={listType === "ordered"}
           shortcut="⌘⇧7"
           testId="ribbon-orderedList"
         >
           <ListOrdered className="size-4" />
-        </RibbonToggleButton>
-        <RibbonToggleButton
+        </ListToggleButton>
+        <ListToggleButton
           label={t("format.unorderedList")}
-          onPressedChange={() =>
-            listType === "unordered" ? execLift() : execWrapIn("bullet_list")
+          listType="unordered"
+          onToggle={(pressed) =>
+            pressed ? execLift() : execWrapIn("bullet_list")
           }
-          pressed={listType === "unordered"}
           shortcut="⌘⇧8"
           testId="ribbon-unorderedList"
         >
           <List className="size-4" />
-        </RibbonToggleButton>
+        </ListToggleButton>
         <RibbonButton
           label={t("format.indent")}
           onClick={execIndent}
@@ -279,7 +285,7 @@ export function HomeTab(_props: RibbonCallbacks) {
               execSetBlockType("heading", { level });
             }
           }}
-          value={headingValue()}
+          value={headingValue}
         >
           <SelectTrigger className="h-7 w-[80px] text-xs" size="sm">
             <SelectValue placeholder={t("format.normal")} />

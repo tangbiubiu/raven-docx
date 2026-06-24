@@ -1,4 +1,5 @@
 // src/features/ribbon/components/RibbonButton.tsx — Ribbon 普通按钮(图标 + tooltip + 动效)/ Ribbon button
+// Phase 7.5: forced-colors 模式下确保可见边框
 import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -29,13 +30,16 @@ export function RibbonButton({
 }: RibbonButtonProps) {
   const button = (
     <button
+      aria-disabled={disabled || undefined}
       aria-label={label}
       className={cn(
         "inline-flex h-12 min-w-[44px] flex-col items-center justify-center gap-0.5 rounded px-2 text-xs",
         "transition duration-150",
         "hover:scale-105 hover:bg-accent hover:text-accent-foreground",
         "active:scale-95",
-        "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+        "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100",
+        // Phase 7.5: 高对比度模式下显示边框确保可见
+        "forced-colors:border forced-colors:border-[ButtonBorder]"
       )}
       data-testid={testId}
       disabled={disabled}

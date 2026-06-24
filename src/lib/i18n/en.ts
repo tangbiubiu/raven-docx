@@ -145,6 +145,10 @@ export const en: Translations = {
   "ribbon.charCount.title": "Character Count",
   "ribbon.charCount.chars": "Characters",
   "ribbon.charCount.close": "Close",
+  "ribbon.error.title": "Tab failed to load",
+  "ribbon.error.default": "An unexpected error occurred",
+  "ribbon.error.retry": "Retry",
+  "ribbon.tab.loading": "Loading…",
 
   // === Panel Layout (resizable/collapse/float) ===
   "panel.resize.outline": "Drag to resize outline panel",

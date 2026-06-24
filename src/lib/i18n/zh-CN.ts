@@ -145,6 +145,10 @@ export const zhCN: Translations = {
   "ribbon.charCount.title": "字符统计",
   "ribbon.charCount.chars": "字符数",
   "ribbon.charCount.close": "关闭",
+  "ribbon.error.title": "标签页加载失败",
+  "ribbon.error.default": "发生未知错误",
+  "ribbon.error.retry": "重试",
+  "ribbon.tab.loading": "加载中…",
 
   // === 面板布局(可调宽/折叠/弹出) ===
   "panel.resize.outline": "拖拽调整大纲面板宽度",

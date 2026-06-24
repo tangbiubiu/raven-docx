@@ -1,6 +1,7 @@
 // features/editor/hooks/__tests__/useEditorBridge.test.ts — useEditorBridge Hook 测试
 
 import { act, renderHook } from "@testing-library/react";
+import type { EditorState } from "prosemirror-state";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useEditorBridge } from "../useEditorBridge";
@@ -39,12 +40,12 @@ describe("useEditorBridge", () => {
             depth: 1,
           },
         },
-      } as unknown as import("prosemirror-state").EditorState;
+      } as unknown as EditorState;
       act(() => {
         // minimal mock — 仅需 getEditorRef().getState()
         result.current.editorRef.current = {
           getEditorRef: () => ({ getState: () => mockPMState }),
-        } as any;
+        } as never;
       });
 
       act(() => {
@@ -56,10 +57,13 @@ describe("useEditorBridge", () => {
             italic: false,
             underline: undefined,
             strike: false,
+            vertAlign: "superscript",
+            color: { rgb: "FF0000" },
+            highlight: "yellow",
             fontSize: 24,
             fontFamily: { ascii: "Arial" },
           },
-          paragraphFormatting: { alignment: "left", lineSpacing: 1.15 },
+          paragraphFormatting: { alignment: "center", lineSpacing: 1.15 },
           styleId: "Heading1",
           startParagraphIndex: 0,
           endParagraphIndex: 2,
@@ -80,6 +84,13 @@ describe("useEditorBridge", () => {
       expect(fmt?.fontSize).toBe(12);
       expect(fmt?.fontFamily).toBe("Arial");
       expect(fmt?.strike).toBe(false);
+      // Phase 7.1: 补全的字段 / newly-populated fields
+      expect(fmt?.superscript).toBe(true);
+      expect(fmt?.subscript).toBe(false);
+      expect(fmt?.textColor).toBe("FF0000");
+      expect(fmt?.highlight).toBe("yellow");
+      expect(fmt?.alignment).toBe("center");
+      expect(fmt?.headingLevel).toBe(1);
     });
 
     it("无选区时清空 selectionInfo 和 selectionFormat", () => {
@@ -103,6 +114,80 @@ describe("useEditorBridge", () => {
       });
       expect(useDocumentStore.getState().selectionInfo).toBeNull();
       expect(useDocumentStore.getState().selectionFormat).toBeNull();
+    });
+
+    it("Heading3 styleId 映射为 headingLevel=3", () => {
+      const { result } = renderHook(() => useEditorBridge());
+
+      const mockPMState = {
+        selection: {
+          $from: {
+            node: () => ({
+              type: { name: "heading" },
+              attrs: { paraId: "H3" },
+            }),
+            doc: null as unknown,
+            depth: 1,
+          },
+        },
+      } as unknown as EditorState;
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({ getState: () => mockPMState }),
+        } as never;
+      });
+
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: false,
+          isMultiParagraph: false,
+          textFormatting: {},
+          paragraphFormatting: {},
+          styleId: "Heading3",
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+
+      expect(useDocumentStore.getState().selectionFormat?.headingLevel).toBe(3);
+    });
+
+    it("Normal styleId 映射为 headingLevel=undefined", () => {
+      const { result } = renderHook(() => useEditorBridge());
+
+      const mockPMState = {
+        selection: {
+          $from: {
+            node: () => ({
+              type: { name: "paragraph" },
+              attrs: { paraId: "P" },
+            }),
+            doc: null as unknown,
+            depth: 1,
+          },
+        },
+      } as unknown as EditorState;
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({ getState: () => mockPMState }),
+        } as never;
+      });
+
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: false,
+          isMultiParagraph: false,
+          textFormatting: {},
+          paragraphFormatting: {},
+          styleId: "Normal",
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+
+      expect(
+        useDocumentStore.getState().selectionFormat?.headingLevel
+      ).toBeUndefined();
     });
   });
 

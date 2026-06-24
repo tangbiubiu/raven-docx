@@ -6,9 +6,63 @@ import type { SelectionState } from "@eigenpal/docx-editor-core/prosemirror";
 import type { Document } from "@eigenpal/docx-editor-core/types/document";
 import type { DocxEditorRef } from "@eigenpal/docx-editor-react";
 import { useEffect, useRef } from "react";
-import type { EditorBridge, SelectionInfo } from "@/stores/useDocumentStore";
+import type { EditorBridge, FormatState } from "@/stores/useDocumentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { extractHeadings } from "../utils";
+
+/** Heading styleId 正则（Heading1→1 ... Heading6→6）*/
+const HEADING_STYLE_RE = /^Heading(\d)$/;
+
+/** 已知内部对齐值查表（静态 → Record 而非 Set，遵循 ts-set-map 规则）*/
+const KNOWN_ALIGNMENTS: Record<string, true> = {
+  left: true,
+  center: true,
+  right: true,
+  justify: true,
+};
+
+/** 将库 ParagraphAlignment 归一化为内部对齐值（'both' → 'justify'，未知值 → undefined）*/
+function normalizeAlignment(
+  a: string | undefined
+): "left" | "center" | "right" | "justify" | undefined {
+  if (a === "both") {
+    return "justify";
+  }
+  if (a && KNOWN_ALIGNMENTS[a]) {
+    return a as "left" | "center" | "right" | "justify";
+  }
+  return;
+}
+
+/**
+ * 从库 SelectionState 构建 store.selectionFormat。
+ * 提取为独立函数以降低 handleSelectionChange 的认知复杂度（Phase 7.1）。
+ */
+function buildSelectionFormat(
+  state: SelectionState,
+  listType: "ordered" | "unordered" | null
+): FormatState {
+  const tf = state.textFormatting;
+  const vertAlign = tf.vertAlign;
+  const headingMatch = state.styleId
+    ? HEADING_STYLE_RE.exec(state.styleId)
+    : null;
+  return {
+    bold: tf.bold ?? false,
+    italic: tf.italic ?? false,
+    underline: !!tf.underline,
+    strike: tf.strike ?? false,
+    superscript: vertAlign === "superscript",
+    subscript: vertAlign === "subscript",
+    textColor: tf.color?.rgb ?? "",
+    highlight: tf.highlight && tf.highlight !== "none" ? tf.highlight : "",
+    fontSize: tf.fontSize ? Math.round(tf.fontSize / 2) : 0,
+    fontFamily: tf.fontFamily?.ascii ?? "",
+    alignment: normalizeAlignment(state.paragraphFormatting.alignment),
+    headingLevel: headingMatch ? Number(headingMatch[1]) : undefined,
+    listType,
+  };
+}
 
 /** 从 ProseMirror view 计算文档字数（CJK 逐字 + 拉丁按词） */
 function computeCharCount(view: {
@@ -124,52 +178,63 @@ export function useEditorBridge() {
     if (!pmState) {
       return;
     }
-    // 获取选区起始位置所在的最近块级节点（段落）
     const { $from } = pmState.selection;
-    // 从文档根到 $from 深度遍历，找到最近的 paragraph 节点
     for (let d = $from.depth; d >= 0; d--) {
       const node = d === 0 ? $from.doc : $from.node(d);
       if (node.type.name === "paragraph" || node.type.name === "heading") {
-        return (node.attrs as { paraId?: string })?.paraId;
+        const attrs = node.attrs as { paraId?: string };
+        return attrs?.paraId;
       }
     }
   };
 
-  /** 选区变化回调 */
+  /** 从 ProseMirror 当前选区推断列表类型（向上遍历祖先节点）*/
+  const getListTypeFromPM = (): "ordered" | "unordered" | null => {
+    const pmState = editorRef.current?.getEditorRef()?.getState();
+    if (!pmState) {
+      return null;
+    }
+    const { $from } = pmState.selection;
+    const depth = $from.depth;
+    if (typeof depth !== "number") {
+      return null;
+    }
+    for (let d = depth; d > 0; d--) {
+      const node = $from.node(d);
+      if (!node) {
+        continue;
+      }
+      if (node.type.name === "ordered_list") {
+        return "ordered";
+      }
+      if (node.type.name === "bullet_list") {
+        return "unordered";
+      }
+    }
+    return null;
+  };
+
+  /** 选区变化回调 — 将库 SelectionState 全量映射到 store.selectionFormat */
   const handleSelectionChange = (state: SelectionState | null) => {
-    if (state) {
-      const info: SelectionInfo = {
-        from: state.startParagraphIndex,
-        to: state.endParagraphIndex,
-        text: "",
-        paraId: getCurrentParaId(),
-      };
-
-      setSelection(info);
-
-      setSelectionFormat({
-        bold: state.textFormatting.bold ?? false,
-        italic: state.textFormatting.italic ?? false,
-        underline: !!state.textFormatting.underline,
-        strike: state.textFormatting.strike ?? false,
-        fontSize: state.textFormatting.fontSize
-          ? Math.round(state.textFormatting.fontSize / 2)
-          : 0,
-        fontFamily: state.textFormatting.fontFamily?.ascii ?? "",
-      });
-    } else {
+    if (!state) {
       setSelection(null);
       setSelectionFormat(null);
+      return;
     }
+    setSelection({
+      from: state.startParagraphIndex,
+      to: state.endParagraphIndex,
+      text: "",
+      paraId: getCurrentParaId(),
+    });
+    setSelectionFormat(buildSelectionFormat(state, getListTypeFromPM()));
   };
 
   /** 文档内容变化回调 — 同步 dirty 标记 + 大纲标题 + 字数 */
   const handleChange = (_doc: Document) => {
     setDirty(true);
-    // 从文档中提取标题并更新 store，驱动 OutlinePanel 响应式渲染
     setHeadings(extractHeadings(_doc));
 
-    // 计算字数（编辑时即时更新，轮询兜底覆盖打开文档场景）
     const view = editorRef.current?.getEditorRef()?.getView();
     if (view) {
       setCharCount(computeCharCount(view));
