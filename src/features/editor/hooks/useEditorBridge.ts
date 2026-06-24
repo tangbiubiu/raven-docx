@@ -94,6 +94,8 @@ export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
     setParagraphStyle: () => false,
     scrollToParaId: (paraId) => ref.scrollToParaId(paraId),
     setZoom: (zoom) => ref.setZoom(zoom / 100), // store 存百分比，DocxEditor 用分数刻度
+    openPrintPreview: () => ref.openPrintPreview(),
+    print: () => ref.print(),
   };
 }
 

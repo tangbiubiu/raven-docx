@@ -150,6 +150,10 @@ export const zhCN: Translations = {
   "ribbon.group.view": "视图",
   "ribbon.group.zoom": "缩放",
   "ribbon.group.agent": "Agent",
+  "ribbon.group.tracking": "修订",
+  "ribbon.group.changes": "更改",
+  "ribbon.group.allChanges": "全部更改",
+  "ribbon.group.print": "打印",
 
   // === Ribbon 按钮(新增项,复用项不重复) ===
   "ribbon.button.newComment": "新建批注",
@@ -157,6 +161,17 @@ export const zhCN: Translations = {
   "ribbon.button.pageBreak": "分页符",
   "ribbon.button.ruler": "标尺",
   "ribbon.button.toc": "目录",
+  "ribbon.button.trackChanges": "修订模式",
+  "ribbon.button.acceptChange": "接受修订",
+  "ribbon.button.rejectChange": "拒绝修订",
+  "ribbon.button.nextChange": "下一处修订",
+  "ribbon.button.previousChange": "上一处修订",
+  "ribbon.button.acceptAllChanges": "全部接受",
+  "ribbon.button.rejectAllChanges": "全部拒绝",
+  "ribbon.button.printPreview": "打印预览",
+  "ribbon.button.print": "打印",
+  "ribbon.label.zoomPercent": "{percent}%",
+
   "ribbon.charCount.title": "字符统计",
   "ribbon.charCount.chars": "字符数",
   "ribbon.charCount.close": "关闭",

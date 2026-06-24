@@ -79,6 +79,9 @@ export type AppState = {
   /** 当前激活的上下文标签页(不持久化;为 null 时显示固定标签页)/ Active contextual tab */
   activeContextualTab: ContextualTab | null;
 
+  /** 标尺可见性(运行时偏好,不持久化)/ Ruler visibility (runtime, not persisted) */
+  rulerVisible: boolean;
+
   // --- Actions ---
   openModal(id: AppModal): void;
   closeModal(): void;
@@ -100,6 +103,8 @@ export type AppState = {
   setSelectionContext(ctx: SelectionContext): void;
   /** 设置当前激活的上下文标签页(null = 回到固定标签页)/ Set active contextual tab */
   setActiveContextualTab(tab: ContextualTab | null): void;
+  /** 切换标尺可见性 / Toggle ruler visibility */
+  toggleRuler(): void;
 };
 
 const initialAppState = {
@@ -116,6 +121,7 @@ const initialAppState = {
   isInitialLoading: true,
   selectionContext: { type: "none" } as SelectionContext,
   activeContextualTab: null as ContextualTab | null,
+  rulerVisible: false,
 } as const satisfies Partial<AppState>;
 
 export const useAppStore = create<AppState>()(
@@ -195,6 +201,7 @@ export const useAppStore = create<AppState>()(
           return { selectionContext: ctx };
         }),
       setActiveContextualTab: (tab) => set({ activeContextualTab: tab }),
+      toggleRuler: () => set((state) => ({ rulerVisible: !state.rulerVisible })),
     }),
     {
       name: "raven:app-layout",

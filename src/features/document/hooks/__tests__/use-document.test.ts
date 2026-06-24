@@ -51,6 +51,8 @@ describe("useDocument — saveDocument", () => {
       setZoom: vi.fn(),
       getEditorView: vi.fn(),
       dispatchTransaction: vi.fn(),
+      openPrintPreview: vi.fn(),
+      print: vi.fn(),
     };
     useDocumentStore.getState().setEditorBridge(bridge);
 
@@ -73,6 +75,8 @@ describe("useDocument — saveDocument", () => {
       setParagraphStyle: vi.fn(),
       scrollToParaId: vi.fn(),
       setZoom: vi.fn(),
+      openPrintPreview: vi.fn(),
+      print: vi.fn(),
       getEditorView: vi.fn(),
       dispatchTransaction: vi.fn(),
     };

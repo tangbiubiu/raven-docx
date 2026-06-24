@@ -22,6 +22,10 @@ export type EditorBridge = {
   scrollToParaId(paraId: string): boolean;
   /** 同步缩放级别到编辑器视图 */
   setZoom(zoom: number): void;
+  /** 打开打印预览 / Open print preview */
+  openPrintPreview(): void;
+  /** 直接打印文档 / Print the document directly */
+  print(): void;
 };
 
 // 最小类型契约，避免直接依赖 prosemirror-view 类型

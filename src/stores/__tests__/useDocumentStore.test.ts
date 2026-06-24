@@ -31,6 +31,12 @@ function createMockBridge(overrides?: Partial<EditorBridge>): EditorBridge {
     setZoom: () => {
       /* no-op */
     },
+    openPrintPreview: () => {
+      /* no-op */
+    },
+    print: () => {
+      /* no-op */
+    },
     ...overrides,
   };
 }

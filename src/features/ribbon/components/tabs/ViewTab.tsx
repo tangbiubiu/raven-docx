@@ -1,11 +1,14 @@
 // src/features/ribbon/components/tabs/ViewTab.tsx — 视图标签页 / View tab
 
-import { Bot, PanelLeft, Ruler, ZoomIn, ZoomOut } from "lucide-react";
+import { Bot, PanelLeft, Printer, Ruler, ZoomIn, ZoomOut } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useAppStore } from "@/stores/useAppStore";
+import { useDocumentStore } from "@/stores/useDocumentStore";
 import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
 import { RibbonGroup } from "../RibbonGroup";
 import { RibbonSeparator } from "../RibbonSeparator";
+import { RibbonToggleButton } from "../RibbonToggleButton";
 
 export function ViewTab({
   onToggleOutline,
@@ -14,6 +17,11 @@ export function ViewTab({
   onToggleAgentSidebar,
 }: RibbonCallbacks) {
   const { t } = useT();
+  const rulerVisible = useAppStore((s) => s.rulerVisible);
+  const toggleRuler = useAppStore((s) => s.toggleRuler);
+  const zoom = useDocumentStore((s) => s.zoom) ?? 100;
+  const editorBridge = useDocumentStore((s) => s.editorBridge);
+
   return (
     <>
       <RibbonGroup labelKey="ribbon.group.view">
@@ -25,12 +33,14 @@ export function ViewTab({
         >
           <PanelLeft className="size-5" />
         </RibbonButton>
-        <RibbonButton
+        <RibbonToggleButton
           label={t("ribbon.button.ruler")}
+          pressed={rulerVisible}
+          onPressedChange={toggleRuler}
           testId="ribbon-toggleRuler"
         >
           <Ruler className="size-5" />
-        </RibbonButton>
+        </RibbonToggleButton>
       </RibbonGroup>
 
       <RibbonSeparator />
@@ -51,6 +61,28 @@ export function ViewTab({
           testId="ribbon-zoomOut"
         >
           <ZoomOut className="size-5" />
+        </RibbonButton>
+        <span className="self-center px-1 text-muted-foreground text-xs">
+          {zoom}%
+        </span>
+      </RibbonGroup>
+
+      <RibbonSeparator />
+
+      <RibbonGroup labelKey="ribbon.group.print">
+        <RibbonButton
+          label={t("ribbon.button.printPreview")}
+          onClick={() => editorBridge?.openPrintPreview()}
+          testId="ribbon-printPreview"
+        >
+          <Printer className="size-5" />
+        </RibbonButton>
+        <RibbonButton
+          label={t("ribbon.button.print")}
+          onClick={() => editorBridge?.print()}
+          testId="ribbon-print"
+        >
+          <Printer className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 

@@ -3,7 +3,16 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ViewTab } from "../../tabs/ViewTab";
 
-vi.mock("@/lib/i18n", () => ({ useT: () => ({ t: (key: string) => key }) }));
+vi.mock("@/lib/i18n", () => ({
+  useT: () => ({
+    t: (key: string, params?: Record<string, string | number>) => {
+      if (params && key === "ribbon.label.zoomPercent") {
+        return `${params.percent}%`;
+      }
+      return key;
+    },
+  }),
+}));
 vi.mock("@/lib/utils", () => ({
   cn: (...args: (string | boolean | undefined)[]) =>
     args.filter(Boolean).join(" "),
@@ -18,6 +27,33 @@ vi.mock("@/components/ui/tooltip", () => ({
   ),
   TooltipProvider: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
+  ),
+}));
+
+// useAppStore mock — rulerVisible + toggleRuler
+const mockAppStore = vi.hoisted(() => ({
+  rulerVisible: false,
+  toggleRuler: vi.fn(),
+}));
+vi.mock("@/stores/useAppStore", () => ({
+  useAppStore: vi.fn((selector?: (s: typeof mockAppStore) => unknown) =>
+    typeof selector === "function" ? selector(mockAppStore) : mockAppStore
+  ),
+}));
+
+// useDocumentStore mock — zoom + editorBridge(openPrintPreview/print)
+const openPrintPreviewMock = vi.fn();
+const printMock = vi.fn();
+const mockDocState = {
+  zoom: 100,
+  editorBridge: {
+    openPrintPreview: openPrintPreviewMock,
+    print: printMock,
+  } as unknown,
+};
+vi.mock("@/stores/useDocumentStore", () => ({
+  useDocumentStore: vi.fn((selector?: (s: typeof mockDocState) => unknown) =>
+    typeof selector === "function" ? selector(mockDocState) : mockDocState
   ),
 }));
 
@@ -61,5 +97,59 @@ describe("ViewTab", () => {
     render(<ViewTab {...props} />);
     fireEvent.click(screen.getByTestId("ribbon-toggleAgentSidebar"));
     expect(props.onToggleAgentSidebar).toHaveBeenCalled();
+  });
+
+  // === 5.4 标尺切换 / Ruler toggle ===
+  it("渲染标尺 toggle 按钮,初始未激活", () => {
+    mockAppStore.rulerVisible = false;
+    render(<ViewTab {...props} />);
+    const btn = screen.getByTestId("ribbon-toggleRuler");
+    expect(btn).toHaveAttribute("data-pressed", "false");
+  });
+
+  it("rulerVisible 为 true 时标尺按钮 data-pressed 为 true", () => {
+    mockAppStore.rulerVisible = true;
+    render(<ViewTab {...props} />);
+    const btn = screen.getByTestId("ribbon-toggleRuler");
+    expect(btn).toHaveAttribute("data-pressed", "true");
+  });
+
+  it("点击标尺按钮调用 toggleRuler", () => {
+    mockAppStore.rulerVisible = false;
+    render(<ViewTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-toggleRuler"));
+    expect(mockAppStore.toggleRuler).toHaveBeenCalledOnce();
+  });
+
+  // === 5.5 缩放百分比显示 / Zoom percentage display ===
+  it("显示当前 zoom 百分比", () => {
+    mockDocState.zoom = 100;
+    render(<ViewTab {...props} />);
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("zoom 变化时百分比文本随之更新", () => {
+    mockDocState.zoom = 150;
+    render(<ViewTab {...props} />);
+    expect(screen.getByText("150%")).toBeInTheDocument();
+  });
+
+  // === 5.6 打印预览 / Print preview ===
+  it("渲染打印组", () => {
+    render(<ViewTab {...props} />);
+    expect(screen.getByText("ribbon.group.print")).toBeInTheDocument();
+  });
+
+  it("点击打印预览调用 editorBridge.openPrintPreview", () => {
+    render(<ViewTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-printPreview"));
+    expect(openPrintPreviewMock).toHaveBeenCalledOnce();
+  });
+
+  // === 5.7 打印 / Print ===
+  it("点击打印调用 editorBridge.print", () => {
+    render(<ViewTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-print"));
+    expect(printMock).toHaveBeenCalledOnce();
   });
 });

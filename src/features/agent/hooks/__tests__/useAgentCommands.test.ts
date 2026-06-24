@@ -192,6 +192,8 @@ function createMockBridge(opts?: {
     setParagraphStyle: vi.fn(),
     scrollToParaId: vi.fn(),
     setZoom: vi.fn(),
+    openPrintPreview: vi.fn(),
+    print: vi.fn(),
   };
 }
 
