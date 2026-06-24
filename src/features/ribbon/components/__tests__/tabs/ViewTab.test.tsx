@@ -8,6 +8,18 @@ vi.mock("@/lib/utils", () => ({
   cn: (...args: (string | boolean | undefined)[]) =>
     args.filter(Boolean).join(" "),
 }));
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
 
 const props = {
   onNew: vi.fn(),

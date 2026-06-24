@@ -1,4 +1,6 @@
 // src/features/ribbon/components/tabs/ReferencesTab.tsx — 引用标签页 / References tab
+
+import { Footprints, ListTree } from "lucide-react";
 import { useState } from "react";
 import { FootnoteDialog } from "@/features/table/components/FootnoteDialog";
 import { useT } from "@/lib/i18n";
@@ -19,7 +21,7 @@ export function ReferencesTab(_props: RibbonCallbacks) {
           onClick={() => setShowFootnoteDialog(true)}
           testId="ribbon-insertFootnote"
         >
-          📝 {t("menu.insert.footnote")}
+          <Footprints className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -31,7 +33,7 @@ export function ReferencesTab(_props: RibbonCallbacks) {
           label={t("ribbon.button.toc")}
           testId="ribbon-toc"
         >
-          {t("ribbon.button.toc")}
+          <ListTree className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 

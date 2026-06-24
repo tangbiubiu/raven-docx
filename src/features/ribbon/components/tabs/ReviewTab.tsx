@@ -1,4 +1,6 @@
 // src/features/ribbon/components/tabs/ReviewTab.tsx — 审阅标签页 / Review tab
+
+import { BarChart3, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { useDocumentStore } from "@/stores/useDocumentStore";
@@ -20,7 +22,7 @@ export function ReviewTab({ onNewComment }: RibbonCallbacks) {
           onClick={onNewComment}
           testId="ribbon-newComment"
         >
-          💬 {t("ribbon.button.newComment")}
+          <MessageSquare className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -32,7 +34,7 @@ export function ReviewTab({ onNewComment }: RibbonCallbacks) {
           onClick={() => setShowWordCount(true)}
           testId="ribbon-wordCount"
         >
-          🔢 {t("ribbon.button.wordCount")}
+          <BarChart3 className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 

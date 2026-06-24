@@ -1,8 +1,16 @@
 // CommandPalette.tsx — 命令面板 (Command Palette)
-// Cmd/Ctrl+K 唤起的全局命令面板，支持预设动作和自定义指令
-// Reference: .dev/plan/phase3-branch-plan.md §3.5, §3.6, §3.7
+// Cmd/Ctrl+K 唤起的全局命令面板，支持预设动作、Ribbon 命令和自定义指令
+// Reference: .dev/plan/phase3-branch-plan.md §3.5, §3.6, §3.7, §3.9
 
 import { useEffect, useRef, useState } from "react";
+import {
+  execIndent,
+  execInsertTable,
+  execOutdent,
+  execSetBlockType,
+  execToggleMark,
+  execWrapIn,
+} from "@/features/editor/commands";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
@@ -11,18 +19,31 @@ import { useAgentContext } from "../hooks/useAgentContext";
 import { useAgentSession } from "../hooks/useAgentSession";
 
 /**
- * 预设动作定义
+ * 命令面板动作(联合类型)/ Command palette action (union)
+ * - agent: 发送给 LLM 的预设动作(润色/扩写/翻译…)
+ * - command: 直接执行的 Ribbon 命令(加粗/插入表格…)不调 agent
  */
-type PresetAction = {
-  id: string;
-  labelKey: string;
-  icon: string;
-  requiresSelection: boolean;
-  requiresDocument: boolean;
-};
+type PaletteAction =
+  | {
+      kind: "agent";
+      id: string;
+      labelKey: string;
+      icon: string;
+      requiresSelection: boolean;
+      requiresDocument: boolean;
+    }
+  | {
+      kind: "command";
+      id: string;
+      labelKey: string;
+      icon: string;
+      execute: () => void;
+    };
 
-const PRESET_ACTIONS: PresetAction[] = [
+/** Agent 预设动作 / Agent preset actions */
+const AGENT_ACTIONS: PaletteAction[] = [
   {
+    kind: "agent",
     id: "rewrite",
     labelKey: "agent.action.rewrite",
     icon: "✨",
@@ -30,6 +51,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "expand",
     labelKey: "agent.action.expand",
     icon: "📝",
@@ -37,6 +59,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "summarize",
     labelKey: "agent.action.summarize",
     icon: "📋",
@@ -44,6 +67,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "translate",
     labelKey: "agent.action.translate",
     icon: "🌐",
@@ -51,6 +75,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "explain",
     labelKey: "agent.action.explain",
     icon: "💡",
@@ -58,6 +83,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "fixGrammar",
     labelKey: "agent.action.fixGrammar",
     icon: "✓",
@@ -65,6 +91,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "makeFormal",
     labelKey: "agent.action.makeFormal",
     icon: "👔",
@@ -72,6 +99,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "makeCasual",
     labelKey: "agent.action.makeCasual",
     icon: "😊",
@@ -79,6 +107,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "proofread",
     labelKey: "agent.action.proofread",
     icon: "📄",
@@ -86,6 +115,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "continue",
     labelKey: "agent.action.continueWriting",
     icon: "▶",
@@ -93,6 +123,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "optimizeLayout",
     labelKey: "agent.action.formatDoc",
     icon: "📊",
@@ -100,6 +131,7 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: true,
   },
   {
+    kind: "agent",
     id: "custom",
     labelKey: "agent.action.custom",
     icon: "🎤",
@@ -107,6 +139,97 @@ const PRESET_ACTIONS: PresetAction[] = [
     requiresDocument: false,
   },
 ];
+
+/** Ribbon 命令(直接执行,不发 agent)/ Ribbon commands (direct execution) */
+const RIBBON_COMMANDS: PaletteAction[] = [
+  {
+    kind: "command",
+    id: "cmd-bold",
+    labelKey: "format.bold",
+    icon: "B",
+    execute: () => execToggleMark("bold"),
+  },
+  {
+    kind: "command",
+    id: "cmd-italic",
+    labelKey: "format.italic",
+    icon: "I",
+    execute: () => execToggleMark("italic"),
+  },
+  {
+    kind: "command",
+    id: "cmd-underline",
+    labelKey: "format.underline",
+    icon: "U",
+    execute: () => execToggleMark("underline"),
+  },
+  {
+    kind: "command",
+    id: "cmd-strike",
+    labelKey: "format.strikethrough",
+    icon: "S",
+    execute: () => execToggleMark("strike"),
+  },
+  {
+    kind: "command",
+    id: "cmd-alignLeft",
+    labelKey: "format.alignLeft",
+    icon: "⬅",
+    execute: () => execSetBlockType("paragraph", { alignment: "left" }),
+  },
+  {
+    kind: "command",
+    id: "cmd-alignCenter",
+    labelKey: "format.alignCenter",
+    icon: "↔",
+    execute: () => execSetBlockType("paragraph", { alignment: "center" }),
+  },
+  {
+    kind: "command",
+    id: "cmd-alignRight",
+    labelKey: "format.alignRight",
+    icon: "➡",
+    execute: () => execSetBlockType("paragraph", { alignment: "right" }),
+  },
+  {
+    kind: "command",
+    id: "cmd-orderedList",
+    labelKey: "format.orderedList",
+    icon: "№",
+    execute: () => execWrapIn("ordered_list"),
+  },
+  {
+    kind: "command",
+    id: "cmd-unorderedList",
+    labelKey: "format.unorderedList",
+    icon: "•",
+    execute: () => execWrapIn("bullet_list"),
+  },
+  {
+    kind: "command",
+    id: "cmd-indent",
+    labelKey: "format.indent",
+    icon: "→",
+    execute: () => execIndent(),
+  },
+  {
+    kind: "command",
+    id: "cmd-outdent",
+    labelKey: "format.outdent",
+    icon: "←",
+    execute: () => execOutdent(),
+  },
+  {
+    kind: "command",
+    id: "cmd-insertTable",
+    labelKey: "menu.insert.table",
+    icon: "⊞",
+    execute: () => execInsertTable(),
+  },
+];
+
+/** 全部动作(Agent 在前,Ribbon 命令在后)/ All actions */
+const ALL_ACTIONS = [...AGENT_ACTIONS, ...RIBBON_COMMANDS];
 
 export function CommandPalette() {
   const { t } = useT();
@@ -122,7 +245,7 @@ export function CommandPalette() {
   const listRef = useRef<HTMLDivElement>(null);
 
   // 过滤动作列表
-  const filteredActions = PRESET_ACTIONS.filter((action) => {
+  const filteredActions = ALL_ACTIONS.filter((action) => {
     const label = t(action.labelKey).toLowerCase();
     return label.includes(searchQuery.toLowerCase());
   });
@@ -171,7 +294,14 @@ export function CommandPalette() {
     }
   };
 
-  const executeAction = async (action: PresetAction) => {
+  const executeAction = async (action: PaletteAction) => {
+    if (action.kind === "command") {
+      closeModal();
+      action.execute();
+      return;
+    }
+
+    // agent 动作:需文档/选区守卫
     if (action.requiresDocument && !documentPath) {
       return;
     }
@@ -192,7 +322,11 @@ export function CommandPalette() {
     await send(prompt);
   };
 
-  const isActionDisabled = (action: PresetAction): boolean => {
+  const isActionDisabled = (action: PaletteAction): boolean => {
+    // Ribbon 命令始终可用(命令层内部有 getView 守卫)
+    if (action.kind === "command") {
+      return false;
+    }
     if (action.requiresDocument && !documentPath) {
       return true;
     }

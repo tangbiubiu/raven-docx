@@ -1,4 +1,6 @@
 // src/features/ribbon/components/tabs/ViewTab.tsx — 视图标签页 / View tab
+
+import { Bot, PanelLeft, Ruler, ZoomIn, ZoomOut } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
@@ -18,15 +20,16 @@ export function ViewTab({
         <RibbonButton
           label={t("menu.view.outline")}
           onClick={onToggleOutline}
+          shortcut="⌘⇧O"
           testId="ribbon-toggleOutline"
         >
-          📑 {t("menu.view.outline")}
+          <PanelLeft className="size-5" />
         </RibbonButton>
         <RibbonButton
           label={t("ribbon.button.ruler")}
           testId="ribbon-toggleRuler"
         >
-          📏 {t("ribbon.button.ruler")}
+          <Ruler className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -36,16 +39,18 @@ export function ViewTab({
         <RibbonButton
           label={t("menu.view.zoomIn")}
           onClick={onZoomIn}
+          shortcut="⌘+"
           testId="ribbon-zoomIn"
         >
-          🔍+ {t("menu.view.zoomIn")}
+          <ZoomIn className="size-5" />
         </RibbonButton>
         <RibbonButton
           label={t("menu.view.zoomOut")}
           onClick={onZoomOut}
+          shortcut="⌘-"
           testId="ribbon-zoomOut"
         >
-          🔍- {t("menu.view.zoomOut")}
+          <ZoomOut className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -55,9 +60,10 @@ export function ViewTab({
         <RibbonButton
           label={t("menu.agent.panel")}
           onClick={onToggleAgentSidebar}
+          shortcut="⌘⇧A"
           testId="ribbon-toggleAgentSidebar"
         >
-          🤖 {t("menu.agent.panel")}
+          <Bot className="size-5" />
         </RibbonButton>
       </RibbonGroup>
     </>

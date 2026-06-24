@@ -12,9 +12,22 @@ import { useAgentContext } from "../../hooks/useAgentContext";
 import { useAgentSession } from "../../hooks/useAgentSession";
 import { CommandPalette } from "../command-palette";
 
+// 顶层 regex(避免 useTopLevelRegex 警告)/ top-level regex
+const TABLE_TEXT_RE = /表格/;
+
 // Mock hooks
 vi.mock("../../hooks/useAgentSession");
 vi.mock("../../hooks/useAgentContext");
+
+const mockCmds = vi.hoisted(() => ({
+  execToggleMark: vi.fn(),
+  execSetBlockType: vi.fn(),
+  execWrapIn: vi.fn(),
+  execIndent: vi.fn(),
+  execOutdent: vi.fn(),
+  execInsertTable: vi.fn(),
+}));
+vi.mock("@/features/editor/commands", () => mockCmds);
 
 describe("CommandPalette", () => {
   const mockSend = vi.fn();
@@ -221,6 +234,36 @@ describe("CommandPalette", () => {
       await user.type(input, "翻译成英文{Enter}");
 
       expect(mockSend).toHaveBeenCalledWith("翻译成英文");
+      expect(useAppStore.getState().activeModal).toBeNull();
+    });
+
+    it("渲染 Ribbon 格式命令(加粗/斜体/左对齐)", () => {
+      useAppStore.setState({ activeModal: "commandPalette" });
+      useDocumentStore.setState({ documentPath: "/test.docx" });
+      render(<CommandPalette />);
+      expect(screen.getByText("加粗")).toBeInTheDocument();
+      expect(screen.getByText("斜体")).toBeInTheDocument();
+      expect(screen.getByText("左对齐")).toBeInTheDocument();
+    });
+
+    it("点击加粗执行 execToggleMark 并关闭面板", async () => {
+      const user = userEvent.setup();
+      useAppStore.setState({ activeModal: "commandPalette" });
+      useDocumentStore.setState({ documentPath: "/test.docx" });
+      render(<CommandPalette />);
+      await user.click(screen.getByText("加粗"));
+      expect(mockCmds.execToggleMark).toHaveBeenCalledWith("bold");
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(useAppStore.getState().activeModal).toBeNull();
+    });
+
+    it("点击插入表格执行 execInsertTable 并关闭面板", async () => {
+      const user = userEvent.setup();
+      useAppStore.setState({ activeModal: "commandPalette" });
+      useDocumentStore.setState({ documentPath: "/test.docx" });
+      render(<CommandPalette />);
+      await user.click(screen.getByText(TABLE_TEXT_RE));
+      expect(mockCmds.execInsertTable).toHaveBeenCalled();
       expect(useAppStore.getState().activeModal).toBeNull();
     });
   });

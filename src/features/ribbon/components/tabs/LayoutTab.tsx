@@ -1,4 +1,6 @@
 // src/features/ribbon/components/tabs/LayoutTab.tsx — 布局标签页 / Layout tab
+
+import { Columns, Indent, LayoutTemplate, Outdent } from "lucide-react";
 import { execIndent, execOutdent } from "@/features/editor/commands";
 import { useT } from "@/lib/i18n";
 import type { RibbonCallbacks } from "../Ribbon";
@@ -16,7 +18,7 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
           onClick={onPageSetup}
           testId="ribbon-pageSetup"
         >
-          {t("pageSetup.title")}
+          <LayoutTemplate className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -28,7 +30,7 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
           onClick={onHeaderFooter}
           testId="ribbon-headerFooter"
         >
-          {t("headerFooter.title")}
+          <Columns className="size-5" />
         </RibbonButton>
       </RibbonGroup>
 
@@ -40,14 +42,14 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
           onClick={execIndent}
           testId="ribbon-indent"
         >
-          → {t("format.indent")}
+          <Indent className="size-5" />
         </RibbonButton>
         <RibbonButton
           label={t("format.outdent")}
           onClick={execOutdent}
           testId="ribbon-outdent"
         >
-          ← {t("format.outdent")}
+          <Outdent className="size-5" />
         </RibbonButton>
       </RibbonGroup>
     </>
