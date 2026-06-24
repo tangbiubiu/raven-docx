@@ -196,6 +196,45 @@ interface ApplyFormattingOptions {
 
 ## 四、分阶段实施计划
 
+### 并行实施策略
+
+基于各 Phase 的文件依赖关系,分四波执行以最大化并行度:
+
+```
+Wave 1 (串行,阻塞)
+  └─ Phase 0: commands.ts + format-apply.ts + useEditorBridge.ts
+       ↑ 所有格式命令的底层依赖,必须先完成
+
+Wave 2 (三路并行,文件不重叠)
+  ├─ Phase 1: Ribbon 子组件 + 6 Tab + command-palette + WorkspacePage (图标/视觉/快捷键)
+  ├─ Phase 6: PanelResizeHandle + PanelPopover (拖拽/浮窗打磨)
+  └─ Phase 7: ErrorBoundary + store selector (性能/a11y,贯穿性独立工作)
+       ↑ Phase 1 改 Ribbon/*.tsx,Phase 6 改 layout/*.tsx,Phase 7 新建 ErrorBoundary — 文件不冲突
+       ⚠️ WorkspacePage.tsx 被 Phase 1(快捷键)和 Phase 6(布局 JSX)共享 — 由同一 subagent 统一改,或分不相邻代码区
+
+Wave 3 (四路并行,各改不同 Tab 文件)
+  ├─ Phase 2: HomeTab + use-format-state.ts + ColorPicker/FormatPainter (开始标签页功能)
+  ├─ Phase 3: LayoutTab + commands.ts 段落命令 (布局标签页功能)
+  ├─ Phase 4: 新建 TableToolsTab/PictureFormatTab + 改 Ribbon.tsx (上下文标签页)
+  └─ Phase 5: ReviewTab + ViewTab + commands.ts 修订/打印命令 (审阅/视图)
+       ↑ 前提:Wave 2 已完成图标替换,各 Phase 改不同 Tab 文件(HomeTab/LayoutTab/新建/ReviewTab+ViewTab)
+       ⚠️ Phase 3 和 Phase 5 都追加 commands.ts 函数(段落格式 vs 修订/打印),函数名无冲突,只需注意 git add 粒度
+       ⚠️ Phase 4 改 Ribbon.tsx 动态标签页逻辑,其他 Phase 不改 Ribbon.tsx — 无冲突
+```
+
+**并行约束:**
+- 同一文件的并发编辑(git index 竞争)通过"各自只 git add 自己的文件"约定解决,必要时用 `git reset HEAD -- .` 清 index
+- commands.ts 被 Phase 3/5 共享:各 Phase 追加不同 exec* 函数(Phase 3 加段落命令、Phase 5 加修订/打印命令),函数名无冲突
+- WorkspacePage.tsx 被 Phase 1 和 Phase 6 共享:建议同一 Wave 内由同一 subagent 统一改 WorkspacePage
+- Wave 3 四路并行的前提是 Wave 2 已完成:各 Tab 文件的图标替换已落地,Phase 2-5 在此基础上改功能内容
+
+**建议执行顺序:**
+1. Wave 1 单独执行(Phase 0,约 1-2 小时)
+2. Wave 2 三路并行(Phase 1 + 6 + 7,约 3-4 小时)
+3. Wave 3 四路并行(Phase 2 + 3 + 4 + 5,约 4-6 小时)
+
+总工期:串行约 15 小时,并行优化后约 8-9 小时
+
 ### Phase 0:补全格式命令接线(阻塞性,必须先做)
 
 > **架构决策(审查修正):** `DocxEditorRef.applyFormatting` 是 agent 导向 API,签名 `(opts: { paraId: string; search?: string; marks: {...} })`——需要 paraId 定位段落,是给 LLM 用的。Ribbon 按钮操作的是当前 ProseMirror 选区,没有 paraId。直接转发 `bridge.applyFormatting = ref.applyFormatting` 在 Ribbon 场景不工作。
