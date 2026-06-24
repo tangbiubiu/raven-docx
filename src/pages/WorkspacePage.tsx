@@ -15,6 +15,7 @@ import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
 import { StatusBar } from "@/features/editor/components/StatusBar";
 import { FindReplaceDialog } from "@/features/find-replace/components/find-replace-dialog";
+import { CollapsedPanelTrigger } from "@/features/layout/components/CollapsedPanelTrigger";
 import { PanelPopover } from "@/features/layout/components/PanelPopover";
 import { PanelResizeHandle } from "@/features/layout/components/PanelResizeHandle";
 import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
@@ -28,7 +29,11 @@ import { VariableForm } from "@/features/template/components/variable-form";
 import { ThemeToggle } from "@/features/theme/components/theme-toggle";
 import { commands } from "@/lib/bindings";
 import { useT } from "@/lib/i18n";
-import { useAppStore } from "@/stores/useAppStore";
+import {
+  DEFAULT_AGENT_WIDTH,
+  DEFAULT_OUTLINE_WIDTH,
+  useAppStore,
+} from "@/stores/useAppStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
@@ -208,20 +213,11 @@ export default function WorkspacePage() {
         {/* 左栏:大纲(展开态可调宽 / 折叠态竖条 + 浮窗)*/}
         {outlinePanelCollapsed ? (
           <>
-            <button
-              aria-label={t("panel.expand.outline")}
-              className="flex h-full w-[22px] shrink-0 items-center justify-center border-border border-r bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            <CollapsedPanelTrigger
+              labelKey="panel.expand.outline"
               onClick={() => setOutlineFloatOpen(true)}
-              title={t("panel.expand.outline")}
-              type="button"
-            >
-              <span
-                className="text-[11px]"
-                style={{ writingMode: "vertical-rl" }}
-              >
-                {t("editor.outline.title")}
-              </span>
-            </button>
+              side="left"
+            />
             {/* 折叠态浮窗 / Collapse popover */}
             <PanelPopover
               onClose={() => setOutlineFloatOpen(false)}
@@ -240,6 +236,7 @@ export default function WorkspacePage() {
             <PanelResizeHandle
               currentWidth={outlineWidth}
               labelKey="panel.resize.outline"
+              onReset={() => setOutlineWidth(DEFAULT_OUTLINE_WIDTH)}
               onResize={setOutlineWidth}
               side="left"
             />
@@ -261,6 +258,7 @@ export default function WorkspacePage() {
             <PanelResizeHandle
               currentWidth={agentWidth}
               labelKey="panel.resize.agent"
+              onReset={() => setAgentWidth(DEFAULT_AGENT_WIDTH)}
               onResize={setAgentWidth}
               side="right"
             />
@@ -270,20 +268,11 @@ export default function WorkspacePage() {
           </>
         ) : (
           <>
-            <button
-              aria-label={t("panel.expand.agent")}
-              className="flex h-full w-8 shrink-0 items-center justify-center border-border border-l bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            <CollapsedPanelTrigger
+              labelKey="panel.expand.agent"
               onClick={() => setAgentFloatOpen(true)}
-              title={t("panel.expand.agent")}
-              type="button"
-            >
-              <span
-                className="text-[11px]"
-                style={{ writingMode: "vertical-rl" }}
-              >
-                {t("agent.title")}
-              </span>
-            </button>
+              side="right"
+            />
             {/* 折叠态浮窗 / Collapse popover */}
             <PanelPopover
               onClose={() => setAgentFloatOpen(false)}

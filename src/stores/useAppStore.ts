@@ -34,6 +34,9 @@ export const OUTLINE_WIDTH_MIN = 160;
 export const OUTLINE_WIDTH_MAX = 400;
 export const AGENT_WIDTH_MIN = 280;
 export const AGENT_WIDTH_MAX = 560;
+/** 面板默认宽度(双击手柄恢复)/ Panel default widths (double-click reset) */
+export const DEFAULT_OUTLINE_WIDTH = 220;
+export const DEFAULT_AGENT_WIDTH = 380;
 /**
  * 应用级状态
  */
@@ -82,8 +85,8 @@ export type AppState = {
 const initialAppState = {
   activeModal: null as AppModal,
   activeRibbonTab: "home" as RibbonTab,
-  outlineWidth: 220,
-  agentWidth: 380,
+  outlineWidth: DEFAULT_OUTLINE_WIDTH,
+  agentWidth: DEFAULT_AGENT_WIDTH,
   outlineFloatOpen: false,
   agentFloatOpen: false,
   settingsDrawerOpen: false,

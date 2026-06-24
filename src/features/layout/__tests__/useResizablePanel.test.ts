@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useResizablePanel } from "../hooks/useResizablePanel";
 
@@ -28,10 +28,12 @@ describe("useResizablePanel", () => {
       })
     );
 
-    result.current.onPointerDown({
-      clientX: 1000,
-      preventDefault: vi.fn(),
-    } as unknown as React.PointerEvent);
+    act(() => {
+      result.current.onPointerDown({
+        clientX: 1000,
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
 
     const moveEvent = new PointerEvent("pointermove", { clientX: 950 });
     window.dispatchEvent(moveEvent);
@@ -50,10 +52,12 @@ describe("useResizablePanel", () => {
       })
     );
 
-    result.current.onPointerDown({
-      clientX: 200,
-      preventDefault: vi.fn(),
-    } as unknown as React.PointerEvent);
+    act(() => {
+      result.current.onPointerDown({
+        clientX: 200,
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
 
     const moveEvent = new PointerEvent("pointermove", { clientX: 250 });
     window.dispatchEvent(moveEvent);
@@ -72,16 +76,57 @@ describe("useResizablePanel", () => {
       })
     );
 
-    result.current.onPointerDown({
-      clientX: 200,
-      preventDefault: vi.fn(),
-    } as unknown as React.PointerEvent);
+    act(() => {
+      result.current.onPointerDown({
+        clientX: 200,
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
 
     const upEvent = new PointerEvent("pointerup");
     const spy = vi.spyOn(window, "removeEventListener");
-    window.dispatchEvent(upEvent);
+    act(() => {
+      window.dispatchEvent(upEvent);
+    });
 
     expect(spy).toHaveBeenCalledWith("pointermove", expect.any(Function));
     expect(spy).toHaveBeenCalledWith("pointerup", expect.any(Function));
+  });
+
+  it("暴露 isDragging,初始为 false", () => {
+    const { result } = renderHook(() =>
+      useResizablePanel({
+        side: "left",
+        currentWidth: 220,
+        onResize: vi.fn(),
+      })
+    );
+    expect(result.current.isDragging).toBe(false);
+  });
+
+  it("拖拽中 isDragging 为 true,结束恢复 false", () => {
+    const onResize = vi.fn();
+    const { result } = renderHook(() =>
+      useResizablePanel({
+        side: "left",
+        currentWidth: 220,
+        onResize,
+      })
+    );
+
+    act(() => {
+      result.current.onPointerDown({
+        clientX: 200,
+        preventDefault: vi.fn(),
+      } as unknown as React.PointerEvent);
+    });
+
+    expect(result.current.isDragging).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(new PointerEvent("pointerup"));
+    });
+
+    expect(result.current.isDragging).toBe(false);
   });
 });
