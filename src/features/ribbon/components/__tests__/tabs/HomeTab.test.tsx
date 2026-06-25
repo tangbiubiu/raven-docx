@@ -48,6 +48,7 @@ const mockCmds = vi.hoisted(() => ({
   execRedo: vi.fn(),
   execToggleMark: vi.fn(),
   execSetBlockType: vi.fn(),
+  execSetAlignment: vi.fn(),
   execWrapIn: vi.fn(),
   execLift: vi.fn(),
   execIndent: vi.fn(),

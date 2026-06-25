@@ -21,6 +21,11 @@ const mockCmds = vi.hoisted(() => {
     setIndentLeft: vi.fn((_twips: number) => mkCmd()),
     setIndentRight: vi.fn((_twips: number) => mkCmd()),
     setIndentFirstLine: vi.fn((_twips: number) => mkCmd()),
+    // 对齐命令 / alignment commands（库专用，ParagraphAlignment 取值 left/center/right/both）
+    alignLeft: mkCmd(),
+    alignCenter: mkCmd(),
+    alignRight: mkCmd(),
+    alignJustify: mkCmd(),
     // Phase 5: 修订命令 / review commands
     acceptChange: vi.fn((_from: number, _to: number) => mkCmd()),
     rejectChange: vi.fn((_from: number, _to: number) => mkCmd()),
@@ -43,6 +48,15 @@ const mockPlugins = vi.hoisted(() => ({
 }));
 vi.mock("@eigenpal/docx-editor-core/prosemirror/plugins", () => mockPlugins);
 
+// --- mock prosemirror-commands: 拦截 setBlockType,验证 attrs 透传 ---
+const mockSetBlockType = vi.hoisted(() => vi.fn(() => vi.fn(() => true)));
+vi.mock("prosemirror-commands", () => ({
+  setBlockType: mockSetBlockType,
+  lift: vi.fn(),
+  toggleMark: vi.fn(),
+  wrapIn: vi.fn(),
+}));
+
 // --- mock prosemirror-state:替换 TextSelection.create,避免构造完整 PM doc ---
 // vi.mock 工厂被提升到顶部,引用的变量必须用 vi.hoisted 声明。
 const mockTextSelectionCreate = vi.hoisted(() =>
@@ -63,6 +77,12 @@ const mockView = {
     doc: {},
     selection: { from: 5, to: 10, head: 10 },
     tr: mockTr,
+    schema: {
+      nodes: {
+        paragraph: { name: "paragraph" },
+        heading: { name: "heading" },
+      },
+    },
   },
   dispatch: mockDispatch,
 };
@@ -82,6 +102,8 @@ import {
   execInsertTable,
   execRejectAllChanges,
   execRejectChange,
+  execSetAlignment,
+  execSetBlockType,
   execSetFontFamily,
   execSetFontFamilyEastAsia,
   execSetFontSize,
@@ -240,6 +262,76 @@ describe("commands — 格式命令封装", () => {
       expect(mockCmds.setIndentLeft).not.toHaveBeenCalled();
       expect(mockCmds.setIndentRight).not.toHaveBeenCalled();
       expect(mockCmds.setIndentFirstLine).not.toHaveBeenCalled();
+    });
+  });
+  // === 对齐 / alignment ===
+  describe("execSetAlignment", () => {
+    it("left → 调用库 alignLeft 命令并 dispatch", () => {
+      execSetAlignment("left");
+      // alignLeft 是库导出的 Command 常量(非工厂),直接断言被以 (state, dispatch) 调用
+      expect(mockCmds.alignLeft).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("center → 调用库 alignCenter 命令并 dispatch", () => {
+      execSetAlignment("center");
+      expect(mockCmds.alignCenter).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("right → 调用库 alignRight 命令并 dispatch", () => {
+      execSetAlignment("right");
+      expect(mockCmds.alignRight).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("justify → 调用库 alignJustify 命令并 dispatch", () => {
+      execSetAlignment("justify");
+      expect(mockCmds.alignJustify).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("仅调用对应的一个对齐命令,不串调", () => {
+      execSetAlignment("center");
+      expect(mockCmds.alignCenter).toHaveBeenCalled();
+      expect(mockCmds.alignLeft).not.toHaveBeenCalled();
+      expect(mockCmds.alignRight).not.toHaveBeenCalled();
+      expect(mockCmds.alignJustify).not.toHaveBeenCalled();
+    });
+  });
+  // === Block 类型 / block type ===
+  describe("execSetBlockType", () => {
+    it("heading 透传 attrs({ level }) 给 setBlockType", () => {
+      execSetBlockType("heading", { level: 2 });
+      expect(mockSetBlockType).toHaveBeenCalledWith(
+        mockView.state.schema.nodes.heading,
+        { level: 2 }
+      );
+    });
+
+    it("paragraph 透传 attrs 给 setBlockType(不丢弃)", () => {
+      // 隐患回归测试:paragraph 分支曾丢弃 attrs,此处守护 attrs 透传。
+      execSetBlockType("paragraph", { alignment: "center" });
+      expect(mockSetBlockType).toHaveBeenCalledWith(
+        mockView.state.schema.nodes.paragraph,
+        { alignment: "center" }
+      );
+    });
+
+    it("无 attrs 时传 null 给 setBlockType", () => {
+      execSetBlockType("paragraph");
+      expect(mockSetBlockType).toHaveBeenCalledWith(
+        mockView.state.schema.nodes.paragraph,
+        null
+      );
     });
   });
 });

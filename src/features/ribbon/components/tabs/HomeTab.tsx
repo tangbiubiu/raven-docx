@@ -35,6 +35,7 @@ import {
   execLift,
   execOutdent,
   execRedo,
+  execSetAlignment,
   execSetBlockType,
   execUndo,
   execWrapIn,
@@ -199,14 +200,10 @@ export function HomeTab(_props: RibbonCallbacks) {
           const Icon = ALIGN_ICONS[align.alignment] ?? AlignLeft;
           return (
             <AlignToggleButton
-              alignment={
-                align.alignment as "left" | "center" | "right" | "justify"
-              }
+              alignment={align.alignment}
               key={align.key}
               label={t(align.i18n)}
-              onToggle={() =>
-                execSetBlockType("paragraph", { alignment: align.alignment })
-              }
+              onToggle={() => execSetAlignment(align.alignment)}
               testId={`ribbon-${align.key}`}
             >
               <Icon className="size-4" />

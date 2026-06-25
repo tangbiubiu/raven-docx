@@ -22,6 +22,7 @@ vi.mock("../../hooks/useAgentContext");
 const mockCmds = vi.hoisted(() => ({
   execToggleMark: vi.fn(),
   execSetBlockType: vi.fn(),
+  execSetAlignment: vi.fn(),
   execWrapIn: vi.fn(),
   execIndent: vi.fn(),
   execOutdent: vi.fn(),

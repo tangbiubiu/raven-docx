@@ -32,10 +32,13 @@ export const HEADING_OPTIONS = [
   { value: "heading6", i18n: "format.heading6" },
 ];
 
+/** 段落对齐值（内部统一用 "justify"，库底层用 "both"，见 useEditorBridge 归一化）*/
+export type Alignment = "left" | "center" | "right" | "justify";
+
 export const ALIGNMENTS: {
   key: string;
   i18n: string;
-  alignment: string;
+  alignment: Alignment;
 }[] = [
   { key: "alignLeft", i18n: "format.alignLeft", alignment: "left" },
   { key: "alignCenter", i18n: "format.alignCenter", alignment: "center" },

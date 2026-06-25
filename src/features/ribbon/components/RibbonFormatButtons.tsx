@@ -1,3 +1,4 @@
+import type { Alignment } from "@/features/formatting/constants";
 // src/features/ribbon/components/RibbonFormatButtons.tsx — 细粒度订阅的格式切换按钮 / Fine-grained format toggle buttons
 // Phase 7.1: 每个按钮只订阅自己所需的 selectionFormat 字段，React Compiler 自动 memo 组件实例。
 // 替代 HomeTab 内联 useFormatState().isActive() 调用（该路径不响应选区变化）。
@@ -61,7 +62,7 @@ export function AlignToggleButton({
   shortcut,
   children,
 }: {
-  alignment: "left" | "center" | "right" | "justify";
+  alignment: Alignment;
   label: string;
   testId: string;
   onToggle: () => void;

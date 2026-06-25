@@ -3,6 +3,10 @@
 // Reference: .dev/plan/implementation-plan.md §Phase 2
 
 import {
+  alignCenter,
+  alignJustify,
+  alignLeft,
+  alignRight,
   applyTableStyle,
   insertTable,
   mergeCells,
@@ -25,6 +29,7 @@ import { redo, undo } from "prosemirror-history";
 import { liftListItem, sinkListItem } from "prosemirror-schema-list";
 import type { Command } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
+import type { Alignment } from "@/features/formatting/constants";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 
 // === 内部获取 EditorView ===
@@ -172,11 +177,30 @@ export function execSetBlockType(
   if (!node) {
     return;
   }
-  if (nodeName === "paragraph") {
-    setBlockType(node)(view.state, view.dispatch);
-  } else {
-    setBlockType(node, attrs ?? null)(view.state, view.dispatch);
-  }
+  // paragraph 与 heading 统一路径:透传 attrs(或 null)给 setBlockType。
+  // 注意:setBlockType 会整体替换节点 attrs,缺失属性填 schema 默认值;
+  // 段落对齐请用 execSetAlignment(库专用命令,正确合并属性)。
+  setBlockType(node, attrs ?? null)(view.state, view.dispatch);
+}
+
+// === Paragraph alignment / 段落对齐 ===
+
+/** 内部对齐值 → 库专用对齐 Command 映射 */
+const ALIGNMENT_COMMANDS: Record<Alignment, Command> = {
+  left: alignLeft,
+  center: alignCenter,
+  right: alignRight,
+  justify: alignJustify,
+};
+
+/**
+ * 设置段落对齐 / Set paragraph alignment.
+ * 使用库专用对齐命令(alignLeft/alignCenter/alignRight/alignJustify),
+ * 这些命令正确合并段落属性,不会覆盖缩进/行距等其他属性。
+ * 注意:内部对齐值 "justify" 对应库的 alignJustify(库底层用 "both")。
+ */
+export function execSetAlignment(alignment: Alignment): void {
+  apply(ALIGNMENT_COMMANDS[alignment]);
 }
 
 // === 列表 ===

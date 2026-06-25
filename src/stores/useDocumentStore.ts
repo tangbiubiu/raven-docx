@@ -3,6 +3,7 @@
 // Reference: .dev/docs/modules/stores.md §2
 
 import { create } from "zustand";
+import type { Alignment } from "@/features/formatting/constants";
 
 /**
  * 编辑器桥接接口 — 暴露给其他 feature 的编辑器操作能力。
@@ -116,7 +117,7 @@ export type FormatState = {
   fontFamily?: { ascii?: string; eastAsia?: string } | null;
   textColor?: string;
   highlight?: string;
-  alignment?: "left" | "center" | "right" | "justify";
+  alignment?: Alignment;
   headingLevel?: number; // 1-6，undefined 表示正文
   listType?: "ordered" | "unordered" | null;
   superscript?: boolean;
