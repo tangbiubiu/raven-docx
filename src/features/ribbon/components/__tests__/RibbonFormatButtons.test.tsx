@@ -1,5 +1,6 @@
 // src/features/ribbon/components/__tests__/RibbonFormatButtons.test.tsx — 字体回显映射测试 / Font echo mapping tests
-// 验证 useFontFamilyValue 将 mark ascii 原始值反向映射到 FONT_FAMILIES.value。
+// 验证 useFontFamilyValue 从 selectionFormat.fontFamily 对象提取显示字符串。
+// 回显策略:混合(null)→ "",无 mark({})→ "",eastAsia 优先于 ascii。
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useFontFamilyValue } from "../RibbonFormatButtons";
@@ -14,56 +15,67 @@ const mockDocState = {
 };
 
 vi.mock("@/stores/useDocumentStore", () => ({
-  useDocumentStore: vi.fn(
-    (selector?: (s: typeof mockDocState) => unknown) =>
-      typeof selector === "function" ? selector(mockDocState) : mockDocState,
+  useDocumentStore: vi.fn((selector?: (s: typeof mockDocState) => unknown) =>
+    typeof selector === "function" ? selector(mockDocState) : mockDocState
   ),
 }));
 
-describe("useFontFamilyValue — ascii→value 反向映射", () => {
+describe("useFontFamilyValue — 对象回显策略", () => {
   beforeEach(() => {
     mockDocState.selectionFormat = null;
   });
 
-  it("ascii 为空时回显 default", () => {
-    mockDocState.selectionFormat = { fontFamily: "" };
-    const { result } = renderHook(() => useFontFamilyValue());
-    expect(result.current).toBe("default");
-  });
-
-  it("selectionFormat 为 null 时回显 default", () => {
+  it("selectionFormat 为 null 时回显空", () => {
     mockDocState.selectionFormat = null;
     const { result } = renderHook(() => useFontFamilyValue());
-    expect(result.current).toBe("default");
+    expect(result.current).toBe("");
   });
 
-  it("ascii 为 Calibri 时回显 calibri", () => {
-    mockDocState.selectionFormat = { fontFamily: "Calibri" };
-    const { result } = renderHook(() => useFontFamilyValue());
-    expect(result.current).toBe("calibri");
-  });
-
-  it("ascii 为 Arial 时回显 arial", () => {
-    mockDocState.selectionFormat = { fontFamily: "Arial" };
-    const { result } = renderHook(() => useFontFamilyValue());
-    expect(result.current).toBe("arial");
-  });
-
-  it("ascii 为 Times New Roman 时回显 times", () => {
-    mockDocState.selectionFormat = { fontFamily: "Times New Roman" };
-    const { result } = renderHook(() => useFontFamilyValue());
-    expect(result.current).toBe("times");
-  });
-
-  it("大小写不敏感:ascii 为 calibri(小写)仍回显 calibri", () => {
-    mockDocState.selectionFormat = { fontFamily: "calibri" };
-    const { result } = renderHook(() => useFontFamilyValue());
-    expect(result.current).toBe("calibri");
-  });
-
-  it("未知字体(不在 FONT_FAMILIES 中)回显空字符串", () => {
-    mockDocState.selectionFormat = { fontFamily: "Comic Sans MS" };
+  it("fontFamily 为 null(混合选区)时回显空", () => {
+    mockDocState.selectionFormat = { fontFamily: null };
     const { result } = renderHook(() => useFontFamilyValue());
     expect(result.current).toBe("");
+  });
+
+  it("fontFamily 为空对象(无 mark)时回显空", () => {
+    mockDocState.selectionFormat = { fontFamily: {} };
+    const { result } = renderHook(() => useFontFamilyValue());
+    expect(result.current).toBe("");
+  });
+
+  it("fontFamily 仅含 ascii 时回显 ascii 值", () => {
+    mockDocState.selectionFormat = { fontFamily: { ascii: "Calibri" } };
+    const { result } = renderHook(() => useFontFamilyValue());
+    expect(result.current).toBe("Calibri");
+  });
+
+  it("fontFamily 仅含 eastAsia(CJK)时回显友好名", () => {
+    mockDocState.selectionFormat = { fontFamily: { eastAsia: "SimSun" } };
+    const { result } = renderHook(() => useFontFamilyValue());
+    expect(result.current).toBe("宋体");
+  });
+
+  it("fontFamily 同时含 ascii 和 eastAsia 时回显 eastAsia 友好名(中文优先)", () => {
+    mockDocState.selectionFormat = {
+      fontFamily: { ascii: "Calibri", eastAsia: "SimSun" },
+    };
+    const { result } = renderHook(() => useFontFamilyValue());
+    expect(result.current).toBe("宋体");
+  });
+
+  it("三字段同设 CJK 字体时回显友好名", () => {
+    mockDocState.selectionFormat = {
+      fontFamily: { ascii: "SimHei", hAnsi: "SimHei", eastAsia: "SimHei" },
+    };
+    const { result } = renderHook(() => useFontFamilyValue());
+    expect(result.current).toBe("黑体");
+  });
+
+  it("fontFamily 含非清单字体名时回显实际字体名", () => {
+    mockDocState.selectionFormat = {
+      fontFamily: { ascii: "Comic Sans MS" },
+    };
+    const { result } = renderHook(() => useFontFamilyValue());
+    expect(result.current).toBe("Comic Sans MS");
   });
 });

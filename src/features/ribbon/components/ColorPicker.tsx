@@ -3,7 +3,11 @@
 // Reference: .dev/plan/2026-06-23-ribbon-enhancement.md §Phase 2
 
 import { useState } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -36,16 +40,18 @@ type ColorPickerProps = {
  * 颜色色板选择器:Popover 展开预设色板,
  * 下方「更多颜色」展开原生 `<input type="color">`。
  */
-export function ColorPicker({ value, onChange, label, testId }: ColorPickerProps) {
+export function ColorPicker({
+  value,
+  onChange,
+  label,
+  testId,
+}: ColorPickerProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [showNative, setShowNative] = useState(false);
 
   return (
-    <Popover
-      onOpenChange={setOpen}
-      open={open}
-    >
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild={true}>
         <button
           aria-label={label}
@@ -72,7 +78,7 @@ export function ColorPicker({ value, onChange, label, testId }: ColorPickerProps
                 aria-pressed={selected}
                 className={cn(
                   "size-5 rounded-sm border border-border transition hover:scale-110",
-                  selected ? "ring-2 ring-ring ring-offset-1" : "",
+                  selected ? "ring-2 ring-ring ring-offset-1" : ""
                 )}
                 data-testid="color-swatch"
                 key={sw.hex}

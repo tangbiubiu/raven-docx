@@ -71,6 +71,76 @@ export function execSetFontFamily(fontName: string): void {
   apply(setFontFamily(fontName));
 }
 
+/**
+ * 设置 CJK 字体族(三字段同设)/ Set CJK font family (co-set ascii+hAnsi+eastAsia).
+ *
+ * 自定义 ProseMirror 命令:库的 setFontFamily 只设 ascii+hAnsi。
+ * 布局层 vt() 和 toDOM 都只读 ascii||hAnsi,仅设 eastAsia 无法渲染。
+ * 故 CJK 字体名同时写入 ascii+hAnsi+eastAsia 三字段,确保:
+ * - 渲染层(读 ascii)能拿到 CJK 字体名 → @font-face local() 别名命中系统字体
+ * - OOXML 序列化时 eastAsia 字段正确(跨平台 Word 兼容)
+ * 用 nodesBetween 逐节点读取现有 fontFamily mark attrs,合并三字段后
+ * 对每个文本段单独 addMark(addMark 替换整个 mark 而非合并 attrs,故须逐节点处理)。
+ *
+ * 光标(空选区)用 storedMarks 设定,后续输入继承该 mark。
+ */
+export function execSetFontFamilyEastAsia(fontName: string): void {
+  const view = getView();
+  if (!view) {
+    return;
+  }
+  const { state, dispatch: viewDispatch } = view;
+  const { from, to, empty } = state.selection;
+  const markType = state.schema.marks.fontFamily;
+  if (!markType) {
+    return;
+  }
+
+  if (empty) {
+    // 光标处:合并进 storedMarks(保留现有 fontFamily 的 ascii/hAnsi 等)
+    const existing = state.storedMarks?.find((m) => m.type === markType);
+    const mergedAttrs = {
+      ...(existing?.attrs ?? {}),
+      ascii: fontName,
+      hAnsi: fontName,
+      eastAsia: fontName,
+    };
+    const mark = markType.create(mergedAttrs);
+    const nextStored = [
+      ...(state.storedMarks?.filter((m) => m.type !== markType) ?? []),
+      mark,
+    ];
+    viewDispatch(state.tr.setStoredMarks(nextStored));
+    return;
+  }
+
+  // 选区:先移除旧 fontFamily mark,再逐节点读取旧 attrs 合并 eastAsia 重新 addMark
+  let tr = state.tr.removeMark(from, to, markType);
+
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText) {
+      return;
+    }
+    // 读取该文本节点在 removeMark 之前的 fontFamily mark attrs
+    const oldMark = node.marks.find((m) => m.type === markType);
+    const mergedAttrs = {
+      ...(oldMark?.attrs ?? {}),
+      ascii: fontName,
+      hAnsi: fontName,
+      eastAsia: fontName,
+    };
+    const mergedMark = markType.create(mergedAttrs);
+    // pos 是节点起始位置,nodeSize 为文本长度
+    const nodeFrom = Math.max(pos, from);
+    const nodeTo = Math.min(pos + node.nodeSize, to);
+    if (nodeFrom < nodeTo) {
+      tr = tr.addMark(nodeFrom, nodeTo, mergedMark);
+    }
+  });
+
+  viewDispatch(tr);
+}
+
 /** 设置字号(half-points,OOXML w:sz 刻度,24 = 12pt)/ Set font size */
 export function execSetFontSize(sizeHalfPt: number): void {
   apply(setFontSize(sizeHalfPt));
@@ -388,7 +458,6 @@ export function execSetImageWrapType(target: ImageWrapTarget): void {
   }
   apply(setImageWrapType(pos, target));
 }
-
 
 // === Review & Print (Phase 5) / 审阅与打印 ===
 // 修订模式(suggestion mode)开关、接受/拒绝修订、定位修订。

@@ -4,6 +4,7 @@
 // Reference: .dev/plan/2026-06-23-ribbon-enhancement.md §Phase 0
 import {
   execSetFontFamily,
+  execSetFontFamilyEastAsia,
   execSetFontSize,
   execSetHighlight,
   execSetTextColor,
@@ -12,11 +13,19 @@ import { useDocumentStore } from "@/stores/useDocumentStore";
 import { FONT_FAMILIES } from "./constants";
 
 /**
- * 设置字体族 / Set font family (value 来自 FONT_FAMILIES)
+ * 设置字体族 / Set font family (value 来自 FONT_FAMILIES)。
+ * 根据 FONT_FAMILIES 项的 script 字段路由:
+ * - latin → execSetFontFamily(设 ascii + hAnsi)
+ * - cjk → execSetFontFamilyEastAsia(设 eastAsia,保留旧 ascii/hAnsi)
  */
 export function applyFont(fontValue: string): void {
   const family = FONT_FAMILIES.find((f) => f.value === fontValue);
-  if (family?.font) {
+  if (!family?.font) {
+    return;
+  }
+  if (family.script === "cjk") {
+    execSetFontFamilyEastAsia(family.font);
+  } else {
     execSetFontFamily(family.font);
   }
 }

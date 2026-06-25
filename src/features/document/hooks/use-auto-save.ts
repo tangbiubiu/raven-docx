@@ -13,6 +13,8 @@ type DraftData = {
 type AutoSaveState = {
   isSaving: boolean;
   lastSaveTime: number | null;
+  /** 手动触发一次草稿保存（同步 saveDocument，供测试与未来手动保存入口复用）*/
+  saveNow: () => void;
 };
 
 type RecoverFns = {
@@ -20,6 +22,20 @@ type RecoverFns = {
   setPath: (path: string) => void;
   setDirty: (dirty: boolean) => void;
 };
+
+/** 分块 base64 编码 — 避免展开运算符在大 buffer 上触发栈溢出。 */
+export function encodeBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const CHUNK = 0x80_00; // 32768 — 远低于各 JS 引擎的函数参数上限
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(
+      null,
+      Array.from(bytes.subarray(i, i + CHUNK))
+    );
+  }
+  return btoa(binary);
+}
 
 /** 从磁盘原文件恢复文档，失败回退到草稿 buffer。 */
 async function recoverDocument(fns: RecoverFns): Promise<void> {
@@ -98,8 +114,7 @@ export function useAutoSave(): AutoSaveState {
     setIsSaving(true);
     setAutoSaving(true);
     try {
-      const uint8Array = new Uint8Array(documentBuffer);
-      const base64Buffer = btoa(String.fromCharCode(...uint8Array));
+      const base64Buffer = encodeBufferToBase64(documentBuffer);
 
       const draft: DraftData = {
         buffer: base64Buffer,
@@ -147,5 +162,6 @@ export function useAutoSave(): AutoSaveState {
   return {
     isSaving,
     lastSaveTime,
+    saveNow: saveDocument,
   };
 }

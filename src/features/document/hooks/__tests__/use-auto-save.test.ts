@@ -15,7 +15,7 @@ vi.mock("@/lib/tauri-events", () => ({
 }));
 
 import { readFile } from "@tauri-apps/plugin-fs";
-import { useAutoSave } from "../use-auto-save";
+import { encodeBufferToBase64, useAutoSave } from "../use-auto-save";
 
 const mockReadFile = vi.mocked(readFile);
 
@@ -115,5 +115,66 @@ describe("useAutoSave — 启动恢复", () => {
     expect(mockReadFile).not.toHaveBeenCalled();
     // path 为空 → 不恢复
     expect(useDocumentStore.getState().documentBuffer).toBeNull();
+  });
+});
+
+describe("useAutoSave — 大文档自动保存（base64 编码不爆栈）", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useDocumentStore.getState().closeDocument();
+    mockReadFile.mockClear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it("encodeBufferToBase64 对超过 64KB 的 buffer 不抛栈溢出", () => {
+    // 浏览器对函数参数数量有硬上限（~65536），展开运算符 ...array 会触发
+    // Maximum call stack size exceeded。此处用 70KB buffer 验证分块编码。
+    const big = new Uint8Array(70_000);
+    for (let i = 0; i < big.length; i++) big[i] = i % 256;
+
+    // 不应抛出 RangeError: Maximum call stack size exceeded
+    const encoded = encodeBufferToBase64(big.buffer);
+
+    // 解码回来应与原数据一致（验证编码正确性，非仅"不崩"）
+    const decoded = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+    expect(decoded).toEqual(big);
+  });
+
+  it("大文档触发自动保存时成功写入 localStorage（不抛栈溢出）", async () => {
+    // 模拟一个 70KB 的"脏"文档
+    const big = new Uint8Array(70_000);
+    for (let i = 0; i < big.length; i++) big[i] = i % 256;
+
+    useDocumentStore
+      .getState()
+      .setDocument(null, big.buffer as ArrayBuffer, "/test/big.docx");
+    useDocumentStore.getState().setDirty(true);
+
+    const { result } = renderHook(() => useAutoSave());
+
+    // 手动触发一次保存（saveDocument 由 30s 定时器驱动，测试中手动调度）
+    await act(async () => {
+      // 等待启动恢复 effect 完成
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // 直接调用暴露的 saveNow 触发保存
+    await act(async () => {
+      await result.current.saveNow?.();
+    });
+
+    // localStorage 应有草稿，且可正确解码回 70KB 数据
+    const raw = localStorage.getItem(DRAFT_KEY);
+    expect(raw).not.toBeNull();
+    const draft = JSON.parse(raw ?? "{}");
+    const decoded = Uint8Array.from(atob(draft.buffer), (c) => c.charCodeAt(0));
+    expect(decoded.length).toBe(70_000);
+    expect(decoded).toEqual(big);
   });
 });

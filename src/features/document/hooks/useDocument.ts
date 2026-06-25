@@ -5,6 +5,7 @@
 import { commands } from "@/lib/bindings";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { addRecentFile } from "./useRecentFiles";
+
 /** Tauri 环境检测 */
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;

@@ -35,8 +35,8 @@ export function ViewTab({
         </RibbonButton>
         <RibbonToggleButton
           label={t("ribbon.button.ruler")}
-          pressed={rulerVisible}
           onPressedChange={toggleRuler}
+          pressed={rulerVisible}
           testId="ribbon-toggleRuler"
         >
           <Ruler className="size-5" />

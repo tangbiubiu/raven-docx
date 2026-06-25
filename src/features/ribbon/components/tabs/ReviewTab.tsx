@@ -1,8 +1,17 @@
 // src/features/ribbon/components/tabs/ReviewTab.tsx — 审阅标签页 / Review tab
 
-import { BarChart3, Check, CheckCheck, ChevronLeft, ChevronRight, FileEdit, MessageSquare, X, XCircle } from "lucide-react";
+import {
+  BarChart3,
+  Check,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  FileEdit,
+  MessageSquare,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
-import { useT } from "@/lib/i18n";
 import {
   execAcceptAllChanges,
   execAcceptChange,
@@ -13,6 +22,7 @@ import {
   execToggleTrackChanges,
   isTrackChangesActive,
 } from "@/features/editor/commands";
+import { useT } from "@/lib/i18n";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
@@ -62,11 +72,11 @@ export function ReviewTab({ onNewComment }: RibbonCallbacks) {
       <RibbonGroup labelKey="ribbon.group.tracking">
         <RibbonToggleButton
           label={t("ribbon.button.trackChanges")}
-          pressed={trackChangesActive}
           onPressedChange={() => {
             execToggleTrackChanges();
             setTrackChangesActive(isTrackChangesActive());
           }}
+          pressed={trackChangesActive}
           testId="ribbon-trackChanges"
         >
           <FileEdit className="size-5" />

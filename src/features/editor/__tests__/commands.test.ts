@@ -68,7 +68,9 @@ const mockView = {
 };
 vi.mock("@/stores/useDocumentStore", () => ({
   useDocumentStore: {
-    getState: () => ({ editorBridge: { getEditorView: () => mockView } }),
+    getState: vi.fn(() => ({
+      editorBridge: { getEditorView: () => mockView },
+    })),
   },
 }));
 
@@ -81,6 +83,7 @@ import {
   execRejectAllChanges,
   execRejectChange,
   execSetFontFamily,
+  execSetFontFamilyEastAsia,
   execSetFontSize,
   execSetHighlight,
   execSetIndentation,
@@ -90,6 +93,7 @@ import {
   execToggleTrackChanges,
   isTrackChangesActive,
 } from "@/features/editor/commands";
+import { useDocumentStore } from "@/stores/useDocumentStore";
 
 describe("commands — 格式命令封装", () => {
   beforeEach(() => {
@@ -335,5 +339,125 @@ describe("commands — 审阅与打印 (Phase 5)", () => {
       expect(mockTr.setSelection).toHaveBeenCalled();
       expect(mockDispatch).toHaveBeenCalled();
     });
+  });
+});
+// === execSetFontFamilyEastAsia:三字段同设测试 / three-field co-set tests ===
+// 该命令使用自定义 ProseMirror 逻辑(非库 setFontFamily),需独立 mock view。
+describe("execSetFontFamilyEastAsia — 三字段同设", () => {
+  // 为 eastAsia 命令构建的可控 mock view
+  const mkMockMark = (attrs: Record<string, unknown>) => ({
+    type: { name: "fontFamily" },
+    attrs,
+  });
+  const createMark = vi.fn((attrs: Record<string, unknown>) =>
+    mkMockMark(attrs)
+  );
+  const markType = { name: "fontFamily", create: createMark };
+  // 文本节点 mock:带可选 fontFamily mark
+  const mkTextNode = (text: string, markAttrs?: Record<string, unknown>) => ({
+    isText: true,
+    nodeSize: text.length,
+    marks: markAttrs ? [mkMockMark(markAttrs)] : [],
+  });
+  // 构建可控 mock view
+  const buildView = (opts: {
+    empty?: boolean;
+    textNodes?: ReturnType<typeof mkTextNode>[];
+    storedMarks?: ReturnType<typeof mkMockMark>[];
+  }) => {
+    const selection = opts.empty
+      ? { from: 0, to: 0, empty: true }
+      : { from: 0, to: 5, empty: false };
+    const tr = {
+      removeMark: vi.fn(() => tr),
+      addMark: vi.fn(() => tr),
+      setStoredMarks: vi.fn(() => tr),
+    };
+    const doc = {
+      nodesBetween: vi.fn(
+        (
+          _from: number,
+          _to: number,
+          cb: (node: unknown, pos: number) => void
+        ) => {
+          for (const n of opts.textNodes ?? []) {
+            cb(n, 0);
+          }
+        }
+      ),
+    };
+    return {
+      view: {
+        state: {
+          selection,
+          storedMarks: opts.storedMarks ?? null,
+          doc,
+          schema: { marks: { fontFamily: markType } },
+          tr,
+        },
+        dispatch: vi.fn(),
+      },
+      tr,
+    };
+  };
+  // 替换 useDocumentStore 的 getEditorView 返回值
+  const setView = (viewObj: unknown) => {
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: { getEditorView: () => viewObj },
+    } as never);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("光标(空选区):三字段同设到 storedMarks", () => {
+    const { view, tr } = buildView({ empty: true, storedMarks: [] });
+    setView(view);
+    execSetFontFamilyEastAsia("SimHei");
+    // create 被调用,attrs 含三字段
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "SimHei",
+      hAnsi: "SimHei",
+      eastAsia: "SimHei",
+    });
+    // setStoredMarks 被调用
+    expect(tr.setStoredMarks).toHaveBeenCalled();
+    expect(view.dispatch).toHaveBeenCalled();
+  });
+
+  it("选区:对每个文本节点 addMark 三字段同设", () => {
+    const { view, tr } = buildView({
+      empty: false,
+      textNodes: [mkTextNode("hello", { ascii: "Calibri" })],
+    });
+    setView(view);
+    execSetFontFamilyEastAsia("SimSun");
+    // removeMark 先移除旧 mark
+    expect(tr.removeMark).toHaveBeenCalled();
+    // create 含三字段(覆盖旧 ascii)
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "SimSun",
+      hAnsi: "SimSun",
+      eastAsia: "SimSun",
+    });
+    // addMark 重新应用
+    expect(tr.addMark).toHaveBeenCalled();
+    expect(view.dispatch).toHaveBeenCalled();
+  });
+
+  it("光标处已有旧 eastAsia 字体:三字段覆盖旧值", () => {
+    const { view, tr } = buildView({
+      empty: true,
+      storedMarks: [mkMockMark({ ascii: "Arial", eastAsia: "SimHei" })],
+    });
+    setView(view);
+    execSetFontFamilyEastAsia("KaiTi");
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "KaiTi",
+      hAnsi: "KaiTi",
+      eastAsia: "KaiTi",
+    });
+    expect(tr.setStoredMarks).toHaveBeenCalled();
   });
 });

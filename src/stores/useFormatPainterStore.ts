@@ -3,8 +3,8 @@
 // 存储 marks 快照 + active 布尔,供 FormatPainter 组件读写。
 // Reference: .dev/plan/2026-06-23-ribbon-enhancement.md §Phase 2.7
 
-import type { FormatState } from "@/stores/useDocumentStore";
 import { create } from "zustand";
+import type { FormatState } from "@/stores/useDocumentStore";
 
 /** 格式刷状态 / Format painter state */
 export type FormatPainterState = {

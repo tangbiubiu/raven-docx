@@ -17,7 +17,7 @@ describe("ColorPicker", () => {
 
   it("渲染触发按钮并带 aria-label", () => {
     render(
-      <ColorPicker label="字体颜色" onChange={vi.fn()} testId="text-color" />,
+      <ColorPicker label="字体颜色" onChange={vi.fn()} testId="text-color" />
     );
     expect(screen.getByTestId("text-color")).toBeInTheDocument();
     expect(screen.getByLabelText("字体颜色")).toBeInTheDocument();

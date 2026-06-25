@@ -86,6 +86,42 @@ function extractSurroundingText(
 
   return { before, after };
 }
+/** Agent 动作对应的中文指令映射 */
+const ACTION_PROMPTS: Record<string, string> = {
+  rewrite: "请润色上述选中文本，使其更加流畅和专业。",
+  expand: "请扩写上述选中文本，补充更多细节和例子。",
+  summarize: "请为上述选中文本生成简洁的摘要。",
+  translate: "请将上述选中文本翻译成英文。",
+  explain: "请解释上述选中文本的含义和背景。",
+  fixGrammar: "请修复上述选中文本中的语法错误。",
+  makeFormal: "请将上述选中文本改写为更正式的风格。",
+  makeCasual: "请将上述选中文本改写为更随意的风格。",
+};
+
+/**
+ * 将格式状态扁平化为可读的中文摘要对象,供 agent prompt 使用。
+ * fontFamily 从 {ascii, eastAsia} 对象转为可读字符串,
+ * 避免 null/嵌套对象污染 prompt。
+ */
+function summarizeFormat(fmt: FormatState): Record<string, string> {
+  const fontParts: string[] = [];
+  if (fmt.fontFamily) {
+    if (fmt.fontFamily.eastAsia) {
+      fontParts.push(fmt.fontFamily.eastAsia);
+    }
+    if (fmt.fontFamily.ascii) {
+      fontParts.push(fmt.fontFamily.ascii);
+    }
+  }
+  return {
+    加粗: fmt.bold ? "是" : "否",
+    斜体: fmt.italic ? "是" : "否",
+    下划线: fmt.underline ? "是" : "否",
+    字体: fontParts.length > 0 ? fontParts.join("/") : "默认",
+    字号: fmt.fontSize ? `${fmt.fontSize}pt` : "默认",
+    对齐: fmt.alignment ?? "默认",
+  };
+}
 
 /**
  * useAgentContext — 采集文档上下文用于 prompt 构建
@@ -162,57 +198,40 @@ export function useAgentContext(): UseAgentContextReturn {
     };
   };
 
+  /** 构建选区上下文的 prompt 片段 */
+  const buildSelectionParts = (ctx: AgentSelectionContext): string[] => {
+    const parts: string[] = [`选中文本：\n${ctx.selectedText}`];
+    if (ctx.formatting) {
+      // 扁平化序列化:fontFamily 从对象转为可读字符串,
+      // 避免 null/嵌套对象污染 agent prompt。
+      const fmtSummary = summarizeFormat(ctx.formatting);
+      parts.push(`当前格式：${JSON.stringify(fmtSummary)}`);
+    }
+    parts.push("");
+    return parts;
+  };
+
+  /** 构建动作指令的 prompt 片段 */
+  const buildActionParts = (action: string, customPrompt?: string): string => {
+    if (action === "custom" || action === "default") {
+      return customPrompt ?? "";
+    }
+    return ACTION_PROMPTS[action] ?? customPrompt ?? "";
+  };
+
   const buildPrompt = (
     action: string,
     selectionCtx: AgentSelectionContext | null,
     customPrompt?: string
   ): string => {
     const parts: string[] = [];
-
     if (selectionCtx) {
-      parts.push(`选中文本：\n${selectionCtx.selectedText}`);
-      if (selectionCtx.formatting) {
-        parts.push(`当前格式：${JSON.stringify(selectionCtx.formatting)}`);
-      }
-      parts.push("");
+      parts.push(...buildSelectionParts(selectionCtx));
     }
-
-    switch (action) {
-      case "rewrite":
-        parts.push("请润色上述选中文本，使其更加流畅和专业。");
-        break;
-      case "expand":
-        parts.push("请扩写上述选中文本，补充更多细节和例子。");
-        break;
-      case "summarize":
-        parts.push("请为上述选中文本生成简洁的摘要。");
-        break;
-      case "translate":
-        parts.push("请将上述选中文本翻译成英文。");
-        break;
-      case "explain":
-        parts.push("请解释上述选中文本的含义和背景。");
-        break;
-      case "fixGrammar":
-        parts.push("请修复上述选中文本中的语法错误。");
-        break;
-      case "makeFormal":
-        parts.push("请将上述选中文本改写为更正式的风格。");
-        break;
-      case "makeCasual":
-        parts.push("请将上述选中文本改写为更随意的风格。");
-        break;
-      case "custom":
-        if (customPrompt) {
-          parts.push(customPrompt);
-        }
-        break;
-      default:
-        if (customPrompt) {
-          parts.push(customPrompt);
-        }
+    const actionPrompt = buildActionParts(action, customPrompt);
+    if (actionPrompt) {
+      parts.push(actionPrompt);
     }
-
     return parts.join("\n");
   };
 

@@ -35,18 +35,139 @@ function normalizeAlignment(
 }
 
 /**
+ * ProseMirror EditorView 的最小字体相关契约。
+ * 避免直接依赖 prosemirror-view 完整类型(库类型复杂且易变)。
+ */
+type FontView = {
+  state: {
+    selection: {
+      from: number;
+      to: number;
+      empty: boolean;
+      $from: { marks: () => readonly unknown[] };
+    };
+    storedMarks: readonly unknown[] | null;
+    doc: {
+      nodesBetween: (
+        from: number,
+        to: number,
+        fn: (node: unknown, pos: number) => void
+      ) => void;
+    };
+    schema: {
+      marks: {
+        fontFamily?: { create: (attrs: Record<string, unknown>) => unknown };
+      };
+    };
+    tr: unknown;
+  };
+};
+
+/** fontFamily mark 的 attrs 形状(最小契约) */
+type FontFamilyAttrs = { ascii?: string; hAnsi?: string; eastAsia?: string };
+
+/** 判断一个 mark 是否为 fontFamily mark */
+function isFontFamilyMark(m: unknown): m is { attrs: FontFamilyAttrs } {
+  if (!m || typeof m !== "object") {
+    return false;
+  }
+  const mark = m as { type?: { name?: string }; attrs?: unknown };
+  return mark.type?.name === "fontFamily" && !!mark.attrs;
+}
+
+/**
+ * 从 ProseMirror view 遍历选区,精确收集 fontFamily mark。
+ * - 遍历选区所有文本节点,收集每个节点的 fontFamily mark {ascii, eastAsia}
+ * - 所有节点一致 → 返回该值
+ * - 不一致(混合)→ 返回 null
+ * - 无 fontFamily mark → 返回 {}(空对象,表示无字体格式)
+ * - 空选区(光标)→ 取 storedMarks 或 $from.marks() 中的 fontFamily
+ *
+ * 库的 SelectionState.textFormatting.fontFamily 丢弃 eastAsia 且混合选区
+ * 只取第一个节点(§2.1/§2.2),故必须直接从 view 读取。
+ */
+function collectFontFamilyFromSelection(view: FontView): {
+  ascii?: string;
+  eastAsia?: string;
+} | null {
+  const { selection, storedMarks, doc, schema } = view.state;
+  const { from, to, empty } = selection;
+
+  // 若 schema 无 fontFamily mark,直接返回 undefined(无字体格式)
+  if (!schema.marks.fontFamily) {
+    return {};
+  }
+
+  if (empty) {
+    // 光标处:优先 storedMarks,其次 $from.marks()
+    const marksSource = storedMarks ?? selection.$from.marks();
+    const ffMark = marksSource.find(isFontFamilyMark);
+    if (!ffMark) {
+      return {};
+    }
+    const { ascii, eastAsia } = ffMark.attrs;
+    return ascii || eastAsia ? { ascii, eastAsia } : {};
+  }
+
+  // 非空选区:遍历所有文本节点收集 fontFamily
+  const collected: Array<{ ascii?: string; eastAsia?: string }> = [];
+  doc.nodesBetween(from, to, (node, _pos) => {
+    const n = node as { isText?: boolean; marks?: readonly unknown[] };
+    if (!n.isText) {
+      return;
+    }
+    const ffMark = (n.marks ?? []).find(isFontFamilyMark);
+    if (!ffMark) {
+      collected.push({});
+      return;
+    }
+    const { ascii, eastAsia } = ffMark.attrs;
+    collected.push({ ascii, eastAsia });
+  });
+
+  if (collected.length === 0) {
+    // 选区内无文本节点(如纯图片选区)
+    return {};
+  }
+
+  // 判断一致性:所有节点的 {ascii, eastAsia} 序列化后是否相同
+  const first = JSON.stringify(collected[0]);
+  const allSame = collected.every((c) => JSON.stringify(c) === first);
+  if (!allSame) {
+    return null; // 混合选区
+  }
+  return collected[0];
+}
+
+/**
  * 从库 SelectionState 构建 store.selectionFormat。
  * 提取为独立函数以降低 handleSelectionChange 的认知复杂度（Phase 7.1）。
+ *
+ * fontFamily 字段通过 collectFontFamilyFromSelection 从 ProseMirror view
+ * 精确收集(库的 tf.fontFamily 丢弃 eastAsia 且混合选区只取首个节点)。
+ * view 为 null 时降级为 tf.fontFamily?.ascii(旧行为)。
  */
 function buildSelectionFormat(
   state: SelectionState,
-  listType: "ordered" | "unordered" | null
+  listType: "ordered" | "unordered" | null,
+  view: FontView | null
 ): FormatState {
   const tf = state.textFormatting;
   const vertAlign = tf.vertAlign;
   const headingMatch = state.styleId
     ? HEADING_STYLE_RE.exec(state.styleId)
     : null;
+
+  // 精确收集字体:view 为 null 时降级到库的 ascii(仅西文场景可用)
+  let fontFamily: FormatState["fontFamily"];
+  if (view) {
+    fontFamily = collectFontFamilyFromSelection(view);
+  } else {
+    // 降级:库的 tf.fontFamily 仅含 ascii(无 eastAsia)
+    const ascii = tf.fontFamily?.ascii ?? "";
+    fontFamily = ascii ? { ascii } : {};
+  }
+
   return {
     bold: tf.bold ?? false,
     italic: tf.italic ?? false,
@@ -57,7 +178,7 @@ function buildSelectionFormat(
     textColor: tf.color?.rgb ?? "",
     highlight: tf.highlight && tf.highlight !== "none" ? tf.highlight : "",
     fontSize: tf.fontSize ? Math.round(tf.fontSize / 2) : 0,
-    fontFamily: tf.fontFamily?.ascii ?? "",
+    fontFamily,
     alignment: normalizeAlignment(state.paragraphFormatting.alignment),
     headingLevel: headingMatch ? Number(headingMatch[1]) : undefined,
     listType,
@@ -229,7 +350,12 @@ export function useEditorBridge() {
       text: "",
       paraId: getCurrentParaId(),
     });
-    setSelectionFormat(buildSelectionFormat(state, getListTypeFromPM()));
+    // 通过 editorRef 获取 ProseMirror view,精确收集 fontFamily mark
+    // view 为 null 时 buildSelectionFormat 降级为库的 tf.fontFamily?.ascii
+    // EditorView 结构复杂,此处用最小契约 FontView 断言(仅用字体相关字段)
+    const view = (editorRef.current?.getEditorRef()?.getView() ??
+      null) as FontView | null;
+    setSelectionFormat(buildSelectionFormat(state, getListTypeFromPM(), view));
   };
 
   /** 文档内容变化回调 — 同步 dirty 标记 + 大纲标题 + 字数 */

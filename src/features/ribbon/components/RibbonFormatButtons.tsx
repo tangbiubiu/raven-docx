@@ -3,8 +3,8 @@
 // 替代 HomeTab 内联 useFormatState().isActive() 调用（该路径不响应选区变化）。
 
 import type { ReactNode } from "react";
-import { FONT_FAMILIES } from "@/features/formatting/constants";
 import { execToggleMark } from "@/features/editor/commands";
+import { FONT_FAMILIES } from "@/features/formatting/constants";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { RibbonToggleButton } from "./RibbonToggleButton";
 
@@ -117,22 +117,36 @@ export function ListToggleButton({
     </RibbonToggleButton>
   );
 }
-
 /**
- * 受控字体 Select 的当前值 hook（细粒度订阅 + ascii→value 反向映射）。
- * selectionFormat.fontFamily 存的是 mark 的 ascii 原始值（如 "Calibri"），
- * SelectItem value 是语义 key（如 "calibri"），此处做大小写不敏感反向匹配。
- * - ascii 为空 → "default"
- * - 未知字体 → ""（Select 显示 placeholder）
+ * 字体回显值 hook — 从 selectionFormat.fontFamily 对象提取显示字符串。
+ *
+ * 回显策略(§3.1 精确 + 混合为空):
+ * - null(混合选区) → ""(回显空)
+ * - {}(选区文本节点均无 fontFamily mark) → ""(回显空)
+ * - {eastAsia: "SimSun"} → "宋体"(中文优先,查 FONT_FAMILIES 友好名)
+ * - {ascii: "Calibri"} → "Calibri"(西文,label 即原名)
+ * - {eastAsia: "SimSun", ascii: "Calibri"} → "宋体"(中文优先)
+ * - 非清单字体名 → 直接显示原始名
+ *
+ * 返回友好显示名(非 Select value),供 FontCombobox 显示。
  */
 export function useFontFamilyValue(): string {
-  const ascii = useDocumentStore((s) => s.selectionFormat?.fontFamily ?? "");
-  if (!ascii) return "default";
-  return (
-    FONT_FAMILIES.find(
-      (f) => f.font?.toLowerCase() === ascii.toLowerCase(),
-    )?.value ?? ""
+  const fontFamily = useDocumentStore(
+    (s) => s.selectionFormat?.fontFamily ?? null
   );
+  if (!fontFamily) {
+    return "";
+  }
+  // eastAsia 优先(中文用户场景下 eastAsia 是视觉主导字体)
+  const raw = fontFamily.eastAsia || fontFamily.ascii || "";
+  if (!raw) {
+    return "";
+  }
+  // 查 FONT_FAMILIES 做 OOXML 名→友好名映射(大小写不敏感)
+  const item = FONT_FAMILIES.find(
+    (f) => f.font.toLowerCase() === raw.toLowerCase()
+  );
+  return item?.label ?? raw;
 }
 
 /** 受控字号 Select 的当前值 hook（半磅 → pt 显示，细粒度订阅）*/

@@ -201,7 +201,8 @@ export const useAppStore = create<AppState>()(
           return { selectionContext: ctx };
         }),
       setActiveContextualTab: (tab) => set({ activeContextualTab: tab }),
-      toggleRuler: () => set((state) => ({ rulerVisible: !state.rulerVisible })),
+      toggleRuler: () =>
+        set((state) => ({ rulerVisible: !state.rulerVisible })),
     }),
     {
       name: "raven:app-layout",

@@ -44,7 +44,10 @@ describe("useEditorBridge", () => {
       act(() => {
         // minimal mock — 仅需 getEditorRef().getState()
         result.current.editorRef.current = {
-          getEditorRef: () => ({ getState: () => mockPMState }),
+          getEditorRef: () => ({
+            getState: () => mockPMState,
+            getView: () => null,
+          }),
         } as never;
       });
 
@@ -82,7 +85,7 @@ describe("useEditorBridge", () => {
       expect(fmt?.bold).toBe(true);
       expect(fmt?.italic).toBe(false);
       expect(fmt?.fontSize).toBe(12);
-      expect(fmt?.fontFamily).toBe("Arial");
+      expect(fmt?.fontFamily).toEqual({ ascii: "Arial" });
       expect(fmt?.strike).toBe(false);
       // Phase 7.1: 补全的字段 / newly-populated fields
       expect(fmt?.superscript).toBe(true);
@@ -133,7 +136,10 @@ describe("useEditorBridge", () => {
       } as unknown as EditorState;
       act(() => {
         result.current.editorRef.current = {
-          getEditorRef: () => ({ getState: () => mockPMState }),
+          getEditorRef: () => ({
+            getState: () => mockPMState,
+            getView: () => null,
+          }),
         } as never;
       });
 
@@ -169,7 +175,10 @@ describe("useEditorBridge", () => {
       } as unknown as EditorState;
       act(() => {
         result.current.editorRef.current = {
-          getEditorRef: () => ({ getState: () => mockPMState }),
+          getEditorRef: () => ({
+            getState: () => mockPMState,
+            getView: () => null,
+          }),
         } as never;
       });
 
@@ -188,6 +197,209 @@ describe("useEditorBridge", () => {
       expect(
         useDocumentStore.getState().selectionFormat?.headingLevel
       ).toBeUndefined();
+    });
+    it("view 为 null 时降级为库 tf.fontFamily?.ascii", () => {
+      const { result } = renderHook(() => useEditorBridge());
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({ getState: () => null, getView: () => null }),
+        } as never;
+      });
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: true,
+          isMultiParagraph: false,
+          textFormatting: { fontFamily: { ascii: "Calibri" } },
+          paragraphFormatting: {},
+          styleId: null,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+      expect(useDocumentStore.getState().selectionFormat?.fontFamily).toEqual({
+        ascii: "Calibri",
+      });
+    });
+
+    it("view 有值时精确收集 eastAsia 字体", () => {
+      const { result } = renderHook(() => useEditorBridge());
+      // mock view:选区文本节点有 fontFamily mark 含 eastAsia
+      const mockView = {
+        state: {
+          selection: {
+            from: 0,
+            to: 5,
+            empty: false,
+            $from: { marks: () => [] },
+          },
+          storedMarks: null,
+          doc: {
+            nodesBetween: (
+              _from: number,
+              _to: number,
+              fn: (node: unknown, pos: number) => void
+            ) => {
+              fn(
+                {
+                  isText: true,
+                  nodeSize: 5,
+                  marks: [
+                    {
+                      type: { name: "fontFamily" },
+                      attrs: { eastAsia: "SimSun" },
+                    },
+                  ],
+                },
+                0
+              );
+            },
+          },
+          schema: { marks: { fontFamily: { create: (a: unknown) => a } } },
+          tr: {},
+        },
+      };
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({
+            getState: () => null,
+            getView: () => mockView,
+          }),
+        } as never;
+      });
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: true,
+          isMultiParagraph: false,
+          textFormatting: {},
+          paragraphFormatting: {},
+          styleId: null,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+      expect(useDocumentStore.getState().selectionFormat?.fontFamily).toEqual({
+        eastAsia: "SimSun",
+      });
+    });
+
+    it("混合字体选区回显 null", () => {
+      const { result } = renderHook(() => useEditorBridge());
+      // mock view:选区内两个文本节点字体不同
+      const mockView = {
+        state: {
+          selection: {
+            from: 0,
+            to: 10,
+            empty: false,
+            $from: { marks: () => [] },
+          },
+          storedMarks: null,
+          doc: {
+            nodesBetween: (
+              _from: number,
+              _to: number,
+              fn: (node: unknown, pos: number) => void
+            ) => {
+              fn(
+                {
+                  isText: true,
+                  nodeSize: 5,
+                  marks: [
+                    { type: { name: "fontFamily" }, attrs: { ascii: "Arial" } },
+                  ],
+                },
+                0
+              );
+              fn(
+                {
+                  isText: true,
+                  nodeSize: 5,
+                  marks: [
+                    {
+                      type: { name: "fontFamily" },
+                      attrs: { eastAsia: "SimSun" },
+                    },
+                  ],
+                },
+                5
+              );
+            },
+          },
+          schema: { marks: { fontFamily: { create: (a: unknown) => a } } },
+          tr: {},
+        },
+      };
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({
+            getState: () => null,
+            getView: () => mockView,
+          }),
+        } as never;
+      });
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: true,
+          isMultiParagraph: false,
+          textFormatting: {},
+          paragraphFormatting: {},
+          styleId: null,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+      // 混合选区 → null
+      expect(
+        useDocumentStore.getState().selectionFormat?.fontFamily
+      ).toBeNull();
+    });
+
+    it("选区无 fontFamily mark 回显空对象", () => {
+      const { result } = renderHook(() => useEditorBridge());
+      const mockView = {
+        state: {
+          selection: {
+            from: 0,
+            to: 5,
+            empty: false,
+            $from: { marks: () => [] },
+          },
+          storedMarks: null,
+          doc: {
+            nodesBetween: (
+              _from: number,
+              _to: number,
+              fn: (node: unknown, pos: number) => void
+            ) => {
+              fn({ isText: true, nodeSize: 5, marks: [] }, 0);
+            },
+          },
+          schema: { marks: { fontFamily: { create: (a: unknown) => a } } },
+          tr: {},
+        },
+      };
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({
+            getState: () => null,
+            getView: () => mockView,
+          }),
+        } as never;
+      });
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: true,
+          isMultiParagraph: false,
+          textFormatting: {},
+          paragraphFormatting: {},
+          styleId: null,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+      expect(useDocumentStore.getState().selectionFormat?.fontFamily).toEqual(
+        {}
+      );
     });
   });
 

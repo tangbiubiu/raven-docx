@@ -2,22 +2,32 @@
 // Phase 2.7: 复制当前选区 marks → 激活 → 下次选区自动应用 → 清除
 // Reference: .dev/plan/2026-06-23-ribbon-enhancement.md §Phase 2
 
-import { useEffect, useRef } from "react";
 import { Paintbrush } from "lucide-react";
+import { useEffect, useRef } from "react";
 import {
   execSetFontFamily,
+  execSetFontFamilyEastAsia,
   execSetFontSize,
   execSetHighlight,
   execSetTextColor,
   execToggleMark,
 } from "@/features/editor/commands";
 import { useT } from "@/lib/i18n";
-import { useFormatPainterStore } from "@/stores/useFormatPainterStore";
-import { useDocumentStore } from "@/stores/useDocumentStore";
 import { cn } from "@/lib/utils";
+import { useDocumentStore } from "@/stores/useDocumentStore";
+import { useFormatPainterStore } from "@/stores/useFormatPainterStore";
 
 /** 布尔 mark 字段 → mark 名称 / Boolean mark field → mark name */
-const BOOL_MARKS: { field: "bold" | "italic" | "underline" | "strike" | "superscript" | "subscript"; markName: string }[] = [
+const BOOL_MARKS: {
+  field:
+    | "bold"
+    | "italic"
+    | "underline"
+    | "strike"
+    | "superscript"
+    | "subscript";
+  markName: string;
+}[] = [
   { field: "bold", markName: "bold" },
   { field: "italic", markName: "italic" },
   { field: "underline", markName: "underline" },
@@ -25,6 +35,9 @@ const BOOL_MARKS: { field: "bold" | "italic" | "underline" | "strike" | "supersc
   { field: "superscript", markName: "superscript" },
   { field: "subscript", markName: "subscript" },
 ];
+
+/** 格式刷快照的 fontFamily 字段类型(与 FormatState.fontFamily 一致) */
+type FontFamilySnapshot = { ascii?: string; eastAsia?: string } | null;
 
 /** 从 selectionFormat 提取 marks 快照 / Extract marks snapshot from selectionFormat */
 function snapshotMarks(fmt: {
@@ -34,7 +47,7 @@ function snapshotMarks(fmt: {
   strike?: boolean;
   superscript?: boolean;
   subscript?: boolean;
-  fontFamily?: string;
+  fontFamily?: FontFamilySnapshot;
   fontSize?: number;
   textColor?: string;
   highlight?: string;
@@ -53,7 +66,11 @@ function snapshotMarks(fmt: {
   };
 }
 
-/** 应用存储的 marks 快照到当前选区 / Apply stored marks snapshot to current selection */
+/**
+ * 应用存储的 marks 快照到当前选区 / Apply stored marks snapshot to current selection。
+ * fontFamily 按 ascii/eastAsia 分别恢复(先 ascii 设西文,后 eastAsia 设中文,
+ * eastAsia 命令会保留旧 ascii,故二者可共存)。
+ */
 function applyMarks(marks: {
   bold?: boolean;
   italic?: boolean;
@@ -61,7 +78,7 @@ function applyMarks(marks: {
   strike?: boolean;
   superscript?: boolean;
   subscript?: boolean;
-  fontFamily?: string;
+  fontFamily?: FontFamilySnapshot;
   fontSize?: number;
   textColor?: string;
   highlight?: string;
@@ -72,7 +89,13 @@ function applyMarks(marks: {
     }
   }
   if (marks.fontFamily) {
-    execSetFontFamily(marks.fontFamily);
+    // 先恢复 ascii(西文字体),再恢复 eastAsia(中文字体,保留 ascii)
+    if (marks.fontFamily.ascii) {
+      execSetFontFamily(marks.fontFamily.ascii);
+    }
+    if (marks.fontFamily.eastAsia) {
+      execSetFontFamilyEastAsia(marks.fontFamily.eastAsia);
+    }
   }
   if (marks.fontSize && marks.fontSize > 0) {
     execSetFontSize(marks.fontSize);
@@ -94,9 +117,7 @@ export function FormatPainter() {
   const active = useFormatPainterStore((s) => s.active);
   const storedMarks = useFormatPainterStore((s) => s.marks);
   const setFormatPainter = useFormatPainterStore((s) => s.setFormatPainter);
-  const clearFormatPainter = useFormatPainterStore(
-    (s) => s.clearFormatPainter,
-  );
+  const clearFormatPainter = useFormatPainterStore((s) => s.clearFormatPainter);
   const selectionFormat = useDocumentStore((s) => s.selectionFormat);
 
   // 跟踪激活后是否已观察到一次选区变化 / Track post-activation selection change
@@ -113,7 +134,7 @@ export function FormatPainter() {
 
   // 选区变化时,若已激活且已 arm(跳过激活当次的选区),应用 marks 并清除
   useEffect(() => {
-    if (!active || !storedMarks || !armedRef.current) {
+    if (!(active && storedMarks && armedRef.current)) {
       return;
     }
     // 跳过激活瞬间的同一选区 / Skip the same selection at activation moment
@@ -148,7 +169,7 @@ export function FormatPainter() {
         "transition duration-150",
         "hover:scale-105 hover:bg-accent hover:text-accent-foreground",
         "active:scale-95",
-        active ? "bg-accent text-accent-foreground" : "",
+        active ? "bg-accent text-accent-foreground" : ""
       )}
       data-pressed={active}
       data-testid="ribbon-formatPainter"

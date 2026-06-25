@@ -41,14 +41,12 @@ import {
 } from "@/features/editor/commands";
 import {
   ALIGNMENTS,
-  FONT_FAMILIES,
   FONT_SIZES,
   HEADING_OPTIONS,
   SUPER_SUB_MARKS,
   TEXT_MARKS,
 } from "@/features/formatting/constants";
 import {
-  applyFont,
   applyFontSize,
   applyHighlight,
   applyTextColor,
@@ -57,15 +55,15 @@ import {
 import { useFormatState } from "@/features/formatting/hooks/use-format-state";
 import { useT } from "@/lib/i18n";
 import { useAppStore } from "@/stores/useAppStore";
-import type { RibbonCallbacks } from "../Ribbon";
 import { ColorPicker } from "../ColorPicker";
+import { FontCombobox } from "../FontCombobox";
 import { FormatPainter } from "../FormatPainter";
+import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
 import {
   AlignToggleButton,
   ListToggleButton,
   MarkToggleButton,
-  useFontFamilyValue,
   useFontSizeValue,
   useHeadingValue,
 } from "../RibbonFormatButtons";
@@ -100,7 +98,6 @@ const MARK_SHORTCUTS: Record<string, string> = {
 
 export function HomeTab(_props: RibbonCallbacks) {
   const { t } = useT();
-  const fontFamilyValue = useFontFamilyValue();
   const fontSizeValue = useFontSizeValue();
   const headingValue = useHeadingValue();
   // 文字颜色/高亮的响应式回显值 / Reactive text color / highlight echo values
@@ -162,18 +159,7 @@ export function HomeTab(_props: RibbonCallbacks) {
             </MarkToggleButton>
           );
         })}
-        <Select onValueChange={applyFont} value={fontFamilyValue ?? ""}>
-          <SelectTrigger className="h-7 w-[90px] text-xs" size="sm">
-            <SelectValue placeholder={t("format.font")} />
-          </SelectTrigger>
-          <SelectContent>
-            {FONT_FAMILIES.map((f) => (
-              <SelectItem key={f.value} value={f.value}>
-                {f.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FontCombobox />
         <Select
           onValueChange={(v) => applyFontSize(Number.parseInt(v, 10) * 2)}
           value={fontSizeValue ?? ""}

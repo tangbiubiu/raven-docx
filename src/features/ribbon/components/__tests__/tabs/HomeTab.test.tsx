@@ -63,6 +63,11 @@ const mockFormatApply = vi.hoisted(() => ({
   clearFormatting: vi.fn(),
 }));
 vi.mock("@/features/formatting/format-apply", () => mockFormatApply);
+vi.mock("../../FontCombobox", () => ({
+  FontCombobox: () => (
+    <div data-testid="ribbon-fontFamily">mock-fontcombobox</div>
+  ),
+}));
 
 const props = {
   onNew: vi.fn(),

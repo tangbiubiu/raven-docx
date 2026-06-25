@@ -14,6 +14,7 @@ vi.mock("@/lib/utils", () => ({
 const mockCmds = vi.hoisted(() => ({
   execToggleMark: vi.fn(),
   execSetFontFamily: vi.fn(),
+  execSetFontFamilyEastAsia: vi.fn(),
   execSetFontSize: vi.fn(),
   execSetTextColor: vi.fn(),
   execSetHighlight: vi.fn(),
@@ -30,7 +31,9 @@ const mockPainterState = {
 vi.mock("@/stores/useFormatPainterStore", () => ({
   useFormatPainterStore: vi.fn(
     (selector?: (s: typeof mockPainterState) => unknown) =>
-      typeof selector === "function" ? selector(mockPainterState) : mockPainterState,
+      typeof selector === "function"
+        ? selector(mockPainterState)
+        : mockPainterState
   ),
 }));
 
@@ -60,7 +63,7 @@ describe("FormatPainter", () => {
     render(<FormatPainter />);
     expect(screen.getByTestId("ribbon-formatPainter")).toHaveAttribute(
       "data-pressed",
-      "false",
+      "false"
     );
   });
 
@@ -70,7 +73,7 @@ describe("FormatPainter", () => {
     render(<FormatPainter />);
     expect(screen.getByTestId("ribbon-formatPainter")).toHaveAttribute(
       "data-pressed",
-      "true",
+      "true"
     );
   });
 
@@ -79,8 +82,7 @@ describe("FormatPainter", () => {
       bold: true,
       italic: false,
       underline: true,
-      strike: false,
-      fontFamily: "Georgia",
+      fontFamily: { ascii: "Georgia" },
       fontSize: 24,
       textColor: "#FF0000",
       highlight: "yellow",
@@ -93,8 +95,7 @@ describe("FormatPainter", () => {
       bold: true,
       italic: false,
       underline: true,
-      strike: false,
-      fontFamily: "Georgia",
+      fontFamily: { ascii: "Georgia" },
       fontSize: 24,
       textColor: "#FF0000",
       highlight: "yellow",

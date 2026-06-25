@@ -4,6 +4,8 @@
 
 import { createEmptyDocument, DocxEditor } from "@eigenpal/docx-editor-react";
 import { useEffect } from "react";
+import { FONT_FAMILIES } from "@/features/formatting/constants";
+import { injectFontAliases } from "@/features/formatting/font-aliases";
 import { useT } from "@/lib/i18n";
 import { useAgentStore } from "@/stores/useAgentStore";
 import { useEditorBridge } from "../hooks/useEditorBridge";
@@ -13,6 +15,18 @@ export type EditorPaneProps = {
   /** 是否新建文档 */
   isNewDocument?: boolean;
 };
+
+/**
+ * 传递给 DocxEditor 的字体清单(库 fontFamilies prop)。
+ * 必须是 module-level 稳定引用,避免每次 render 重建数组导致 picker memo 失效。
+ * 格式: FontOption { name, fontFamily, category }
+ */
+const EDITOR_FONT_FAMILIES = FONT_FAMILIES.filter(
+  (f) => f.value !== "default"
+).map((f) => ({
+  name: f.label,
+  fontFamily: f.font,
+}));
 /**
  * 编辑器容器。
  *
@@ -40,6 +54,11 @@ export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
       return () => cancelAnimationFrame(id);
     }
   }, [shouldRenderEditor, injectBridge]);
+
+  // 注入 CJK 字体跨平台别名(@font-face local()),幂等
+  useEffect(() => {
+    injectFontAliases();
+  }, []);
   // 空状态：无文档（documentBuffer 为 null/undefined 且 非新建文档）
   if (documentBuffer == null && !isNewDocument) {
     return (
@@ -64,6 +83,7 @@ export function EditorPane({ documentBuffer, isNewDocument }: EditorPaneProps) {
       <DocxEditor
         document={docProp}
         documentBuffer={docBuffer}
+        fontFamilies={EDITOR_FONT_FAMILIES}
         onChange={handleChange}
         onSelectionChange={handleSelectionChange}
         readOnly={isEditorLocked}

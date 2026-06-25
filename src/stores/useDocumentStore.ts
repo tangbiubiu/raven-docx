@@ -106,7 +106,14 @@ export type FormatState = {
   underline?: boolean;
   strike?: boolean;
   fontSize?: number;
-  fontFamily?: string;
+  /**
+   * 选区字体族 — 反映选区实际字体结构。
+   * - `{ ascii?: string; eastAsia?: string }`：选区内所有文本节点字体一致
+   * - `null`：混合字体选区（多节点字体不一致）
+   * - `undefined`：无 fontFamily mark（空选区且无 storedMarks，或选区无 mark）
+   * ascii 为西文字体名，eastAsia 为中文字体名，二者可独立存在。
+   */
+  fontFamily?: { ascii?: string; eastAsia?: string } | null;
   textColor?: string;
   highlight?: string;
   alignment?: "left" | "center" | "right" | "justify";
