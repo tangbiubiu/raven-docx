@@ -54,7 +54,8 @@ function MenuDropdown({
               item.disabled
                 ? "cursor-not-allowed text-muted-foreground/50"
                 : "hover:bg-accent hover:text-accent-foreground",
-              item.highlight && "bg-primary/10 text-primary hover:bg-primary/20"
+              !!item.highlight &&
+                "bg-primary/10 text-primary hover:bg-primary/20"
             )}
             data-testid={`menu-item-${item.action ?? String(idx)}`}
             disabled={item.disabled}

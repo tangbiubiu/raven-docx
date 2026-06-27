@@ -12,6 +12,106 @@ import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useAgentSession } from "../hooks/useAgentSession";
 import { QuickActions } from "./quick-actions";
 
+/** Agent 输入区域 — 从 AgentSidebar 提取以降低主组件复杂度 */
+function AgentInputArea({
+  isFreeMode,
+  isStreaming,
+  onSend,
+  onAbort,
+  status,
+}: {
+  isFreeMode: boolean;
+  isStreaming: boolean;
+  onSend: (prompt: string) => Promise<string>;
+  onAbort: () => void;
+  status: string;
+}) {
+  const { t } = useT();
+  const [inputValue, setInputValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 依赖 inputValue 变化触发高度调整
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [inputValue]);
+
+  const handleSend = async () => {
+    if (!inputValue.trim() || isStreaming) {
+      return;
+    }
+    const prompt = inputValue.trim();
+    setInputValue("");
+    try {
+      await onSend(prompt);
+    } catch {
+      // 错误已通过 store 处理
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="border-border border-t p-3">
+      {/* 自由模式提示 */}
+      {!!isFreeMode && (
+        <div className="mb-2 rounded bg-accent/50 px-2 py-1 text-muted-foreground text-xs">
+          {t("agent.freeMode") || "打开文档以启用完整 Agent 功能"}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <textarea
+          className={cn(
+            "flex-1 resize-none rounded border border-input bg-background px-3 py-2 text-sm",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+            "disabled:cursor-not-allowed disabled:opacity-50"
+          )}
+          // biome-ignore lint/nursery/noLeakedRender: 两操作数均严格 boolean,无泄漏风险
+          disabled={isFreeMode && status === "error"}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={t("agent.input.placeholder")}
+          ref={textareaRef}
+          rows={1}
+          value={inputValue}
+        />
+        {isStreaming ? (
+          <button
+            className="rounded bg-destructive px-3 py-2 font-medium text-destructive-foreground text-sm hover:bg-destructive/90"
+            onClick={onAbort}
+            title={t("agent.input.stop")}
+            type="button"
+          >
+            {t("agent.input.stop")}
+          </button>
+        ) : (
+          <button
+            className={cn(
+              "rounded bg-primary px-3 py-2 font-medium text-primary-foreground text-sm hover:bg-primary/90",
+              "disabled:cursor-not-allowed disabled:opacity-50"
+            )}
+            // biome-ignore lint/nursery/noLeakedRender: 两操作数均严格 boolean,无泄漏风险
+            disabled={!inputValue.trim() || (isFreeMode && status === "error")}
+            onClick={handleSend}
+            title={t("agent.input.send")}
+            type="button"
+          >
+            {t("agent.input.send")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AgentSidebar() {
   const { t } = useT();
   const toggle = useAppStore((s) => s.toggleAgentSidebar);
@@ -30,41 +130,14 @@ export function AgentSidebar() {
     contextBadge,
   } = useAgentSession();
 
-  const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "comments">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 自动滚动到底部
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 依赖 messages 变化触发滚动
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // 自动调整 textarea 高度
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-    }
-  }, [inputValue]);
-
-  const handleSend = async () => {
-    if (!inputValue.trim() || isStreaming) return;
-    const prompt = inputValue.trim();
-    setInputValue("");
-    try {
-      await send(prompt);
-    } catch {
-      // 错误已通过 store 处理
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
 
   // 无文档打开时的自由模式
   const isFreeMode = !documentPath;
@@ -108,7 +181,7 @@ export function AgentSidebar() {
         </div>
 
         {/* 上下文徽章 */}
-        {contextBadge && (
+        {!!contextBadge && (
           <span className="shrink-0 whitespace-nowrap rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[10px] text-primary">
             {contextBadge.text}
           </span>
@@ -124,6 +197,7 @@ export function AgentSidebar() {
               type="button"
             >
               <svg
+                aria-hidden="true"
                 className="h-4 w-4"
                 fill="none"
                 stroke="currentColor"
@@ -145,6 +219,7 @@ export function AgentSidebar() {
             type="button"
           >
             <svg
+              aria-hidden="true"
               className="h-4 w-4"
               fill="none"
               stroke="currentColor"
@@ -182,10 +257,11 @@ export function AgentSidebar() {
           </div>
 
           {/* 错误提示 */}
-          {error && (
+          {!!error && (
             <div className="mx-3 mb-2 rounded border border-destructive bg-destructive/10 p-2 text-destructive text-sm">
               <div className="flex items-start gap-2">
                 <svg
+                  aria-hidden="true"
                   className="mt-0.5 h-4 w-4 shrink-0"
                   fill="none"
                   stroke="currentColor"
@@ -206,6 +282,7 @@ export function AgentSidebar() {
                   type="button"
                 >
                   <svg
+                    aria-hidden="true"
                     className="h-4 w-4"
                     fill="none"
                     stroke="currentColor"
@@ -226,57 +303,13 @@ export function AgentSidebar() {
           {/* QuickActions — 位于消息列表和输入框之间 */}
           <QuickActions />
 
-          {/* 输入区域 */}
-          <div className="border-border border-t p-3">
-            {/* 自由模式提示 */}
-            {isFreeMode && (
-              <div className="mb-2 rounded bg-accent/50 px-2 py-1 text-muted-foreground text-xs">
-                {t("agent.freeMode") || "打开文档以启用完整 Agent 功能"}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <textarea
-                className={cn(
-                  "flex-1 resize-none rounded border border-input bg-background px-3 py-2 text-sm",
-                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                  "disabled:cursor-not-allowed disabled:opacity-50"
-                )}
-                disabled={isFreeMode && status === "error"}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t("agent.input.placeholder")}
-                ref={textareaRef}
-                rows={1}
-                value={inputValue}
-              />
-              {isStreaming ? (
-                <button
-                  className="rounded bg-destructive px-3 py-2 font-medium text-destructive-foreground text-sm hover:bg-destructive/90"
-                  onClick={abort}
-                  title={t("agent.input.stop")}
-                  type="button"
-                >
-                  {t("agent.input.stop")}
-                </button>
-              ) : (
-                <button
-                  className={cn(
-                    "rounded bg-primary px-3 py-2 font-medium text-primary-foreground text-sm hover:bg-primary/90",
-                    "disabled:cursor-not-allowed disabled:opacity-50"
-                  )}
-                  disabled={
-                    !inputValue.trim() || (isFreeMode && status === "error")
-                  }
-                  onClick={handleSend}
-                  title={t("agent.input.send")}
-                  type="button"
-                >
-                  {t("agent.input.send")}
-                </button>
-              )}
-            </div>
-          </div>
+          <AgentInputArea
+            isFreeMode={isFreeMode}
+            isStreaming={isStreaming}
+            onAbort={abort}
+            onSend={send}
+            status={status}
+          />
         </>
       ) : (
         /* 批注 Tab */
@@ -324,7 +357,7 @@ function MessageBubble({ message }: { message: AgentMessage }) {
       >
         <div className="whitespace-pre-wrap break-words">
           {message.content}
-          {message.isStreaming && (
+          {!!message.isStreaming && (
             <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current" />
           )}
         </div>
@@ -348,6 +381,7 @@ function EmptyState({
       <div className="flex h-full items-center justify-center text-center text-muted-foreground">
         <div className="space-y-3">
           <svg
+            aria-hidden="true"
             className="mx-auto h-12 w-12 opacity-50"
             fill="none"
             stroke="currentColor"
@@ -380,6 +414,7 @@ function EmptyState({
     <div className="flex h-full items-center justify-center text-center text-muted-foreground">
       <div>
         <svg
+          aria-hidden="true"
           className="mx-auto mb-3 h-12 w-12 opacity-50"
           fill="none"
           stroke="currentColor"

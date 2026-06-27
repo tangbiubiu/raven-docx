@@ -1,3 +1,4 @@
+// biome-ignore lint/style/useFilenamingConvention: zh-CN 是 BCP 47 标准语言标签,与 locale key 一致
 // i18n/zh-CN.ts — 简体中文翻译 (Simplified Chinese Translations)
 // Reference: .dev/docs/i18n-standards.md
 

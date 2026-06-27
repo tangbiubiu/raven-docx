@@ -47,6 +47,22 @@ function twipsToMm(twips: number): number {
 function mmToTwips(mm: number): number {
   return Math.round(mm * MM_TO_TWIPS);
 }
+/** 识别当前边距对应的预设 — 模块级纯函数,无闭包状态,引用稳定 */
+function identifyPresetFromLayout(margins: Margins): string {
+  const threshold = 2; // mm tolerance
+  for (const key of MARGIN_OPTIONS) {
+    const p = MARGIN_PRESETS[key];
+    if (
+      Math.abs(twipsToMm(p.top) - twipsToMm(margins.top)) < threshold &&
+      Math.abs(twipsToMm(p.right) - twipsToMm(margins.right)) < threshold &&
+      Math.abs(twipsToMm(p.bottom) - twipsToMm(margins.bottom)) < threshold &&
+      Math.abs(twipsToMm(p.left) - twipsToMm(margins.left)) < threshold
+    ) {
+      return key;
+    }
+  }
+  return "custom";
+}
 
 type Props = {
   open: boolean;
@@ -88,23 +104,6 @@ export function PageSetupDialog({ open, onClose }: Props) {
       setForm(initLayout());
     }
   }, [open, initLayout]);
-
-  /** 识别当前边距对应的预设 */
-  function identifyPresetFromLayout(margins: Margins): string {
-    const threshold = 2; // mm tolerance
-    for (const key of MARGIN_OPTIONS) {
-      const p = MARGIN_PRESETS[key];
-      if (
-        Math.abs(twipsToMm(p.top) - twipsToMm(margins.top)) < threshold &&
-        Math.abs(twipsToMm(p.right) - twipsToMm(margins.right)) < threshold &&
-        Math.abs(twipsToMm(p.bottom) - twipsToMm(margins.bottom)) < threshold &&
-        Math.abs(twipsToMm(p.left) - twipsToMm(margins.left)) < threshold
-      ) {
-        return key;
-      }
-    }
-    return "custom";
-  }
 
   /** 页边距预设变更 */
   const handleMarginPresetChange = useCallback((value: string) => {
@@ -253,14 +252,20 @@ export function PageSetupDialog({ open, onClose }: Props) {
 
             {/* 预设选择 */}
             <div className="flex items-center gap-2">
-              <label className="w-16 text-muted-foreground text-xs">
+              <label
+                className="w-16 text-muted-foreground text-xs"
+                htmlFor="margin-preset"
+              >
                 {t("pageSetup.margins.preset")}
               </label>
               <Select
                 onValueChange={handleMarginPresetChange}
                 value={form.marginPreset}
               >
-                <SelectTrigger className="h-8 flex-1 text-xs">
+                <SelectTrigger
+                  className="h-8 flex-1 text-xs"
+                  id="margin-preset"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -281,11 +286,15 @@ export function PageSetupDialog({ open, onClose }: Props) {
                 >
               ).map((side) => (
                 <div className="flex items-center gap-2" key={side}>
-                  <label className="w-8 text-muted-foreground text-xs">
+                  <label
+                    className="w-8 text-muted-foreground text-xs"
+                    htmlFor={`margin-${side}`}
+                  >
                     {t(`pageSetup.margins.${side}`)}
                   </label>
                   <Input
                     className="h-8 flex-1 text-xs"
+                    id={`margin-${side}`}
                     max={200}
                     min={0}
                     onChange={(e) => handleMarginChange(side, e.target.value)}
@@ -316,14 +325,17 @@ export function PageSetupDialog({ open, onClose }: Props) {
 
             {/* 纸张预设 */}
             <div className="flex items-center gap-2">
-              <label className="w-16 text-muted-foreground text-xs">
+              <label
+                className="w-16 text-muted-foreground text-xs"
+                htmlFor="paper-preset"
+              >
                 {t("pageSetup.paperSize.preset")}
               </label>
               <Select
                 onValueChange={handlePaperPresetChange}
                 value={form.paperPreset}
               >
-                <SelectTrigger className="h-8 flex-1 text-xs">
+                <SelectTrigger className="h-8 flex-1 text-xs" id="paper-preset">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -342,11 +354,15 @@ export function PageSetupDialog({ open, onClose }: Props) {
             {/* 自定义宽高 */}
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
-                <label className="w-8 text-muted-foreground text-xs">
+                <label
+                  className="w-8 text-muted-foreground text-xs"
+                  htmlFor="paper-width"
+                >
                   {t("pageSetup.paperSize.width")}
                 </label>
                 <Input
                   className="h-8 flex-1 text-xs"
+                  id="paper-width"
                   max={600}
                   min={50}
                   onChange={(e) => {
@@ -368,11 +384,15 @@ export function PageSetupDialog({ open, onClose }: Props) {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <label className="w-8 text-muted-foreground text-xs">
+                <label
+                  className="w-8 text-muted-foreground text-xs"
+                  htmlFor="paper-height"
+                >
                   {t("pageSetup.paperSize.height")}
                 </label>
                 <Input
                   className="h-8 flex-1 text-xs"
+                  id="paper-height"
                   max={600}
                   min={50}
                   onChange={(e) => {

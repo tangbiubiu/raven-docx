@@ -4,6 +4,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useAgentStore } from "@/stores/useAgentStore";
+import type { SelectionInfo } from "@/stores/useDocumentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import type { AgentSelectionContext } from "./useAgentContext";
 import { useAgentContext } from "./useAgentContext";
@@ -70,6 +71,24 @@ export type UseAgentCommandsReturn = {
 
 /** markdown code fence 提取正则 */
 const JSON_FENCE_RE = /```(?:json)?\s*\n?([\s\S]*?)\n?```/;
+
+/** 计算选区在视口中的坐标,用于定位 SuggestionPopover */
+function resolveSuggestionPosition(
+  info: SelectionInfo
+): { top: number; left: number } | undefined {
+  const bridge = useDocumentStore.getState().editorBridge;
+  const view = bridge?.getEditorView();
+  if (!view) {
+    return;
+  }
+  try {
+    const coords = view.coordsAtPos(info.from);
+    return { top: coords.bottom + 8, left: coords.left };
+  } catch {
+    // coordsAtPos 在无效选区位置时抛错,忽略
+    return;
+  }
+}
 
 // ============================================================
 // 纯函数：parseAgentResponse
@@ -309,16 +328,7 @@ export function useAgentCommands(): UseAgentCommandsReturn {
           info
         ) {
           pendingResponseRef.current = response;
-          // 获取选区视口坐标，用于定位 SuggestionPopover
-          let position: { top: number; left: number } | undefined;
-          const bridge = useDocumentStore.getState().editorBridge;
-          const view = bridge?.getEditorView();
-          if (view && info) {
-            try {
-              const coords = view.coordsAtPos(info.from);
-              position = { top: coords.bottom + 8, left: coords.left };
-            } catch {}
-          }
+          const position = resolveSuggestionPosition(info);
           setPendingSuggestion({
             originalText: info.text,
             suggestedText: response.newText,

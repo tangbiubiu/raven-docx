@@ -245,7 +245,9 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
 
     // 挂载 hook 注册监听器
     const { unmount } = renderHook(() => useAgentSession());
-    for (const r of resolveQueue) r();
+    for (const r of resolveQueue) {
+      r();
+    }
     resolveQueue = [];
     await act(async () => {
       await Promise.resolve();
@@ -295,7 +297,9 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
     expect(useDocumentStore.getState().isDirty).toBe(false);
 
     unmount();
-    for (const r of resolveQueue) r();
+    for (const r of resolveQueue) {
+      r();
+    }
   });
 
   it("documentDirty=true 但 documentPath=null（新建文档）时不写回，isDirty=true", async () => {
@@ -304,7 +308,9 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
     useAgentStore.setState({ tempDocPath: "/tmp/.agent-tmp-doc.docx" });
 
     const { unmount } = renderHook(() => useAgentSession());
-    for (const r of resolveQueue) r();
+    for (const r of resolveQueue) {
+      r();
+    }
     resolveQueue = [];
     await act(async () => {
       await Promise.resolve();
@@ -333,7 +339,9 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
     expect(useDocumentStore.getState().isDirty).toBe(true);
 
     unmount();
-    for (const r of resolveQueue) r();
+    for (const r of resolveQueue) {
+      r();
+    }
   });
 
   it("documentDirty=false 时不重载文档，isDirty 保持 false", async () => {
@@ -342,7 +350,9 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
       .setDocument(null, new ArrayBuffer(4), "/test/doc.docx");
 
     const { unmount } = renderHook(() => useAgentSession());
-    for (const r of resolveQueue) r();
+    for (const r of resolveQueue) {
+      r();
+    }
     resolveQueue = [];
     await act(async () => {
       await Promise.resolve();
@@ -365,6 +375,8 @@ describe("useAgentSession — agent_end documentDirty 重载", () => {
     expect(useDocumentStore.getState().isDirty).toBe(false);
 
     unmount();
-    for (const r of resolveQueue) r();
+    for (const r of resolveQueue) {
+      r();
+    }
   });
 });

@@ -16,7 +16,7 @@ export function InsertImageButton() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** 处理文件选择 */
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
       return;

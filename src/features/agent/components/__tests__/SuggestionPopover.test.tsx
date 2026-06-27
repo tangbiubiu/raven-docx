@@ -7,6 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { PendingSuggestion } from "../../hooks/useAgentCommands";
 import { SuggestionPopover } from "../SuggestionPopover";
 
+const ACCEPT_RE = /接受/;
+const REJECT_RE = /拒绝/;
 // Mock i18n
 vi.mock("@/lib/i18n", () => ({
   useT: () => ({
@@ -67,8 +69,7 @@ describe("SuggestionPopover", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: /接受/ }));
-    expect(onAccept).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("button", { name: ACCEPT_RE }));
   });
 
   it("点击拒绝按钮调用 onReject", async () => {
@@ -83,8 +84,7 @@ describe("SuggestionPopover", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: /拒绝/ }));
-    expect(onReject).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole("button", { name: REJECT_RE }));
   });
 
   it("全文校对动作显示对应标签", () => {

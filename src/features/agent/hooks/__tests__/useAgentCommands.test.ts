@@ -200,7 +200,9 @@ function createMockBridge(opts?: {
 describe("applyResponse", () => {
   beforeEach(() => {
     mockIPC((cmd) => {
-      if (cmd === "plugin:log|log") return;
+      if (cmd === "plugin:log|log") {
+        return;
+      }
       return null;
     });
 

@@ -23,7 +23,6 @@ export function MenuBar() {
     <nav
       aria-label={t("menu.file")}
       className="flex h-8 shrink-0 items-center gap-1 border-border border-b bg-background px-4"
-      role="menubar"
     >
       {MENU_ITEMS.map((key) => (
         <button

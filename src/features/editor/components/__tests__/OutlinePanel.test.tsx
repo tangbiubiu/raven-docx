@@ -9,6 +9,7 @@ import type { OutlineItem } from "@/stores/useDocumentStore";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { OutlinePanel } from "../OutlinePanel";
 
+const NO_HEADINGS_RE = /暂无可导航标题/;
 /** 创建测试用 OutlineItem */
 function makeHeading(paraId: string, level: number, text: string): OutlineItem {
   return { paraId, level, text };
@@ -23,7 +24,7 @@ describe("OutlinePanel", () => {
   it("headings 为空时显示空状态", () => {
     useDocumentStore.getState().setHeadings([]);
     render(<OutlinePanel />);
-    expect(screen.getByText(/暂无可导航标题/)).toBeInTheDocument();
+    expect(screen.getByText(NO_HEADINGS_RE)).toBeInTheDocument();
   });
 
   it("有标题时渲染大纲树", () => {
