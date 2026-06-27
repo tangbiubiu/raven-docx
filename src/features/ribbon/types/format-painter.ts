@@ -3,6 +3,9 @@
 // Reference: .dev/plan/2026-06-25-format-painter-redesign.md §3.1
 import type { Alignment } from "@/features/formatting/constants";
 
+/** 行距规则(与库 LineSpacingRule 同构,库未公开导出故本地定义) */
+export type LineSpacingRule = "auto" | "exact" | "atLeast";
+
 /** 字体族结构(与 FormatState.fontFamily 对齐,保留 eastAsia/CJK)
  * 注意:不含 hAnsi——FormatState 只采集 ascii+eastAsia。
  * 应用时 hAnsi 由 ascii 派生,无需单独快照。 */
@@ -27,7 +30,7 @@ export type TextFormatSnapshot = {
 export type ParagraphFormatSnapshot = {
   alignment: Alignment;
   lineSpacing: number; // 倍数
-  lineSpacingRule?: string;
+  lineSpacingRule?: LineSpacingRule;
   indentLeft: number; // twips
   indentRight: number;
   indentFirstLine: number;

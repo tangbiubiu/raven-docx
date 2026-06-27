@@ -594,7 +594,7 @@ describe("applyBatch — 单事务批量应用", () => {
       stepSeq += 1;
       return { id: stepSeq };
     };
-    const mkState = (appliedSteps: number[]) => ({
+    const mkState = (appliedSteps: unknown[]) => ({
       // appliedSteps 记录该 state 已应用的 step id,供后续命令读取
       appliedSteps,
       tr: {
@@ -609,7 +609,7 @@ describe("applyBatch — 单事务批量应用", () => {
       },
       applyTransaction(innerTr: { steps: unknown[] }) {
         // 模拟 PM:返回应用 innerTr 后的新 state,steps 累加
-        const newApplied = [...appliedSteps, ...innerTr.steps.map((s) => s)];
+        const newApplied = [...appliedSteps, ...innerTr.steps];
         return {
           state: mkState(newApplied),
           transactions: [innerTr],
@@ -641,11 +641,11 @@ describe("applyBatch — 单事务批量应用", () => {
     setView(view);
     // 两个命令各自 dispatch 一个带 1 step 的 innerTr
     const cmd1: Command = (_state, dispatch) => {
-      dispatch?.({ steps: [mkStep()] });
+      dispatch?.({ steps: [mkStep()] } as never);
       return true;
     };
     const cmd2: Command = (_state, dispatch) => {
-      dispatch?.({ steps: [mkStep()] });
+      dispatch?.({ steps: [mkStep()] } as never);
       return true;
     };
     applyBatch([cmd1, cmd2]);
@@ -660,14 +660,15 @@ describe("applyBatch — 单事务批量应用", () => {
     const { view, dispatchHistory, mkStep } = buildBatchView();
     setView(view);
     // cmd1 dispatch step A,cmd2 读取 state.appliedSteps 验证能看到 A
-    let seenByCmd2: number[] = [];
+    let seenByCmd2: unknown[] = [];
     const cmd1: Command = (_state, dispatch) => {
-      dispatch?.({ steps: [{ id: 100 }] });
+      dispatch?.({ steps: [{ id: 100 }] } as never);
       return true;
     };
     const cmd2: Command = (state, dispatch) => {
-      seenByCmd2 = (state as { appliedSteps: number[] }).appliedSteps;
-      dispatch?.({ steps: [mkStep()] });
+      seenByCmd2 = (state as unknown as { appliedSteps: unknown[] })
+        .appliedSteps;
+      dispatch?.({ steps: [mkStep()] } as never);
       return true;
     };
     applyBatch([cmd1, cmd2]);

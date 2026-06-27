@@ -300,9 +300,9 @@ describe("applySnapshot — 设值语义应用", () => {
     // clearFontFamily 是 Command 常量,应被 push(applyBatch 接收的数组含它)
     expect(mockApplyBatch).toHaveBeenCalledOnce();
     // 验证未调用 createSetMarkCommand 设 fontFamily(仅布尔 mark 会调)
-    const setCalls = mockLibCmds.createSetMarkCommand.mock.calls.filter(
-      (c) => c[0] === mockSchemaMarks.fontFamily
-    );
+    const setCalls = (
+      mockLibCmds.createSetMarkCommand.mock.calls as unknown[][]
+    ).filter((c) => c[0] === mockSchemaMarks.fontFamily);
     expect(setCalls).toHaveLength(0);
   });
 
@@ -311,9 +311,9 @@ describe("applySnapshot — 设值语义应用", () => {
       text: { ...baseText, fontFamily: null },
     };
     applySnapshot(snap);
-    const setCalls = mockLibCmds.createSetMarkCommand.mock.calls.filter(
-      (c) => c[0] === mockSchemaMarks.fontFamily
-    );
+    const setCalls = (
+      mockLibCmds.createSetMarkCommand.mock.calls as unknown[][]
+    ).filter((c) => c[0] === mockSchemaMarks.fontFamily);
     expect(setCalls).toHaveLength(0);
   });
 

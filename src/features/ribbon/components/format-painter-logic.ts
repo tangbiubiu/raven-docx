@@ -23,11 +23,13 @@ import {
   setSpaceBefore,
   setTextColor,
 } from "@eigenpal/docx-editor-core/prosemirror/commands";
+import type { MarkType } from "prosemirror-model";
 import type { Command } from "prosemirror-state";
 import { applyBatch } from "@/features/editor/commands";
 import type { Alignment } from "@/features/formatting/constants";
 import type {
   FormatPainterSnapshot,
+  LineSpacingRule,
   ParagraphFormatSnapshot,
 } from "@/features/ribbon/types/format-painter";
 import { useDocumentStore } from "@/stores/useDocumentStore";
@@ -103,7 +105,7 @@ type CollectorView = {
       ): void;
     };
     selection: { from: number; to: number; empty: boolean };
-    schema: { marks: Record<string, { name: string }> };
+    schema: { marks: Record<string, MarkType> };
   };
 };
 
@@ -162,7 +164,7 @@ function collectParagraphFormat(
   return {
     alignment,
     lineSpacing: (first.lineSpacing as number) ?? 1.0,
-    lineSpacingRule: first.lineSpacingRule as string | undefined,
+    lineSpacingRule: first.lineSpacingRule as LineSpacingRule | undefined,
     indentLeft: (first.indentLeft as number) ?? 0,
     indentRight: (first.indentRight as number) ?? 0,
     indentFirstLine: (first.indentFirstLine as number) ?? 0,
@@ -209,7 +211,7 @@ export function collectFormatPainterSnapshot(
  */
 function buildFontFamilyCommand(
   fontFamily: { ascii?: string; eastAsia?: string } | null,
-  markType: { name: string } | undefined
+  markType: MarkType | undefined
 ): Command | null {
   if (fontFamily === null) {
     return null;
@@ -236,7 +238,7 @@ function buildFontFamilyCommand(
  * 标量:0/空串→clear,非零/非空→set。 */
 function buildTextCommands(
   text: FormatPainterSnapshot["text"],
-  schema: { marks: Record<string, { name: string }> }
+  schema: { marks: Record<string, MarkType> }
 ): Command[] {
   const commands: Command[] = [];
 
