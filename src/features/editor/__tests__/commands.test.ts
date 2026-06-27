@@ -14,6 +14,15 @@ const mockCmds = vi.hoisted(() => {
     setTextColor: vi.fn((_attrs: unknown) => mkCmd()),
     setHighlight: vi.fn((_color: string) => mkCmd()),
     insertTable: vi.fn((_rows: number, _cols: number) => mkCmd()),
+    // Phase 1: 设值/清除 mark 命令 / set/remove/clear mark commands
+    createSetMarkCommand: vi.fn(
+      (_markType: unknown, _attrs?: Record<string, unknown>) => mkCmd()
+    ),
+    createRemoveMarkCommand: vi.fn((_markType: unknown) => mkCmd()),
+    clearFontFamily: mkCmd(),
+    clearFontSize: mkCmd(),
+    clearTextColor: mkCmd(),
+    clearHighlight: mkCmd(),
     // Phase 3: 段落格式 / paragraph formatting
     setLineSpacing: vi.fn((_value: number) => mkCmd()),
     setSpaceBefore: vi.fn((_twips: number) => mkCmd()),
@@ -26,6 +35,8 @@ const mockCmds = vi.hoisted(() => {
     alignCenter: mkCmd(),
     alignRight: mkCmd(),
     alignJustify: mkCmd(),
+    // 段落对齐 getter / paragraph alignment getter (Phase 3 用)
+    getParagraphAlignment: vi.fn(() => null),
     // Phase 5: 修订命令 / review commands
     acceptChange: vi.fn((_from: number, _to: number) => mkCmd()),
     rejectChange: vi.fn((_from: number, _to: number) => mkCmd()),
@@ -82,6 +93,14 @@ const mockView = {
         paragraph: { name: "paragraph" },
         heading: { name: "heading" },
       },
+      marks: {
+        bold: { name: "bold" },
+        italic: { name: "italic" },
+        underline: { name: "underline" },
+        strike: { name: "strike" },
+        superscript: { name: "superscript" },
+        subscript: { name: "subscript" },
+      },
     },
   },
   dispatch: mockDispatch,
@@ -95,21 +114,29 @@ vi.mock("@/stores/useDocumentStore", () => ({
 }));
 
 import {
+  applyBatch,
   execAcceptAllChanges,
   execAcceptChange,
+  execClearFontFamily,
+  execClearFontSize,
+  execClearHighlight,
+  execClearTextColor,
   execFindNextChange,
   execFindPreviousChange,
   execInsertTable,
   execRejectAllChanges,
   execRejectChange,
+  execRemoveMark,
   execSetAlignment,
   execSetBlockType,
   execSetFontFamily,
+  execSetFontFamilyComplete,
   execSetFontFamilyEastAsia,
   execSetFontSize,
   execSetHighlight,
   execSetIndentation,
   execSetLineSpacing,
+  execSetMark,
   execSetParagraphSpacing,
   execSetTextColor,
   execToggleTrackChanges,
@@ -551,5 +578,369 @@ describe("execSetFontFamilyEastAsia — 三字段同设", () => {
       eastAsia: "KaiTi",
     });
     expect(tr.setStoredMarks).toHaveBeenCalled();
+  });
+});
+// === applyBatch:单事务批量应用 / single-transaction batch apply ===
+// 验证多个命令合并为单次 dispatch,且后一命令能看到前一命令的变换结果。
+describe("applyBatch — 单事务批量应用", () => {
+  // 构建支持 applyTransaction 累积的 mock view。
+  // 关键:view.state.applyTransaction(innerTr).state 必须返回应用 innerTr 后的新 state,
+  // 且累积 tr 的 steps 必须能跨命令保留。
+  const buildBatchView = () => {
+    const dispatchHistory: unknown[] = [];
+    // 每个 step 用自增 id 标识,便于断言 step 顺序与数量
+    let stepSeq = 0;
+    const mkStep = () => {
+      stepSeq += 1;
+      return { id: stepSeq };
+    };
+    const mkState = (appliedSteps: number[]) => ({
+      // appliedSteps 记录该 state 已应用的 step id,供后续命令读取
+      appliedSteps,
+      tr: {
+        steps: [] as unknown[],
+        step(step: unknown) {
+          this.steps.push(step);
+          return this;
+        },
+        get docChanged() {
+          return this.steps.length > 0;
+        },
+      },
+      applyTransaction(innerTr: { steps: unknown[] }) {
+        // 模拟 PM:返回应用 innerTr 后的新 state,steps 累加
+        const newApplied = [...appliedSteps, ...innerTr.steps.map((s) => s)];
+        return {
+          state: mkState(newApplied),
+          transactions: [innerTr],
+        };
+      },
+    });
+    const initialState = mkState([]);
+    const view = {
+      state: initialState,
+      dispatch(tr: unknown) {
+        dispatchHistory.push(tr);
+      },
+    };
+    return { view, dispatchHistory, mkStep };
+  };
+
+  const setView = (viewObj: unknown) => {
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: { getEditorView: () => viewObj },
+    } as never);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("两个命令合并为单次 dispatch", () => {
+    const { view, dispatchHistory, mkStep } = buildBatchView();
+    setView(view);
+    // 两个命令各自 dispatch 一个带 1 step 的 innerTr
+    const cmd1: Command = (_state, dispatch) => {
+      dispatch?.({ steps: [mkStep()] });
+      return true;
+    };
+    const cmd2: Command = (_state, dispatch) => {
+      dispatch?.({ steps: [mkStep()] });
+      return true;
+    };
+    applyBatch([cmd1, cmd2]);
+    // 仅 dispatch 一次(单事务)
+    expect(dispatchHistory).toHaveLength(1);
+    // 累积 tr 含两个 step
+    const dispatchedTr = dispatchHistory[0] as { steps: unknown[] };
+    expect(dispatchedTr.steps).toHaveLength(2);
+  });
+
+  it("后一命令能看到前一命令的变换结果", () => {
+    const { view, dispatchHistory, mkStep } = buildBatchView();
+    setView(view);
+    // cmd1 dispatch step A,cmd2 读取 state.appliedSteps 验证能看到 A
+    let seenByCmd2: number[] = [];
+    const cmd1: Command = (_state, dispatch) => {
+      dispatch?.({ steps: [{ id: 100 }] });
+      return true;
+    };
+    const cmd2: Command = (state, dispatch) => {
+      seenByCmd2 = (state as { appliedSteps: number[] }).appliedSteps;
+      dispatch?.({ steps: [mkStep()] });
+      return true;
+    };
+    applyBatch([cmd1, cmd2]);
+    // cmd2 看到的 state 应已包含 cmd1 的 step
+    expect(seenByCmd2).toContainEqual({ id: 100 });
+    expect(dispatchHistory).toHaveLength(1);
+  });
+
+  it("无 editor view 时静默返回(不抛错)", () => {
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: { getEditorView: () => null },
+    } as never);
+    expect(() =>
+      applyBatch([vi.fn(() => true) as unknown as Command])
+    ).not.toThrow();
+  });
+
+  it("空命令数组不 dispatch", () => {
+    const { view, dispatchHistory } = buildBatchView();
+    setView(view);
+    applyBatch([]);
+    expect(dispatchHistory).toHaveLength(0);
+  });
+
+  it("命令未调用 dispatch(无可应用 step)时不 dispatch", () => {
+    const { view, dispatchHistory } = buildBatchView();
+    setView(view);
+    // 命令返回 true 但不调 dispatch(模拟命令判定无需变更)
+    const noopCmd: Command = () => true;
+    applyBatch([noopCmd]);
+    expect(dispatchHistory).toHaveLength(0);
+  });
+});
+// === Phase 1: 设值/清除/字体合并命令 / set/remove/clear & font-family-merge ===
+describe("execSetMark / execRemoveMark — 设值与清除 mark", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 重置回 mockView,避免 applyBatch 测试的 setView 污染
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: { getEditorView: () => mockView },
+    } as never);
+  });
+
+  it("execSetMark 用 schema.marks 查找 markType 并调用 createSetMarkCommand", () => {
+    execSetMark("bold");
+    expect(mockCmds.createSetMarkCommand).toHaveBeenCalledTimes(1);
+    // 第一个参数为 markType(mockView.schema.marks.bold)
+    const markType = mockCmds.createSetMarkCommand.mock.calls[0][0];
+    expect(markType).toBe(mockView.state.schema.marks.bold);
+    // 返回的 Command 被以 (state, dispatch) 调用
+    const cmd = mockCmds.createSetMarkCommand.mock.results[0].value;
+    expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+  });
+
+  it("execSetMark 透传 attrs 给 createSetMarkCommand", () => {
+    execSetMark("bold", { fake: true });
+    expect(mockCmds.createSetMarkCommand).toHaveBeenCalledWith(
+      expect.anything(),
+      { fake: true }
+    );
+  });
+
+  it("execSetMark 无对应 markType 时静默返回", () => {
+    expect(() => execSetMark("nonexistent")).not.toThrow();
+    expect(mockCmds.createSetMarkCommand).not.toHaveBeenCalled();
+  });
+
+  it("execRemoveMark 调用 createRemoveMarkCommand 并 dispatch", () => {
+    execRemoveMark("italic");
+    expect(mockCmds.createRemoveMarkCommand).toHaveBeenCalledTimes(1);
+    const markType = mockCmds.createRemoveMarkCommand.mock.calls[0][0];
+    expect(markType).toBe(mockView.state.schema.marks.italic);
+    const cmd = mockCmds.createRemoveMarkCommand.mock.results[0].value;
+    expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+  });
+
+  it("execRemoveMark 无对应 markType 时静默返回", () => {
+    expect(() => execRemoveMark("nonexistent")).not.toThrow();
+    expect(mockCmds.createRemoveMarkCommand).not.toHaveBeenCalled();
+  });
+});
+
+describe("execClearFontFamily / execClearFontSize / execClearTextColor / execClearHighlight — 清除标量属性", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 重置回 mockView,避免 applyBatch 测试的 setView 污染
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: { getEditorView: () => mockView },
+    } as never);
+  });
+
+  it("execClearFontFamily dispatch 库 clearFontFamily 命令", () => {
+    execClearFontFamily();
+    expect(mockCmds.clearFontFamily).toHaveBeenCalledWith(
+      mockView.state,
+      mockDispatch
+    );
+  });
+
+  it("execClearFontSize dispatch 库 clearFontSize 命令", () => {
+    execClearFontSize();
+    expect(mockCmds.clearFontSize).toHaveBeenCalledWith(
+      mockView.state,
+      mockDispatch
+    );
+  });
+
+  it("execClearTextColor dispatch 库 clearTextColor 命令", () => {
+    execClearTextColor();
+    expect(mockCmds.clearTextColor).toHaveBeenCalledWith(
+      mockView.state,
+      mockDispatch
+    );
+  });
+
+  it("execClearHighlight dispatch 库 clearHighlight 命令", () => {
+    execClearHighlight();
+    expect(mockCmds.clearHighlight).toHaveBeenCalledWith(
+      mockView.state,
+      mockDispatch
+    );
+  });
+});
+
+// === execSetFontFamilyComplete:对象合并测试 / object-merge tests ===
+// 验证只覆盖传入字段,保留其他字段(与 execSetFontFamilyEastAsia 三字段同设不同)。
+describe("execSetFontFamilyComplete — 字段合并(只覆盖传入字段)", () => {
+  // 复用 eastAsia 测试的 mock 模式;markType 先声明,使 mkMockMark 的 type 引用一致
+  // (实现用 m.type === markType 引用相等查找旧 mark,故 mock 必须共用同一引用)
+  const createMark = vi.fn((attrs: Record<string, unknown>) => ({
+    type: markType,
+    attrs,
+  }));
+  const markType = { name: "fontFamily", create: createMark };
+  const mkMockMark = (attrs: Record<string, unknown>) => ({
+    type: markType,
+    attrs,
+  });
+  const mkTextNode = (text: string, markAttrs?: Record<string, unknown>) => ({
+    isText: true,
+    nodeSize: text.length,
+    marks: markAttrs ? [mkMockMark(markAttrs)] : [],
+  });
+  const buildView = (opts: {
+    empty?: boolean;
+    textNodes?: ReturnType<typeof mkTextNode>[];
+    storedMarks?: ReturnType<typeof mkMockMark>[];
+  }) => {
+    const selection = opts.empty
+      ? { from: 0, to: 0, empty: true }
+      : { from: 0, to: 5, empty: false };
+    const tr = {
+      removeMark: vi.fn(() => tr),
+      addMark: vi.fn(() => tr),
+      setStoredMarks: vi.fn(() => tr),
+    };
+    const doc = {
+      nodesBetween: vi.fn(
+        (
+          _from: number,
+          _to: number,
+          cb: (node: unknown, pos: number) => void
+        ) => {
+          for (const n of opts.textNodes ?? []) {
+            cb(n, 0);
+          }
+        }
+      ),
+    };
+    return {
+      view: {
+        state: {
+          selection,
+          storedMarks: opts.storedMarks ?? null,
+          doc,
+          schema: { marks: { fontFamily: markType } },
+          tr,
+        },
+        dispatch: vi.fn(),
+      },
+      tr,
+    };
+  };
+  const setView = (viewObj: unknown) => {
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: { getEditorView: () => viewObj },
+    } as never);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("选区:合并 ascii+hAnsi,保留旧 eastAsia", () => {
+    const { view, tr } = buildView({
+      empty: false,
+      textNodes: [mkTextNode("hello", { ascii: "Arial", eastAsia: "SimSun" })],
+    });
+    setView(view);
+    execSetFontFamilyComplete({ ascii: "Calibri", hAnsi: "Calibri" });
+    expect(tr.removeMark).toHaveBeenCalled();
+    // createMark 收到合并后的 attrs:ascii/hAnsi 被覆盖,eastAsia 保留
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "Calibri",
+      hAnsi: "Calibri",
+      eastAsia: "SimSun",
+    });
+    expect(tr.addMark).toHaveBeenCalled();
+    expect(view.dispatch).toHaveBeenCalled();
+  });
+
+  it("选区:仅设 eastAsia,保留旧 ascii", () => {
+    const { view } = buildView({
+      empty: false,
+      textNodes: [mkTextNode("hello", { ascii: "Arial", hAnsi: "Arial" })],
+    });
+    setView(view);
+    execSetFontFamilyComplete({ eastAsia: "SimHei" });
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "Arial",
+      hAnsi: "Arial",
+      eastAsia: "SimHei",
+    });
+  });
+
+  it("选区:三字段同时设置,结果完整", () => {
+    const { view } = buildView({
+      empty: false,
+      textNodes: [
+        mkTextNode("hello", { ascii: "Calibri", eastAsia: "SimSun" }),
+      ],
+    });
+    setView(view);
+    execSetFontFamilyComplete({
+      ascii: "Arial",
+      hAnsi: "Arial",
+      eastAsia: "SimHei",
+    });
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "Arial",
+      hAnsi: "Arial",
+      eastAsia: "SimHei",
+    });
+  });
+
+  it("光标(空选区):合并进 storedMarks", () => {
+    const { view, tr } = buildView({
+      empty: true,
+      storedMarks: [mkMockMark({ ascii: "Arial", eastAsia: "SimSun" })],
+    });
+    setView(view);
+    execSetFontFamilyComplete({ ascii: "Calibri", hAnsi: "Calibri" });
+    expect(createMark).toHaveBeenCalledWith({
+      ascii: "Calibri",
+      hAnsi: "Calibri",
+      eastAsia: "SimSun",
+    });
+    expect(tr.setStoredMarks).toHaveBeenCalled();
+    expect(view.dispatch).toHaveBeenCalled();
+  });
+
+  it("无 fontFamily markType 时静默返回", () => {
+    const view = {
+      state: {
+        selection: { from: 0, to: 0, empty: true },
+        storedMarks: null,
+        doc: { nodesBetween: vi.fn() },
+        schema: { marks: {} },
+        tr: {},
+      },
+      dispatch: vi.fn(),
+    };
+    setView(view);
+    expect(() => execSetFontFamilyComplete({ ascii: "Arial" })).not.toThrow();
   });
 });
