@@ -10,7 +10,10 @@ export default mergeConfig(
       environment: "jsdom",
       setupFiles: ["./vitest.setup.ts"],
       globals: true,
-      include: ["src/**/*.test.{ts,tsx}"],
+      include: [
+        "src/**/*.test.{ts,tsx}",
+        "src-tauri/resources/pi-extensions/**/*.test.ts",
+      ],
       // React 19 + testing-library: force development React in tests
       env: {
         NODE_ENV: "development",
