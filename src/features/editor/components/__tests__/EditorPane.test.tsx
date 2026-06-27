@@ -21,6 +21,7 @@ vi.mock("@eigenpal/docx-editor-react", () => {
   };
 });
 
+import { useSettingsStore } from "@/stores/useSettingsStore";
 import { EditorPane } from "../EditorPane";
 
 describe("EditorPane", () => {
@@ -62,5 +63,34 @@ describe("EditorPane", () => {
     expect(props.showOutlineButton).toBe(false);
     expect(props.showMarginGuides).toBe(false);
     expect(props.showRuler).toBe(false);
+  });
+
+  it("locale 为 zh-CN 时传入 zhCN 翻译对象", () => {
+    useSettingsStore.setState({
+      editorConfig: {
+        ...useSettingsStore.getState().editorConfig,
+        locale: "zh-CN",
+      },
+    });
+    render(<EditorPane isNewDocument />);
+    const props = JSON.parse(
+      screen.getByTestId("docx-editor").dataset.props ?? "{}"
+    );
+    expect(props.i18n).toBeDefined();
+    expect(props.i18n._lang).toBe("zh-CN");
+  });
+
+  it("locale 为 en 时不传 i18n（回落到编辑器默认英文）", () => {
+    useSettingsStore.setState({
+      editorConfig: {
+        ...useSettingsStore.getState().editorConfig,
+        locale: "en",
+      },
+    });
+    render(<EditorPane isNewDocument />);
+    const props = JSON.parse(
+      screen.getByTestId("docx-editor").dataset.props ?? "{}"
+    );
+    expect(props.i18n).toBeUndefined();
   });
 });

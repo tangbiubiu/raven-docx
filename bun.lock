@@ -6,6 +6,7 @@
       "name": "create-tauri-react-app",
       "dependencies": {
         "@eigenpal/docx-editor-agents": "^1.3.2",
+        "@eigenpal/docx-editor-i18n": "^1.3.2",
         "@eigenpal/docx-editor-react": "^1.3.2",
         "@tailwindcss/vite": "^4.1.17",
         "@tauri-apps/api": "^2.11.1",
