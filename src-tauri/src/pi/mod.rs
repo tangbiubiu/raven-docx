@@ -554,6 +554,7 @@ impl AgentManager {
                                     const MUTATION_TOOLS: &[&str] = &[
                                         "suggest_change", "add_comment", "apply_formatting",
                                         "set_paragraph_style", "reply_comment", "resolve_comment",
+                                        "insert_paragraph",
                                     ];
                                     if !is_error && MUTATION_TOOLS.contains(&tool_name.as_str()) {
                                         document_dirty = true;
