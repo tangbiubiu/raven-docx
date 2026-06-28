@@ -60,7 +60,7 @@ export function useTableOperations() {
     const nodes = tableNodes(state.schema);
 
     // 创建表头行
-    const headerCells = [];
+    const headerCells: ReturnType<typeof nodes.table_header.create>[] = [];
     for (let i = 0; i < cols; i++) {
       headerCells.push(
         nodes.table_header.createAndFill() ||

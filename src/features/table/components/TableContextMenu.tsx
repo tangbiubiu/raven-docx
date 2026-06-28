@@ -106,21 +106,22 @@ export function TableContextMenu({ onClose }: TableContextMenuProps) {
       data-testid="table-context-menu"
     >
       {menuItems.map((item, idx) => {
-        if ("separator" in item && item.separator) {
+        if ("separator" in item) {
+          // biome-ignore lint/suspicious/noArrayIndexKey: separator 项无唯一 id
           return <div className="my-1 h-px bg-border" key={`sep-${idx}`} />;
         }
 
-        if ("action" in item && item.action) {
+        if ("action" in item) {
           return (
             <button
               className={`flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors hover:bg-accent ${
-                "danger" in item && item.danger
+                "danger" in item
                   ? "text-destructive hover:bg-destructive/10"
                   : ""
               }`}
               data-testid={item.testId}
               key={item.testId}
-              onClick={() => handleAction(item.action!)}
+              onClick={() => handleAction(item.action)}
               type="button"
             >
               <span className="w-4 text-center">{item.icon}</span>

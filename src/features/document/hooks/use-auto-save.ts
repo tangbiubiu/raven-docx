@@ -40,10 +40,14 @@ export function encodeBufferToBase64(buffer: ArrayBuffer): string {
 /** 从磁盘原文件恢复文档，失败回退到草稿 buffer。 */
 async function recoverDocument(fns: RecoverFns): Promise<void> {
   const draftJson = localStorage.getItem(DRAFT_KEY);
-  if (!draftJson) return;
+  if (!draftJson) {
+    return;
+  }
 
   const draft: DraftData = JSON.parse(draftJson);
-  if (!draft.path) return;
+  if (!draft.path) {
+    return;
+  }
 
   const draftBuffer = Uint8Array.from(atob(draft.buffer), (c) =>
     c.charCodeAt(0)
@@ -88,13 +92,19 @@ export function useAutoSave(): AutoSaveState {
 
     recoverDocument({
       setDocument: (doc, buffer, path) => {
-        if (!cancelled) setDocument(doc, buffer, path);
+        if (!cancelled) {
+          setDocument(doc, buffer, path);
+        }
       },
       setPath: (path) => {
-        if (!cancelled) setPath(path);
+        if (!cancelled) {
+          setPath(path);
+        }
       },
       setDirty: (dirty) => {
-        if (!cancelled) setDirty(dirty);
+        if (!cancelled) {
+          setDirty(dirty);
+        }
       },
     }).catch(() => {
       // 草稿解析失败，忽略
@@ -157,7 +167,7 @@ export function useAutoSave(): AutoSaveState {
         saveTimeoutRef.current = null;
       }
     };
-  }, [autoSaveEnabled, saveDocument]);
+  }, [saveDocument]);
 
   return {
     isSaving,

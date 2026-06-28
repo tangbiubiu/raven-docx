@@ -23,6 +23,8 @@ vi.mock("../hooks/useTableOperations", () => ({
     addColumnRight: vi.fn(),
   }),
 }));
+const GRID_LABEL_RE = /3×4/;
+const CELL_TESTID_RE = /^table-grid-cell-/;
 
 describe("InsertTableGrid", () => {
   beforeEach(() => {
@@ -32,7 +34,7 @@ describe("InsertTableGrid", () => {
   it("渲染网格选择器", () => {
     render(<InsertTableGrid onClose={vi.fn()} />);
     expect(screen.getByTestId("table-grid")).toBeInTheDocument();
-    expect(screen.getByText(/3×4/)).toBeInTheDocument();
+    expect(screen.getByText(GRID_LABEL_RE)).toBeInTheDocument();
   });
 
   it("点击网格单元格插入对应大小的表格", () => {
@@ -40,7 +42,7 @@ describe("InsertTableGrid", () => {
     render(<InsertTableGrid onClose={onClose} />);
 
     // 点击第 2 行第 3 列的单元格
-    const cells = screen.getAllByTestId(/^table-grid-cell-/);
+    const cells = screen.getAllByTestId(CELL_TESTID_RE);
     const cell = cells.find(
       (c) =>
         c.getAttribute("data-row") === "2" && c.getAttribute("data-col") === "3"
@@ -80,10 +82,10 @@ describe("InsertTableGrid", () => {
 
     // 测试最小值
     fireEvent.change(rowsInput, { target: { value: "0" } });
-    expect(Number.parseInt(rowsInput.value)).toBeGreaterThanOrEqual(1);
+    expect(Number.parseInt(rowsInput.value, 10)).toBeGreaterThanOrEqual(1);
 
     // 测试最大值
     fireEvent.change(colsInput, { target: { value: "100" } });
-    expect(Number.parseInt(colsInput.value)).toBeLessThanOrEqual(10);
+    expect(Number.parseInt(colsInput.value, 10)).toBeLessThanOrEqual(10);
   });
 });

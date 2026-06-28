@@ -64,7 +64,7 @@ export function QuickActions() {
         >
           <span className="text-sm">{action.icon}</span>
           <span className="flex-1 text-left">{t(action.labelKey)}</span>
-          {action.shortcut && (
+          {!!action.shortcut && (
             <span className="text-[10px] text-muted-foreground">
               {action.shortcut}
             </span>

@@ -38,6 +38,7 @@ export function ReviewTab({ onNewComment }: RibbonCallbacks) {
   const selectionInfo = useDocumentStore((s) => s.selectionInfo);
 
   // 选区变化时重新查询修订模式状态 / Re-query track-changes state on selection change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 依赖选区变化重新查询修订模式状态
   useEffect(() => {
     setTrackChangesActive(isTrackChangesActive());
   }, [selectionInfo]);

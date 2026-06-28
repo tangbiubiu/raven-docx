@@ -134,7 +134,9 @@ describe("useAutoSave — 大文档自动保存（base64 编码不爆栈）", ()
     // 浏览器对函数参数数量有硬上限（~65536），展开运算符 ...array 会触发
     // Maximum call stack size exceeded。此处用 70KB buffer 验证分块编码。
     const big = new Uint8Array(70_000);
-    for (let i = 0; i < big.length; i++) big[i] = i % 256;
+    for (let i = 0; i < big.length; i++) {
+      big[i] = i % 256;
+    }
 
     // 不应抛出 RangeError: Maximum call stack size exceeded
     const encoded = encodeBufferToBase64(big.buffer);
@@ -147,7 +149,9 @@ describe("useAutoSave — 大文档自动保存（base64 编码不爆栈）", ()
   it("大文档触发自动保存时成功写入 localStorage（不抛栈溢出）", async () => {
     // 模拟一个 70KB 的"脏"文档
     const big = new Uint8Array(70_000);
-    for (let i = 0; i < big.length; i++) big[i] = i % 256;
+    for (let i = 0; i < big.length; i++) {
+      big[i] = i % 256;
+    }
 
     useDocumentStore
       .getState()

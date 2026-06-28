@@ -137,20 +137,27 @@ export function HeaderFooterEditor({
 
     return (
       <div className="space-y-3">
-        {fields.map(({ side, label }) => (
-          <div className="flex items-center gap-2" key={side}>
-            <label className="w-10 shrink-0 text-muted-foreground text-xs">
-              {label}
-            </label>
-            <Input
-              className="h-8 flex-1 text-xs"
-              data-hf-field={`${section}.${side}`}
-              onChange={(e) => updateContent(section, side, e.target.value)}
-              placeholder={t("headerFooter.placeholder")}
-              value={content[side] ?? ""}
-            />
-          </div>
-        ))}
+        {fields.map(({ side, label }) => {
+          const id = `hf-${section}-${side}`;
+          return (
+            <div className="flex items-center gap-2" key={side}>
+              <label
+                className="w-10 shrink-0 text-muted-foreground text-xs"
+                htmlFor={id}
+              >
+                {label}
+              </label>
+              <Input
+                className="h-8 flex-1 text-xs"
+                data-hf-field={`${section}.${side}`}
+                id={id}
+                onChange={(e) => updateContent(section, side, e.target.value)}
+                placeholder={t("headerFooter.placeholder")}
+                value={content[side] ?? ""}
+              />
+            </div>
+          );
+        })}
       </div>
     );
   };

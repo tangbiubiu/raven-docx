@@ -85,7 +85,7 @@ export function InsertTableGrid({ onClose }: InsertTableGridProps) {
         style={{ gridTemplateColumns: `repeat(${GRID_COLS}, 1.5rem)` }}
       >
         {Array.from({ length: GRID_ROWS }, (_, rowIdx) =>
-          Array.from({ length: GRID_COLS }, (_, colIdx) => {
+          Array.from({ length: GRID_COLS }, (_col, colIdx) => {
             const row = rowIdx + 1;
             const col = colIdx + 1;
             const isHighlighted = row <= hoverRow && col <= hoverCol;

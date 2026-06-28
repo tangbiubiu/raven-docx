@@ -16,7 +16,9 @@ function isTauri(): boolean {
  * 未安装插件或非 Tauri 环境时返回 null。
  */
 async function openFileDialog(): Promise<string | null> {
-  if (!isTauri()) return null;
+  if (!isTauri()) {
+    return null;
+  }
   try {
     const { open } = await import("@tauri-apps/plugin-dialog");
     const selected = await open({
@@ -34,7 +36,9 @@ async function openFileDialog(): Promise<string | null> {
  * 未安装插件或非 Tauri 环境时返回 null。
  */
 async function saveFileDialog(): Promise<string | null> {
-  if (!isTauri()) return null;
+  if (!isTauri()) {
+    return null;
+  }
   try {
     const { save } = await import("@tauri-apps/plugin-dialog");
     const selected = await save({
@@ -51,7 +55,9 @@ async function saveFileDialog(): Promise<string | null> {
  * 非 Tauri 环境返回 null。
  */
 async function readFileAsBuffer(path: string): Promise<ArrayBuffer | null> {
-  if (!isTauri()) return null;
+  if (!isTauri()) {
+    return null;
+  }
   try {
     const result = await commands.openDocx(path);
     if (result.status === "ok") {
@@ -72,7 +78,9 @@ async function writeFileFromBuffer(
   path: string,
   buffer: ArrayBuffer
 ): Promise<boolean> {
-  if (!isTauri()) return false;
+  if (!isTauri()) {
+    return false;
+  }
   try {
     const result = await commands.saveDocx(
       path,
@@ -101,10 +109,14 @@ export function useDocument() {
   /** 打开文档 — 弹出文件对话框，读取 .docx 字节并设置到 store */
   async function openDocument(): Promise<boolean> {
     const filePath = await openFileDialog();
-    if (!filePath) return false;
+    if (!filePath) {
+      return false;
+    }
 
     const buffer = await readFileAsBuffer(filePath);
-    if (!buffer) return false;
+    if (!buffer) {
+      return false;
+    }
 
     // setDocument: doc=null（由 EditorPane 解析 buffer）、buffer、path
     store.getState().setDocument(null, buffer, filePath);
@@ -118,10 +130,14 @@ export function useDocument() {
    */
   async function saveDocument(): Promise<boolean> {
     const { editorBridge, documentPath } = store.getState();
-    if (!editorBridge) return false;
+    if (!editorBridge) {
+      return false;
+    }
 
     const buffer = await editorBridge.save();
-    if (!buffer) return false;
+    if (!buffer) {
+      return false;
+    }
 
     if (!documentPath) {
       return saveDocumentAs();
@@ -137,13 +153,19 @@ export function useDocument() {
   /** 另存为 — 弹出保存对话框，写入文件 */
   async function saveDocumentAs(): Promise<boolean> {
     const { editorBridge } = store.getState();
-    if (!editorBridge) return false;
+    if (!editorBridge) {
+      return false;
+    }
 
     const buffer = await editorBridge.save();
-    if (!buffer) return false;
+    if (!buffer) {
+      return false;
+    }
 
     const filePath = await saveFileDialog();
-    if (!filePath) return false;
+    if (!filePath) {
+      return false;
+    }
 
     const ok = await writeFileFromBuffer(filePath, buffer);
     if (ok) {
