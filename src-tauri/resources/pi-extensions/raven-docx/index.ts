@@ -245,6 +245,20 @@ export default function ravenDocxExtension(pi: ExtensionAPI) {
           };
         }
 
+        // 表格内段落锚点：明确拒绝（top-level 插入语义不支持表格内插入）
+        if (found.location === "table-cell") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `错误：paraId ${afterParaId} 位于表格单元格内，insert_paragraph 暂不支持以表格内段落为锚点。请在表格外的段落后插入。`,
+              },
+            ],
+            details: { success: false, isMutation: true },
+            isError: true,
+          };
+        }
+
         // 2. 校验 styleId（若提供）
         if (
           styleId !== undefined &&
@@ -257,7 +271,7 @@ export default function ravenDocxExtension(pi: ExtensionAPI) {
             content: [
               {
                 type: "text",
-                text: `错误：样式 ${styleId} 不存在。可用样式：${available.join(", ")}`,
+                text: `错误：样式 ${styleId} 不存在。可用样式：${available.join(", ")}。注意：styleId 须用文档内实际的样式 ID（可能是数字），不要假设 Heading1/Normal 存在。`,
               },
             ],
             details: { success: false, isMutation: true },
@@ -278,8 +292,8 @@ export default function ravenDocxExtension(pi: ExtensionAPI) {
           date: now,
         });
 
-        // 4. splice 插入
-        body.content.splice(found.pos + 1, 0, newParagraph);
+        // 4. splice 插入（insertPos 已是 top-level body.content 位置）
+        body.content.splice(found.insertPos, 0, newParagraph);
 
         // 5. 重建 bridge + 重注册全部工具以失效 cache（blocker：否则后续 suggest_change 静默写错段）
         rebuildBridgeAndTools();

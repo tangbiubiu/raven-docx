@@ -1,5 +1,6 @@
 // raven-docx/paragraphBuilder.ts — 段落构造与 revisionId 扫描
 // Reference: .dev/plan/2026-06-27-agent-docx-prompt-fix.md §3.2.2
+// Reference: .dev/plan/2026-06-29-insert-paragraph-table-crash-fix.md §3.2
 
 import { generateHexId } from "./hexId";
 
@@ -44,9 +45,29 @@ export type Paragraph = {
   content: InlineContent[];
 };
 
-/** DocumentBody 的最小形状（仅 content 数组 + 可选 comments/styles）。 */
+/** Table 行的最小形状（仅 cells，walker 递归用）。 */
+type TableRow = {
+  cells: Array<{ content: BlockContent[] }>;
+};
+
+/** Table block 的最小形状（仅 rows，walker 递归用）。 */
+export type Table = {
+  type: "table";
+  rows: TableRow[];
+};
+
+/** BlockSdt 的最小形状（content 为嵌套 BlockContent[]，walker 递归用）。 */
+export type BlockSdt = {
+  type: "blockSdt";
+  content: BlockContent[];
+};
+
+/** Body 顶级 block：段落、表格、块级 SDT。镜像上游 BlockContent 联合。 */
+export type BlockContent = Paragraph | Table | BlockSdt;
+
+/** DocumentBody 的最小形状（content 为混合 BlockContent[] + 可选 comments/styles）。 */
 export type DocumentBody = {
-  content: Paragraph[];
+  content: BlockContent[];
   comments?: unknown[];
 };
 
@@ -81,17 +102,53 @@ function extractTrackedChangeId(item: InlineContent): number | null {
   return null;
 }
 
-/** 扫描 body 内所有段落的 Insertion/Deletion，取 info.id 的 max。无 tracked change 返回 0。 */
+/**
+ * 遍历 body 内所有 paragraph（含 table cell 内），按 document-wide paragraph index 顺序回调。
+ * index 语义对齐上游 forEachParagraph（utils.ts:98-123, countOther=true）：
+ * top-level paragraph 与 table cell paragraph 共享同一递增 index；
+ * blockSdt 不递归其 content，仅推进 index（对齐上游 walkParagraphs 的 countOther 分支）。
+ *
+ * 注意：上游 walkParagraphs 对 blockSdt 不递归 content，仅 countOther++。
+ * 此处保持一致——blockSdt 内段落不参与 paraId 映射（与上游 reviewerBridge 行为一致）。
+ */
+function forEachParagraph(
+  body: DocumentBody,
+  fn: (para: Paragraph, index: number) => void | boolean
+): void {
+  let index = 0;
+  for (const block of body.content) {
+    if (block.type === "paragraph") {
+      if (fn(block, index) === false) return;
+      index++;
+    } else if (block.type === "table") {
+      for (const row of block.rows) {
+        for (const cell of row.cells) {
+          for (const cellBlock of cell.content) {
+            if (cellBlock.type === "paragraph") {
+              if (fn(cellBlock, index) === false) return;
+              index++;
+            }
+          }
+        }
+      }
+    } else {
+      // blockSdt 及未知 block：推进 index（对齐上游 countOther=true）
+      index++;
+    }
+  }
+}
+
+/** 扫描 body 内所有 paragraph（含 table cell）的 Insertion/Deletion，取 info.id 的 max。无 tracked change 返回 0。 */
 function scanMaxRevisionId(body: DocumentBody): number {
   let maxId = 0;
-  for (const para of body.content) {
+  forEachParagraph(body, (para) => {
     for (const item of para.content) {
       const id = extractTrackedChangeId(item);
       if (id !== null) {
         maxId = Math.max(maxId, id);
       }
     }
-  }
+  });
   return maxId;
 }
 
@@ -164,16 +221,16 @@ export function hasParagraphStyle(
 }
 
 /**
- * 扫描 body 内已有 paraId，生成不冲突的唯一 paraId。
+ * 扫描 body 内已有 paraId（含 table cell），生成不冲突的唯一 paraId。
  * 用 generateHexId（上游同款范围/大小写/补零）。
  */
 export function generateUniqueParaId(body: DocumentBody): string {
   const seen = new Set<string>();
-  for (const para of body.content) {
+  forEachParagraph(body, (para) => {
     if (para.paraId) {
       seen.add(para.paraId);
     }
-  }
+  });
   let id = generateHexId();
   while (seen.has(id)) {
     id = generateHexId();
@@ -181,16 +238,76 @@ export function generateUniqueParaId(body: DocumentBody): string {
   return id;
 }
 
-/** 在 body.content 中找到 paraId 对应段落及其在数组中的位置。 */
+/** findParagraphIndex 返回值：定位到的段落 + top-level 插入位置。 */
+type FindResult = {
+  para: Paragraph;
+  /** 新段落应插入的 top-level body.content 位置（splice 用）。 */
+  insertPos: number;
+  /** 锚点段落所在位置类型。 */
+  location: "top-level" | "table-cell";
+};
+
+/**
+ * 在 body 内找到 paraId 对应段落（含 table cell）。
+ * - paraId 匹配：按 w14:paraId 精确匹配（8-hex-digit，上游同款）。
+ * - index fallback：按 document-wide paragraph index（对齐上游 reviewerBridge buildParaIdMap）。
+ *
+ * 返回新段落应插入的 top-level body.content 位置：
+ * - 锚点在 top-level paragraph：插入该 paragraph 之后（insertPos = block index + 1）。
+ * - 锚点在 table cell：返回 location="table-cell"，insertPos = 该 table block 之后。
+ *   调用方（insert_paragraph）应对 table-cell 锚点返回明确错误（§3.3）。
+ */
 export function findParagraphIndex(
   body: DocumentBody,
   paraId: string
-): { para: Paragraph; pos: number } | null {
-  for (let i = 0; i < body.content.length; i++) {
-    const para = body.content[i];
-    if (para.paraId === paraId || String(i) === paraId) {
-      return { para, pos: i };
+): FindResult | null {
+  // 1. document-wide paragraph index fallback
+  //    对齐上游 buildParaIdMap：paraId-less paragraph 标记为 [<index>]，
+  //    index 是 forEachParagraph 的 document-wide 计数。
+  let paraIndex = 0;
+  let foundByIndex:
+    | { para: Paragraph; blockIndex: number; location: "top-level" | "table-cell" }
+    | null = null;
+
+  for (let blockIdx = 0; blockIdx < body.content.length; blockIdx++) {
+    const block = body.content[blockIdx];
+    if (block.type === "paragraph") {
+      if (block.paraId === paraId) {
+        return { para: block, insertPos: blockIdx + 1, location: "top-level" };
+      }
+      if (String(paraIndex) === paraId) {
+        foundByIndex = { para: block, blockIndex: blockIdx, location: "top-level" };
+      }
+      paraIndex++;
+    } else if (block.type === "table") {
+      for (const row of block.rows) {
+        for (const cell of row.cells) {
+          for (const cellBlock of cell.content) {
+            if (cellBlock.type === "paragraph") {
+              if (cellBlock.paraId === paraId) {
+                // 表格内段落：insertPos 指向 table block 之后
+                return { para: cellBlock, insertPos: blockIdx + 1, location: "table-cell" };
+              }
+              if (String(paraIndex) === paraId) {
+                foundByIndex = { para: cellBlock, blockIndex: blockIdx, location: "table-cell" };
+              }
+              paraIndex++;
+            }
+          }
+        }
+      }
+    } else {
+      // blockSdt / 未知：推进 index（对齐上游 countOther=true）
+      paraIndex++;
     }
+  }
+
+  if (foundByIndex) {
+    return {
+      para: foundByIndex.para,
+      insertPos: foundByIndex.blockIndex + 1,
+      location: foundByIndex.location,
+    };
   }
   return null;
 }
