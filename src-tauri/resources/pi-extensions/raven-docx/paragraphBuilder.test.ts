@@ -1,12 +1,18 @@
 // raven-docx/paragraphBuilder.test.ts — 段落构造与 revisionId 扫描单元测试
 // Reference: .dev/plan/2026-06-27-agent-docx-prompt-fix.md §3.2.2、§3.2.4
+// Reference: .dev/plan/2026-06-29-insert-paragraph-table-crash-fix.md §3.5
 
 import { describe, expect, it } from "vitest";
 import {
   buildInsertedParagraph,
+  type BlockContent,
+  type BlockSdt,
   type DocumentBody,
+  findParagraphIndex,
+  generateUniqueParaId,
   nextRevisionId,
   type Paragraph,
+  type Table,
 } from "./paragraphBuilder";
 
 // ---- 最小 mock：只构造扫描所需的字段 ----
@@ -22,8 +28,23 @@ function mkPara(opts: {
     ],
   };
 }
-function mkBody(content: Paragraph[]): DocumentBody {
+function mkBody(content: BlockContent[]): DocumentBody {
   return { content };
+}
+
+// 表格 helper：rows × cells，每 cell 含若干 block（paragraph 或嵌套 block）
+function mkTable(rows: Array<Array<BlockContent[]>>): Table {
+  return {
+    type: "table",
+    rows: rows.map((cells) => ({
+      cells: cells.map((content) => ({ content })),
+    })),
+  };
+}
+
+// blockSdt helper：content 为嵌套 BlockContent[]
+function mkBlockSdt(content: BlockContent[]): BlockSdt {
+  return { type: "blockSdt", content };
 }
 
 describe("buildInsertedParagraph", () => {
@@ -43,13 +64,11 @@ describe("buildInsertedParagraph", () => {
     expect(para.type).toBe("paragraph");
     expect(para.paraId).toBe("0000ABCD");
     expect(para.formatting).toEqual({ styleId: "Heading2" });
-    // 段落标记 tracked insertion
     expect(para.pPrIns).toEqual({
       id: 42,
       author: "Raven Agent",
       date: "2026-06-27T00:00:00Z",
     });
-    // 内容是单个 Insertion wrapper，内含一个 run→text
     expect(para.content).toHaveLength(1);
     const insertion = para.content[0];
     expect(insertion.type).toBe("insertion");
@@ -137,12 +156,10 @@ describe("nextRevisionId", () => {
         ],
       }),
     ]);
-    expect(nextRevisionId(body)).toBe(13); // max(5,12,8)+1
+    expect(nextRevisionId(body)).toBe(13);
   });
 
   it("WeakMap 缓存：连续调用每次 +2（预留 replacement 双 id 间隔）", () => {
-    // 首次扫描 max=99 → 返回 100，缓存设为 101
-    // 后续读缓存：101→返回102缓存103、103→返回104缓存105
     const body = mkBody([
       mkPara({
         paraId: "00000001",
@@ -175,5 +192,109 @@ describe("nextRevisionId", () => {
     ]);
     expect(nextRevisionId(bodyA)).toBe(11);
     expect(nextRevisionId(bodyB)).toBe(21);
+  });
+});
+
+describe("nextRevisionId — 表格文档", () => {
+  it("body 含 table block 不崩溃，返回 1（无 tracked change）", () => {
+    const body = mkBody([
+      mkPara({ paraId: "00000001" }),
+      mkTable([[[mkPara({ paraId: "00000002" })]]]),
+      mkPara({ paraId: "00000003" }),
+    ]);
+    expect(nextRevisionId(body)).toBe(1);
+  });
+
+  it("扫描 table cell 内 Insertion/Deletion 的 info.id", () => {
+    const body = mkBody([
+      mkPara({ paraId: "00000001" }),
+      mkTable([
+        [
+          [
+            mkPara({
+              paraId: "00000002",
+              content: [
+                {
+                  type: "insertion",
+                  info: { id: 99, author: "a" },
+                  content: [],
+                },
+              ],
+            }),
+          ],
+        ],
+      ]),
+    ]);
+    expect(nextRevisionId(body)).toBe(100);
+  });
+
+  it("body 含 blockSdt block 不崩溃", () => {
+    const body = mkBody([
+      mkPara({ paraId: "00000001" }),
+      mkBlockSdt([mkPara({ paraId: "00000002" })]),
+      mkPara({ paraId: "00000003" }),
+    ]);
+    expect(nextRevisionId(body)).toBe(1);
+  });
+});
+
+describe("findParagraphIndex — 表格文档", () => {
+  it("top-level paragraph paraId 定位 + insertPos 指向其后", () => {
+    const body = mkBody([
+      mkPara({ paraId: "0A423B0E" }),
+      mkTable([[[mkPara({ paraId: "16AF244C" })]]]),
+      mkPara({ paraId: "5C2A2B25" }),
+    ]);
+    const found = findParagraphIndex(body, "0A423B0E");
+    expect(found).not.toBeNull();
+    expect(found!.location).toBe("top-level");
+    expect(found!.insertPos).toBe(1);
+    expect(found!.para.paraId).toBe("0A423B0E");
+  });
+
+  it("table cell 内 paraId 定位，location=table-cell", () => {
+    const body = mkBody([
+      mkPara({ paraId: "0A423B0E" }),
+      mkTable([[[mkPara({ paraId: "16AF244C" })]]]),
+    ]);
+    const found = findParagraphIndex(body, "16AF244C");
+    expect(found).not.toBeNull();
+    expect(found!.location).toBe("table-cell");
+    expect(found!.para.paraId).toBe("16AF244C");
+  });
+
+  it("document-wide index fallback（paraId-less paragraph）", () => {
+    const body = mkBody([
+      mkPara({ paraId: undefined }),
+      mkTable([[[mkPara({ paraId: undefined })]]]),
+    ]);
+    const found0 = findParagraphIndex(body, "0");
+    expect(found0!.para).toBe(body.content[0]);
+    const found1 = findParagraphIndex(body, "1");
+    expect(found1!.location).toBe("table-cell");
+  });
+
+  it("不存在的 paraId 返回 null", () => {
+    const body = mkBody([mkPara({ paraId: "0A423B0E" })]);
+    expect(findParagraphIndex(body, "DEADBEEF")).toBeNull();
+  });
+
+  it("blockSdt 不递归其 content（对齐上游）", () => {
+    const body = mkBody([
+      mkBlockSdt([mkPara({ paraId: "INSIDE_SDT" })]),
+      mkPara({ paraId: "AFTER_SDT" }),
+    ]);
+    expect(findParagraphIndex(body, "INSIDE_SDT")).toBeNull();
+    expect(findParagraphIndex(body, "1")?.para.paraId).toBe("AFTER_SDT");
+  });
+});
+
+describe("generateUniqueParaId — 表格文档", () => {
+  it("body 含 table 不崩溃", () => {
+    const body = mkBody([
+      mkPara({ paraId: "00000001" }),
+      mkTable([[[mkPara({ paraId: "00000002" })]]]),
+    ]);
+    expect(() => generateUniqueParaId(body)).not.toThrow();
   });
 });
