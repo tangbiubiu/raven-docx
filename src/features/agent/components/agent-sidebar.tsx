@@ -2,6 +2,14 @@
 // 完整的 Agent 交互界面：消息列表、流式渲染、输入框、错误状态
 // Reference: .dev/proto/workspace.html, .dev/docs/module-split.md §3.8
 
+import {
+  AlertCircle,
+  Lock,
+  MessageSquare,
+  RefreshCw,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CommentPanel } from "@/features/review/components/comment-panel";
 import { useT } from "@/lib/i18n";
@@ -133,6 +141,16 @@ export function AgentSidebar() {
   const [activeTab, setActiveTab] = useState<"chat" | "comments">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // p2: Ribbon「新建批注」→ 切到批注页(commentPanelOpen 是触发信号,消费后重置)
+  const commentPanelOpen = useAppStore((s) => s.commentPanelOpen);
+  const setCommentPanelOpen = useAppStore((s) => s.setCommentPanelOpen);
+  useEffect(() => {
+    if (commentPanelOpen) {
+      setActiveTab("comments");
+      setCommentPanelOpen(false);
+    }
+  }, [commentPanelOpen, setCommentPanelOpen]);
+
   // 自动滚动到底部
   // biome-ignore lint/correctness/useExhaustiveDependencies: 依赖 messages 变化触发滚动
   useEffect(() => {
@@ -149,7 +167,7 @@ export function AgentSidebar() {
     >
       {/* Agent 标题栏 + Tab 切换 */}
       <div className="flex items-center gap-2 border-border border-b px-3 py-2">
-        <span className="font-medium text-sm">{t("agent.title")}</span>
+        <span className="font-medium text-xs">{t("agent.title")}</span>
         <StatusIndicator status={status} />
 
         {/* Tab 切换 */}
@@ -196,20 +214,7 @@ export function AgentSidebar() {
               title={t("dialog.clear")}
               type="button"
             >
-              <svg
-                aria-hidden="true"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                />
-              </svg>
+              <Trash2 aria-hidden="true" className="size-4" />
             </button>
           )}
           <button
@@ -218,20 +223,7 @@ export function AgentSidebar() {
             title={t("dialog.close")}
             type="button"
           >
-            <svg
-              aria-hidden="true"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M6 18L18 6M6 6l12 12"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-              />
-            </svg>
+            <X aria-hidden="true" className="size-4" />
           </button>
         </div>
       </div>
@@ -260,20 +252,10 @@ export function AgentSidebar() {
           {!!error && (
             <div className="mx-3 mb-2 rounded border border-destructive bg-destructive/10 p-2 text-destructive text-sm">
               <div className="flex items-start gap-2">
-                <svg
+                <AlertCircle
                   aria-hidden="true"
-                  className="mt-0.5 h-4 w-4 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                  />
-                </svg>
+                  className="mt-0.5 size-4 shrink-0"
+                />
                 <span className="flex-1">{error}</span>
                 <button
                   className="text-destructive hover:text-destructive/80"
@@ -281,20 +263,7 @@ export function AgentSidebar() {
                   title={t("dialog.retry") || "重试"}
                   type="button"
                 >
-                  <svg
-                    aria-hidden="true"
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                    />
-                  </svg>
+                  <RefreshCw aria-hidden="true" className="size-4" />
                 </button>
               </div>
             </div>
@@ -380,20 +349,7 @@ function EmptyState({
     return (
       <div className="flex h-full items-center justify-center text-center text-muted-foreground">
         <div className="space-y-3">
-          <svg
-            aria-hidden="true"
-            className="mx-auto h-12 w-12 opacity-50"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
-          </svg>
+          <Lock aria-hidden="true" className="mx-auto h-12 w-12 opacity-50" />
           <p className="text-sm">
             {t("agent.notConfigured") ||
               "Raven 需要配置 AI 模型才能使用 Agent 功能"}
@@ -413,20 +369,10 @@ function EmptyState({
   return (
     <div className="flex h-full items-center justify-center text-center text-muted-foreground">
       <div>
-        <svg
+        <MessageSquare
           aria-hidden="true"
           className="mx-auto mb-3 h-12 w-12 opacity-50"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-          />
-        </svg>
+        />
         <p className="text-sm">
           {t("agent.welcome") || "有什么我可以帮你的？"}
         </p>
