@@ -80,7 +80,7 @@ main
 
 ## 6. 合入后收尾(Phase 6,协调人执行)
 
-1. 全量验证:`bun run typecheck` + `bun run check` + `bun test`。
+1. 全量验证:`bun run typecheck` + `bunx biome check` + `bun run test`。
 2. 全局搜索清零检查:`bg-white`(弹窗内)、emoji 图标、`hover:scale-`、`text-[10px]` 新用例、`fixed inset-0` 非 Dialog 弹层。
 3. 亮/暗截图走查清单(来自主计划 P6):Home tab、Insert/Review 弹窗、标尺开关、侧栏折叠浮层、窄窗口 Ribbon 折叠、文件 tab。
 4. 走查遗留问题开 issue 或直接修,收尾完成后更新 `ui-overhaul.md` 状态为已实施。
