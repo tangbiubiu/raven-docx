@@ -2,6 +2,7 @@
 // 单页面应用的唯一页面，编排所有面板和弹层
 // Reference: .dev/docs/modules/pages/workspace-page.md
 
+import { Variable } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { AgentSidebar } from "@/features/agent/components/agent-sidebar";
 import { CommandPalette } from "@/features/agent/components/command-palette";
@@ -188,10 +189,11 @@ export default function WorkspacePage() {
         </div>
         <div className="flex items-center gap-1 pr-3">
           <button
-            className="rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent"
             onClick={() => openModal("templateVars")}
             type="button"
           >
+            <Variable aria-hidden="true" className="size-3.5" />
             {t("template.button")}
           </button>
           <ThemeToggle />

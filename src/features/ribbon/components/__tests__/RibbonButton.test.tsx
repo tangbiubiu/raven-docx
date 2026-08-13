@@ -45,11 +45,10 @@ describe("RibbonButton", () => {
       </RibbonButton>
     );
     const btn = screen.getByTestId("btn");
-    // active 缩放
-    expect(btn.className).toContain("active:scale-95");
-    // hover 背景与缩放
+    // p5: 去掉缩放动效(生产力工具栏),保留 hover 底色与 transition
+    expect(btn.className).not.toContain("scale");
+    // hover 背景
     expect(btn.className).toContain("hover:bg-accent");
-    expect(btn.className).toContain("hover:scale-105");
     // transition 150ms
     expect(btn.className).toContain("transition");
     expect(btn.className).toContain("duration-150");

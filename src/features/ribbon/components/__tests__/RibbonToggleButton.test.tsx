@@ -82,8 +82,8 @@ describe("RibbonToggleButton", () => {
       </RibbonToggleButton>
     );
     const btn = screen.getByTestId("btn");
-    expect(btn.className).toContain("active:scale-95");
-    expect(btn.className).toContain("hover:scale-105");
+    // p5: 去掉缩放动效,保留 hover 底色与 transition
+    expect(btn.className).not.toContain("scale");
     expect(btn.className).toContain("transition");
     expect(btn.className).toContain("duration-150");
   });

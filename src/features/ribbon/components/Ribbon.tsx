@@ -289,8 +289,8 @@ export function Ribbon(callbacks: RibbonCallbacks) {
   // 面板渲染:宽屏内联,窄屏浮层 / Panel render: inline on desktop, popover on mobile
   const renderPanel = () => {
     if (isDesktop) {
-      // 文件 tab 是垂直菜单,面板高度自适应;其余 tab 固定 88px
-      const panelHeight = activeTabId === "file" ? "h-auto" : "h-[88px]";
+      // 文件 tab 是垂直菜单,面板高度自适应;其余 tab 按内容收紧(p5: 88→74,按钮 44px)
+      const panelHeight = activeTabId === "file" ? "h-auto" : "h-[74px]";
       return (
         <div
           aria-labelledby={`ribbon-tab-${activeTabId}`}
