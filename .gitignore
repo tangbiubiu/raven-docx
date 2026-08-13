@@ -27,8 +27,6 @@ dist-ssr
 # START Ruler Generated Files
 /.mcp.json
 /.mcp.json.bak
-/AGENTS.md
-/AGENTS.md.bak
 /CLAUDE.md
 /CLAUDE.md.bak
 /opencode.json
@@ -38,14 +36,9 @@ dist-ssr
 # Generated tauri-specta bindings
 src/lib/bindings.ts
 
-# devleopment files
-AGENTS.md
-
 # Local env files
 .env
-.pi
 worktree
-.dev
 # 内置 pi 二进制（由 scripts/fetch-pi.ts 按需拉取）
 src-tauri/resources/pi/
 # extension 子包的 lock 文件（由 bun install 按需生成）
@@ -54,3 +47,5 @@ github
 .rules
 .vscode
 .zed
+
+.worktree
