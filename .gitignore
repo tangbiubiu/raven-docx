@@ -49,3 +49,4 @@ github
 .zed
 
 .worktree
+src-tauri/target
