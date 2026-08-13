@@ -2,6 +2,34 @@
 // Cmd/Ctrl+K 唤起的全局命令面板，支持预设动作、Ribbon 命令和自定义指令
 // Reference: .dev/plan/phase3-branch-plan.md §3.5, §3.6, §3.7, §3.9
 
+import type { LucideIcon } from "lucide-react";
+import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Briefcase,
+  CheckCheck,
+  ClipboardList,
+  Expand,
+  FileCheck,
+  Indent,
+  Italic,
+  Languages,
+  LayoutDashboard,
+  Lightbulb,
+  List,
+  ListOrdered,
+  Mic,
+  Outdent,
+  PenLine,
+  Smile,
+  Sparkles,
+  Strikethrough,
+  Table,
+  Underline,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   execIndent,
@@ -28,7 +56,7 @@ type PaletteAction =
       kind: "agent";
       id: string;
       labelKey: string;
-      icon: string;
+      icon: LucideIcon;
       requiresSelection: boolean;
       requiresDocument: boolean;
     }
@@ -36,7 +64,7 @@ type PaletteAction =
       kind: "command";
       id: string;
       labelKey: string;
-      icon: string;
+      icon: LucideIcon;
       execute: () => void;
     };
 
@@ -46,7 +74,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "rewrite",
     labelKey: "agent.action.rewrite",
-    icon: "✨",
+    icon: Sparkles,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -54,7 +82,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "expand",
     labelKey: "agent.action.expand",
-    icon: "📝",
+    icon: Expand,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -62,7 +90,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "summarize",
     labelKey: "agent.action.summarize",
-    icon: "📋",
+    icon: ClipboardList,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -70,7 +98,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "translate",
     labelKey: "agent.action.translate",
-    icon: "🌐",
+    icon: Languages,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -78,7 +106,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "explain",
     labelKey: "agent.action.explain",
-    icon: "💡",
+    icon: Lightbulb,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -86,7 +114,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "fixGrammar",
     labelKey: "agent.action.fixGrammar",
-    icon: "✓",
+    icon: CheckCheck,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -94,7 +122,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "makeFormal",
     labelKey: "agent.action.makeFormal",
-    icon: "👔",
+    icon: Briefcase,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -102,7 +130,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "makeCasual",
     labelKey: "agent.action.makeCasual",
-    icon: "😊",
+    icon: Smile,
     requiresSelection: true,
     requiresDocument: true,
   },
@@ -110,7 +138,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "proofread",
     labelKey: "agent.action.proofread",
-    icon: "📄",
+    icon: FileCheck,
     requiresSelection: false,
     requiresDocument: true,
   },
@@ -118,7 +146,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "continue",
     labelKey: "agent.action.continueWriting",
-    icon: "▶",
+    icon: PenLine,
     requiresSelection: false,
     requiresDocument: true,
   },
@@ -126,7 +154,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "optimizeLayout",
     labelKey: "agent.action.formatDoc",
-    icon: "📊",
+    icon: LayoutDashboard,
     requiresSelection: false,
     requiresDocument: true,
   },
@@ -134,7 +162,7 @@ const AGENT_ACTIONS: PaletteAction[] = [
     kind: "agent",
     id: "custom",
     labelKey: "agent.action.custom",
-    icon: "🎤",
+    icon: Mic,
     requiresSelection: false,
     requiresDocument: false,
   },
@@ -146,91 +174,91 @@ const RIBBON_COMMANDS: PaletteAction[] = [
     kind: "command",
     id: "cmd-bold",
     labelKey: "format.bold",
-    icon: "B",
+    icon: Bold,
     execute: () => execToggleMark("bold"),
   },
   {
     kind: "command",
     id: "cmd-italic",
     labelKey: "format.italic",
-    icon: "I",
+    icon: Italic,
     execute: () => execToggleMark("italic"),
   },
   {
     kind: "command",
     id: "cmd-underline",
     labelKey: "format.underline",
-    icon: "U",
+    icon: Underline,
     execute: () => execToggleMark("underline"),
   },
   {
     kind: "command",
     id: "cmd-strike",
     labelKey: "format.strikethrough",
-    icon: "S",
+    icon: Strikethrough,
     execute: () => execToggleMark("strike"),
   },
   {
     kind: "command",
     id: "cmd-alignLeft",
     labelKey: "format.alignLeft",
-    icon: "⬅",
+    icon: AlignLeft,
     execute: () => execSetAlignment("left"),
   },
   {
     kind: "command",
     id: "cmd-alignCenter",
     labelKey: "format.alignCenter",
-    icon: "↔",
+    icon: AlignCenter,
     execute: () => execSetAlignment("center"),
   },
   {
     kind: "command",
     id: "cmd-alignRight",
     labelKey: "format.alignRight",
-    icon: "➡",
+    icon: AlignRight,
     execute: () => execSetAlignment("right"),
   },
   {
     kind: "command",
     id: "cmd-alignJustify",
     labelKey: "format.alignJustify",
-    icon: "☰",
+    icon: AlignJustify,
     execute: () => execSetAlignment("justify"),
   },
   {
     kind: "command",
     id: "cmd-orderedList",
     labelKey: "format.orderedList",
-    icon: "№",
+    icon: ListOrdered,
     execute: () => execWrapIn("ordered_list"),
   },
   {
     kind: "command",
     id: "cmd-unorderedList",
     labelKey: "format.unorderedList",
-    icon: "•",
+    icon: List,
     execute: () => execWrapIn("bullet_list"),
   },
   {
     kind: "command",
     id: "cmd-indent",
     labelKey: "format.indent",
-    icon: "→",
+    icon: Indent,
     execute: () => execIndent(),
   },
   {
     kind: "command",
     id: "cmd-outdent",
     labelKey: "format.outdent",
-    icon: "←",
+    icon: Outdent,
     execute: () => execOutdent(),
   },
   {
     kind: "command",
     id: "cmd-insertTable",
     labelKey: "menu.insert.table",
-    icon: "⊞",
+    icon: Table,
     execute: () => execInsertTable(),
   },
 ];
@@ -402,7 +430,7 @@ export function CommandPalette() {
                   onClick={() => executeAction(action)}
                   type="button"
                 >
-                  <span className="text-lg">{action.icon}</span>
+                  <action.icon className="size-5" />
                   <span className="flex-1">{t(action.labelKey)}</span>
                 </button>
               );

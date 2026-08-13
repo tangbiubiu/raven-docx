@@ -2,13 +2,24 @@
 // Agent 侧边栏中的 8 个快捷操作：续写、润色、摘要、扩写、翻译、风格检查、转正式、解释
 // Reference: .dev/proto/workspace.html (agent sidebar section)
 
+import type { LucideIcon } from "lucide-react";
+import {
+  Briefcase,
+  ClipboardList,
+  Expand,
+  Languages,
+  Lightbulb,
+  PenLine,
+  SearchCheck,
+  Sparkles,
+} from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useAgentContext } from "../hooks/useAgentContext";
 import { useAgentSession } from "../hooks/useAgentSession";
 
 type QuickAction = {
   id: string;
-  icon: string;
+  icon: LucideIcon;
   shortcut?: string;
   labelKey: string;
 };
@@ -16,27 +27,27 @@ type QuickAction = {
 const QUICK_ACTIONS: QuickAction[] = [
   {
     id: "continue",
-    icon: "✏️",
+    icon: PenLine,
     shortcut: "⌘J",
     labelKey: "agent.action.continueWriting",
   },
   {
     id: "rewrite",
-    icon: "✨",
+    icon: Sparkles,
     shortcut: "⌘K",
     labelKey: "agent.action.rewrite",
   },
   {
     id: "summarize",
-    icon: "📋",
+    icon: ClipboardList,
     shortcut: "⌘⇧S",
     labelKey: "agent.action.summarize",
   },
-  { id: "expand", icon: "📝", labelKey: "agent.action.expand" },
-  { id: "translate", icon: "🌐", labelKey: "agent.action.translate" },
-  { id: "styleCheck", icon: "🔍", labelKey: "agent.action.styleCheck" },
-  { id: "makeFormal", icon: "👔", labelKey: "agent.action.makeFormal" },
-  { id: "explain", icon: "💡", labelKey: "agent.action.explain" },
+  { id: "expand", icon: Expand, labelKey: "agent.action.expand" },
+  { id: "translate", icon: Languages, labelKey: "agent.action.translate" },
+  { id: "styleCheck", icon: SearchCheck, labelKey: "agent.action.styleCheck" },
+  { id: "makeFormal", icon: Briefcase, labelKey: "agent.action.makeFormal" },
+  { id: "explain", icon: Lightbulb, labelKey: "agent.action.explain" },
 ];
 
 export function QuickActions() {
@@ -62,7 +73,7 @@ export function QuickActions() {
           onClick={() => handleClick(action.id)}
           type="button"
         >
-          <span className="text-sm">{action.icon}</span>
+          <action.icon className="size-4" />
           <span className="flex-1 text-left">{t(action.labelKey)}</span>
           {!!action.shortcut && (
             <span className="text-[10px] text-muted-foreground">

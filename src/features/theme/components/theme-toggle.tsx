@@ -1,11 +1,12 @@
 // theme/components/theme-toggle.tsx — 暗色模式切换按钮
 // Reference: .dev/proto/workspace.html (dark mode button)
 
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "../hooks/use-theme";
 
 /**
  * 暗色模式切换按钮。
- * 在亮色模式显示 🌙，在暗色模式显示 ☀️。
+ * 亮色模式显示月亮(点击切到暗色),暗色模式显示太阳(点击切到亮色)。
  */
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -19,7 +20,7 @@ export function ThemeToggle() {
       title={isDark ? "亮色模式" : "暗色模式"}
       type="button"
     >
-      {isDark ? "☀️" : "🌙"}
+      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </button>
   );
 }
