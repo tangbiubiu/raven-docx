@@ -43,7 +43,7 @@ describe("SettingsDrawer", () => {
     expect(screen.getByText("数据管理")).toBeInTheDocument();
   });
 
-  it("点击「完成」按钮关闭抽屉", async () => {
+  it("点击关闭按钮(X)关闭抽屉", async () => {
     const user = userEvent.setup();
     const handleClose = vi.fn();
 
@@ -53,7 +53,7 @@ describe("SettingsDrawer", () => {
     });
 
     render(<SettingsDrawer />);
-    await user.click(screen.getByRole("button", { name: /完成/ }));
+    await user.click(screen.getByRole("button", { name: "Close" }));
     expect(handleClose).toHaveBeenCalledWith(false);
 
     await act(() => {
@@ -71,7 +71,7 @@ describe("SettingsDrawer", () => {
     });
 
     render(<SettingsDrawer />);
-    const overlay = document.querySelector('[aria-hidden="true"]');
+    const overlay = document.querySelector('[data-slot="sheet-overlay"]');
     expect(overlay).toBeInTheDocument();
     if (overlay) {
       await user.click(overlay);

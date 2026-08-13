@@ -1,6 +1,7 @@
 // src/features/ribbon/components/tabs/InsertTab.tsx — 插入标签页 / Insert tab
 import { FileText, Footprints, Link, Table } from "lucide-react";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FootnoteDialog } from "@/features/table/components/FootnoteDialog";
 import { HyperlinkDialog } from "@/features/table/components/HyperlinkDialog";
 import { InsertImageButton } from "@/features/table/components/InsertImageButton";
@@ -71,28 +72,38 @@ export function InsertTab({ onInsertPageBreak }: RibbonCallbacks) {
         </RibbonButton>
       </RibbonGroup>
 
-      {/* 弹窗 / Dialogs */}
-      {showTableGrid ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-4 shadow-lg">
-            <InsertTableGrid onClose={() => setShowTableGrid(false)} />
-          </div>
-        </div>
-      ) : null}
-      {showHyperlinkDialog ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-4 shadow-lg">
-            <HyperlinkDialog onClose={() => setShowHyperlinkDialog(false)} />
-          </div>
-        </div>
-      ) : null}
-      {showFootnoteDialog ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-4 shadow-lg">
-            <FootnoteDialog onClose={() => setShowFootnoteDialog(false)} />
-          </div>
-        </div>
-      ) : null}
+      {/* 弹窗 / Dialogs (统一 radix Dialog,内层组件自带 p-4 与标题,外壳用 p-0 + sr-only 标题) */}
+      <Dialog
+        onOpenChange={(o) => !o && setShowTableGrid(false)}
+        open={showTableGrid}
+      >
+        <DialogContent className="p-0">
+          <DialogTitle className="sr-only">
+            {t("menu.insert.table")}
+          </DialogTitle>
+          <InsertTableGrid onClose={() => setShowTableGrid(false)} />
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        onOpenChange={(o) => !o && setShowHyperlinkDialog(false)}
+        open={showHyperlinkDialog}
+      >
+        <DialogContent className="p-0">
+          <DialogTitle className="sr-only">{t("menu.insert.link")}</DialogTitle>
+          <HyperlinkDialog onClose={() => setShowHyperlinkDialog(false)} />
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        onOpenChange={(o) => !o && setShowFootnoteDialog(false)}
+        open={showFootnoteDialog}
+      >
+        <DialogContent className="p-0">
+          <DialogTitle className="sr-only">
+            {t("menu.insert.footnote")}
+          </DialogTitle>
+          <FootnoteDialog onClose={() => setShowFootnoteDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
