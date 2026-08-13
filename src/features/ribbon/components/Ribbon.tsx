@@ -18,7 +18,7 @@ import { useDocumentStore } from "@/stores/useDocumentStore";
 import { RIBBON_TABS } from "../ribbon-config";
 import { RibbonErrorBoundary } from "./RibbonErrorBoundary";
 
-/** Ribbon 回调(扩展 MenuBarCallbacks + onNewComment + onInsertPageBreak)*/
+/** Ribbon 回调(原菜单栏动作并入后由 FileTab 复用 onNew/onOpen/onSave)*/
 export type RibbonCallbacks = {
   onNew: () => void;
   onOpen: () => void;
@@ -33,8 +33,11 @@ export type RibbonCallbacks = {
   onInsertPageBreak: () => void;
 };
 
-// Phase 7.2: 懒加载标签页组件，只有激活时加载
-// 命名导出 → React.lazy 需要 default，用 .then 适配
+// Phase 7.2: 懒加载标签页组件,只有激活时加载
+// 命名导出 → React.lazy 需要 default,用 .then 适配
+const LazyFileTab = lazy(() =>
+  import("./tabs/FileTab").then((m) => ({ default: m.FileTab }))
+);
 const LazyHomeTab = lazy(() =>
   import("./tabs/HomeTab").then((m) => ({ default: m.HomeTab }))
 );
@@ -67,6 +70,7 @@ const TAB_COMPONENTS: Record<
   RibbonTab,
   React.ComponentType<RibbonCallbacks>
 > = {
+  file: LazyFileTab,
   home: LazyHomeTab,
   insert: LazyInsertTab,
   layout: LazyLayoutTab,
@@ -285,10 +289,15 @@ export function Ribbon(callbacks: RibbonCallbacks) {
   // 面板渲染:宽屏内联,窄屏浮层 / Panel render: inline on desktop, popover on mobile
   const renderPanel = () => {
     if (isDesktop) {
+      // 文件 tab 是垂直菜单,面板高度自适应;其余 tab 固定 88px
+      const panelHeight = activeTabId === "file" ? "h-auto" : "h-[88px]";
       return (
         <div
           aria-labelledby={`ribbon-tab-${activeTabId}`}
-          className="flex h-[88px] items-stretch gap-1 overflow-x-auto px-2 py-1"
+          className={cn(
+            "flex items-stretch gap-1 overflow-x-auto px-2 py-1",
+            panelHeight
+          )}
           role="tabpanel"
         >
           {panelContent}
