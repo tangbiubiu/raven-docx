@@ -58,7 +58,7 @@
 ## 5. 测试与验证
 
 ```bash
-bun run typecheck && bun run check && bun run test
+bun run typecheck && bunx biome check && bun run test
 ```
 
 受影响测试:`Ruler.test.tsx`、`agent-sidebar` 相关测试、`useAppStore` 测试 —— 断言跟随实现更新。

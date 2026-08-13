@@ -52,7 +52,7 @@
 ## 5. 测试与验证
 
 ```bash
-bun run typecheck && bun run check && bun run test
+bun run typecheck && bunx biome check && bun run test
 ```
 
 验收:

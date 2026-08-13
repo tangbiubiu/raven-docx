@@ -47,7 +47,7 @@
 ## 5. 测试与验证
 
 ```bash
-bun run typecheck && bun run check && bun run test
+bun run typecheck && bunx biome check && bun run test
 ```
 
 受影响测试:`quick-actions` 测试若断言 emoji 文案则更新(lucide 图标渲染为 `<svg>`,一般不影响 `getByText` 对 label 的断言);`command-palette` 测试同理。

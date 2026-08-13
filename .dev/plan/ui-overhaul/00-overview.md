@@ -70,7 +70,7 @@ main
 
   ```bash
   bun run typecheck
-  bun run check          # biome
+  bunx biome check      # biome (ultracite wrapper 存量损坏)
   bun test               # vitest 全量
   ```
 
