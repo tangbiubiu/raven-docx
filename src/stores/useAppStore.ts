@@ -13,10 +13,6 @@ export type AppModal =
   | "findReplace"
   | "pageSetup"
   | "headerFooter"
-  | "hyperlink"
-  | "insertTable"
-  | "insertImage"
-  | "footnote"
   | "templateVars"
   | null;
 
@@ -70,7 +66,7 @@ export type AppState = {
   settingsDrawerOpen: boolean;
   agentSidebarOpen: boolean; // 需持久化
   outlinePanelCollapsed: boolean; // 需持久化
-  commentPanelOpen: boolean; // 批注面板状态
+  commentPanelOpen: boolean; // 批注页跳转触发信号(p2: AgentSidebar 消费后重置)
 
   /** 应用初始加载 */
   isInitialLoading: boolean;
@@ -122,7 +118,8 @@ const initialAppState = {
   isInitialLoading: true,
   selectionContext: { type: "none" } as SelectionContext,
   activeContextualTab: null as ContextualTab | null,
-  rulerVisible: false,
+  // p2: 标尺默认显示(与 Word 一致),开关接真实渲染
+  rulerVisible: true,
 } as const satisfies Partial<AppState>;
 
 export const useAppStore = create<AppState>()(

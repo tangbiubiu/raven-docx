@@ -66,6 +66,8 @@ export default function WorkspacePage() {
   const setOutlineFloatOpen = useAppStore((s) => s.setOutlineFloatOpen);
   const agentFloatOpen = useAppStore((s) => s.agentFloatOpen);
   const setAgentFloatOpen = useAppStore((s) => s.setAgentFloatOpen);
+  // p2: 标尺开关(视图页 Ribbon 切换)接真实渲染
+  const rulerVisible = useAppStore((s) => s.rulerVisible);
 
   const isLoaded = useSettingsStore((s) => s.isLoaded);
   const hasApiKey = useSettingsStore((s) => !!s.apiConfig.apiKey);
@@ -243,7 +245,7 @@ export default function WorkspacePage() {
 
         {/* 中栏:标尺 + 编辑器 / Ruler + Editor */}
         <div className="relative flex flex-1 flex-col overflow-hidden">
-          <Ruler />
+          {rulerVisible ? <Ruler /> : null}
           <EditorPane
             documentBuffer={documentBuffer}
             isNewDocument={isNewDocument}

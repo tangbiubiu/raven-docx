@@ -5,7 +5,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAppStore } from "@/stores/useAppStore";
 import { useComments } from "../../hooks/use-comments";
 import { CommentPanel } from "../comment-panel";
 
@@ -54,7 +53,7 @@ describe("CommentPanel", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useAppStore.setState({ commentPanelOpen: true });
+    // p2: commentPanelOpen 不再被 CommentPanel 消费(由 AgentSidebar 消费),删死代码
 
     // Default mock: no comments, no selection
     vi.mocked(useComments).mockReturnValue({
