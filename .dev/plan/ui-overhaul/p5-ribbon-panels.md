@@ -59,7 +59,7 @@
 ## 5. 测试与验证
 
 ```bash
-bun run typecheck && bun run check && bun test
+bun run typecheck && bun run check && bun run test
 ```
 
 受影响测试: Ribbon 相关测试若断言了高度/class 或截图结构,同步更新;`OutlinePanel` 测试同理。
