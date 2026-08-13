@@ -2,6 +2,7 @@
 // 显示文档批注列表，支持添加新批注、筛选已解决/未解决
 // Reference: .dev/requirements/requirements-functional.md F-122
 
+import { X } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -47,10 +48,10 @@ export function CommentPanel({ embedded = false }: { embedded?: boolean }) {
 
   const content = (
     <>
-      {/* 标题栏 — embedded 模式下隐藏 */}
+      {/* 标题栏 — embedded 模式下隐藏;p5: 头部与 OutlinePanel/AgentSidebar 同款(px-3 py-2 text-xs) */}
       {!embedded && (
-        <header className="flex items-center justify-between border-border border-b px-4 py-3">
-          <h2 className="font-semibold text-base">
+        <header className="flex items-center justify-between border-border border-b px-3 py-2">
+          <h2 className="font-medium text-xs">
             {t("review.title")}
             {commentCount > 0 ? (
               <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-primary text-xs">
@@ -64,20 +65,7 @@ export function CommentPanel({ embedded = false }: { embedded?: boolean }) {
             onClick={togglePanel}
             type="button"
           >
-            <svg
-              aria-hidden="true"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M6 18L18 6M6 6l12 12"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-              />
-            </svg>
+            <X aria-hidden="true" className="size-4" />
           </button>
         </header>
       )}

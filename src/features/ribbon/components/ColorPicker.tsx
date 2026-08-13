@@ -77,7 +77,7 @@ export function ColorPicker({
                 aria-label={t(sw.nameKey)}
                 aria-pressed={selected}
                 className={cn(
-                  "size-5 rounded-sm border border-border transition hover:scale-110",
+                  "size-5 rounded-sm border border-border transition",
                   selected ? "ring-2 ring-ring ring-offset-1" : ""
                 )}
                 data-testid="color-swatch"

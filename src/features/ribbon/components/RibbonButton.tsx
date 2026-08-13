@@ -33,11 +33,10 @@ export function RibbonButton({
       aria-disabled={disabled || undefined}
       aria-label={label}
       className={cn(
-        "inline-flex h-12 min-w-[44px] flex-col items-center justify-center gap-0.5 rounded px-2 text-xs",
+        "inline-flex h-11 min-w-[40px] flex-col items-center justify-center gap-0.5 rounded px-1.5 text-xs",
         "transition duration-150",
-        "hover:scale-105 hover:bg-accent hover:text-accent-foreground",
-        "active:scale-95",
-        "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100",
+        "hover:bg-accent hover:text-accent-foreground",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         // Phase 7.5: 高对比度模式下显示边框确保可见
         "forced-colors:border forced-colors:border-[ButtonBorder]"
       )}

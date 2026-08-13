@@ -165,7 +165,7 @@ export function HomeTab(_props: RibbonCallbacks) {
           onValueChange={(v) => applyFontSize(Number.parseInt(v, 10) * 2)}
           value={fontSizeValue ?? ""}
         >
-          <SelectTrigger className="h-7 w-[60px] text-xs" size="sm">
+          <SelectTrigger className="h-7 w-[52px] text-xs" size="sm">
             <SelectValue placeholder={t("format.fontSize")} />
           </SelectTrigger>
           <SelectContent>

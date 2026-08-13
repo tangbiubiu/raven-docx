@@ -56,7 +56,7 @@ export function FontCombobox() {
         <button
           aria-expanded={open}
           className={cn(
-            "flex h-7 w-[110px] items-center justify-between rounded border bg-background px-2 text-xs",
+            "flex h-7 w-[96px] items-center justify-between rounded border bg-background px-2 text-xs",
             "hover:bg-accent hover:text-accent-foreground",
             "focus:outline-none focus:ring-1 focus:ring-ring"
           )}
