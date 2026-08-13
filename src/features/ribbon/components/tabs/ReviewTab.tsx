@@ -12,6 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   execAcceptAllChanges,
   execAcceptChange,
@@ -138,28 +139,29 @@ export function ReviewTab({ onNewComment }: RibbonCallbacks) {
         </RibbonButton>
       </RibbonGroup>
 
-      {showWordCount ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="min-w-[260px] rounded-lg bg-white p-5 shadow-lg">
-            <h3 className="mb-3 font-medium text-sm">
-              {t("ribbon.charCount.title")}
-            </h3>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>{t("ribbon.charCount.chars")}</span>
-                <span>{charCount}</span>
-              </div>
+      <Dialog
+        onOpenChange={(o) => !o && setShowWordCount(false)}
+        open={showWordCount}
+      >
+        <DialogContent className="min-w-[260px] p-5">
+          <DialogTitle className="mb-3 font-medium text-sm">
+            {t("ribbon.charCount.title")}
+          </DialogTitle>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>{t("ribbon.charCount.chars")}</span>
+              <span>{charCount}</span>
             </div>
-            <button
-              className="mt-4 w-full rounded bg-primary px-3 py-1.5 text-primary-foreground text-sm"
-              onClick={() => setShowWordCount(false)}
-              type="button"
-            >
-              {t("ribbon.charCount.close")}
-            </button>
           </div>
-        </div>
-      ) : null}
+          <button
+            className="mt-4 w-full rounded bg-primary px-3 py-1.5 text-primary-foreground text-sm"
+            onClick={() => setShowWordCount(false)}
+            type="button"
+          >
+            {t("ribbon.charCount.close")}
+          </button>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

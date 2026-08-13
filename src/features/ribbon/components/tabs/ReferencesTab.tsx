@@ -2,6 +2,7 @@
 
 import { Footprints, ListTree } from "lucide-react";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FootnoteDialog } from "@/features/table/components/FootnoteDialog";
 import { useT } from "@/lib/i18n";
 import type { RibbonCallbacks } from "../Ribbon";
@@ -37,13 +38,17 @@ export function ReferencesTab(_props: RibbonCallbacks) {
         </RibbonButton>
       </RibbonGroup>
 
-      {showFootnoteDialog ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="rounded-lg bg-white p-4 shadow-lg">
-            <FootnoteDialog onClose={() => setShowFootnoteDialog(false)} />
-          </div>
-        </div>
-      ) : null}
+      <Dialog
+        onOpenChange={(o) => !o && setShowFootnoteDialog(false)}
+        open={showFootnoteDialog}
+      >
+        <DialogContent className="p-0">
+          <DialogTitle className="sr-only">
+            {t("menu.insert.footnote")}
+          </DialogTitle>
+          <FootnoteDialog onClose={() => setShowFootnoteDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

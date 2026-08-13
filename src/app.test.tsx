@@ -40,8 +40,11 @@ describe("App", () => {
     render(<App />);
     expect(screen.getByText("未命名文档")).toBeInTheDocument();
   });
-  it("shows API Key configuration prompt", () => {
+  it("shows API Key configuration prompt", async () => {
+    const user = userEvent.setup();
     render(<App />);
+    // 抽屉自开时 radix Sheet 会 aria-hide 背景内容,先关抽屉再断言标题栏按钮
+    await user.keyboard("{Escape}");
     expect(
       screen.getByRole("button", { name: /配置 API Key/i })
     ).toBeInTheDocument();
@@ -56,13 +59,14 @@ describe("App", () => {
     expect(screen.getByText("API Key 配置")).toBeInTheDocument();
   });
 
-  it("closes SettingsDrawer when clicking Done", async () => {
+  it("closes SettingsDrawer when clicking the close button", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     expect(screen.getByText("API Key 配置")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /完成/ }));
+    // 抽屉换 radix Sheet 后,关闭钮为内置 X(accessible name "Close")
+    await user.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByText("API Key 配置")).not.toBeInTheDocument();
   });
 
