@@ -123,6 +123,7 @@ export const en: Translations = {
   "color.gray": "Gray",
 
   // === Ribbon Tabs ===
+  "ribbon.tab.file": "File",
   "ribbon.tab.home": "Home",
   "ribbon.tab.insert": "Insert",
   "ribbon.tab.layout": "Layout",

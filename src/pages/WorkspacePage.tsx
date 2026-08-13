@@ -18,8 +18,6 @@ import { FindReplaceDialog } from "@/features/find-replace/components/find-repla
 import { CollapsedPanelTrigger } from "@/features/layout/components/CollapsedPanelTrigger";
 import { PanelPopover } from "@/features/layout/components/PanelPopover";
 import { PanelResizeHandle } from "@/features/layout/components/PanelResizeHandle";
-import type { MenuBarCallbacks } from "@/features/menubar/components/menu-bar";
-import { MenuBar } from "@/features/menubar/components/menu-bar";
 import { HeaderFooterEditor } from "@/features/page-layout/components/HeaderFooterEditor";
 import { PageSetupDialog } from "@/features/page-layout/components/PageSetupDialog";
 import { Ribbon } from "@/features/ribbon";
@@ -46,7 +44,7 @@ const ZOOM_MAX = 200;
  * WorkspacePage — 编辑器主页面。
  *
  * 布局层次：
- *  DocumentTitleBar → MenuBar → Ribbon → Main(Outline|Float | Ruler+Editor | Agent|Float) → StatusBar
+ *  DocumentTitleBar → Ribbon → Main(Outline|Float | Ruler+Editor | Agent|Float) → StatusBar
  */
 export default function WorkspacePage() {
   const { t } = useT();
@@ -153,8 +151,8 @@ export default function WorkspacePage() {
 
   const initialSection = hasApiKey ? undefined : ("apiKey" as const);
 
-  // MenuBar 回调
-  const menuCallbacks: MenuBarCallbacks = {
+  // 文件/编辑/视图等回调(Ribbon 各 tab 共用,类型由 RibbonCallbacks 校验)
+  const menuCallbacks = {
     onNew: newDocument,
     onOpen: openDocument,
     onSave: saveDocument,
@@ -205,10 +203,7 @@ export default function WorkspacePage() {
         </div>
       </div>
 
-      {/* 菜单栏 */}
-      <MenuBar {...menuCallbacks} />
-
-      {/* Ribbon 功能区(替代旧 Toolbar)/ Ribbon (replaces Toolbar) */}
+      {/* Ribbon 功能区(原菜单栏动作已并入各 tab,「文件」在最左)/ Ribbon (file ops merged into tabs) */}
       <Ribbon {...ribbonCallbacks} />
 
       {/* 主内容区 — 可调宽三栏 + 折叠浮窗 / Resizable three-column + collapse popover */}

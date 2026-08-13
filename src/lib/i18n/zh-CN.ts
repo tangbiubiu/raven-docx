@@ -124,6 +124,7 @@ export const zhCN: Translations = {
   "color.gray": "灰色",
 
   // === Ribbon 标签页 ===
+  "ribbon.tab.file": "文件",
   "ribbon.tab.home": "开始",
   "ribbon.tab.insert": "插入",
   "ribbon.tab.layout": "布局",

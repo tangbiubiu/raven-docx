@@ -22,6 +22,7 @@ export type AppModal =
 
 /** Ribbon 固定标签页 ID / Ribbon fixed tab id */
 export type RibbonTab =
+  | "file"
   | "home"
   | "insert"
   | "layout"

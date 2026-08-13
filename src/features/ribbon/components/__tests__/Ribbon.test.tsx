@@ -271,9 +271,10 @@ describe("Ribbon", () => {
     const tablist = screen.getByRole("tablist");
     const buttons = tablist.querySelectorAll("button[role='tab']");
     const labels = Array.from(buttons).map((b) => b.textContent);
-    // 固定标签页在前,图片格式标签页在最后
+    // 固定标签页在前(文件 tab 最左),图片格式标签页在最后
     // biome-ignore lint/style/useAtIndex: target lib is ES2020, .at() not available
     expect(labels[labels.length - 1]).toBe("ribbon.tab.pictureFormat");
-    expect(labels[0]).toBe("ribbon.tab.home");
+    expect(labels[0]).toBe("ribbon.tab.file");
+    expect(labels[1]).toBe("ribbon.tab.home");
   });
 });
