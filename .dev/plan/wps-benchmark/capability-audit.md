@@ -81,7 +81,7 @@ MenuBar、Toolbar、ToolbarButton/Group/Separator、TitleBar、AlignmentButtons�
 | 题注/书签/交叉引用 | 🟡 field 节点 | 🔵 bookmarks + fields(REF/PAGEREF/SEQ) | OfficeCLI(agent 通道)或自写 field 命令 |
 | 页码 | 🟡 field + 页眉页脚 | 🔵 fields | 库(页眉页脚编辑器扩展) |
 | 文本框/形状 | 🟡 textBox/shape 节点 | 🔵 textbox/shape | OfficeCLI(agent 通道)或自写 insert 命令 |
-| 分隔符(分页/分节/分栏) | 🟢 分页符;🟡 分节/分栏 | 🔵 sections | 分页符走库;分节/分栏见 §6 |
+| 分隔符(分页/分节/分栏) | 🟢 分页符;🟡 分栏(数据模型原生支持,自写直改命令);分节符🟡 | 🔵 sections | 分页符走库;分栏已定自研;分节符待定 |
 | 页眉页脚 | 🟢 getHfPmView(hf) | 🔵 headers/footers | 库(已自建 HeaderFooterEditor,核对) |
 | 封面页/空白页 | ⚪ | — | 自研(模板)或放弃 |
 | 修订(track changes) | 🟢 完整(by-id/接受拒绝/定位) | 🔵 revisions(type/action) | 库(已接线,可增强 by-id) |
@@ -127,11 +127,15 @@ P0 已决策:样式库 + 目录 + 水印 + 分栏。盘点后:
   - 样式库:接 `applyFormatting`/`setParagraphStyle` 空桩 + 用 `applyStyle`/`StyleResolver` + `StylePicker`。
   - 目录:`generateTOC`。
   - 水印:`setWatermark`。
-- **分栏**:🟡 **库无公开命令**(`w:cols` 仅内部序列化)。两条路:
-  - (a) 自研 sectPr 操作命令(参考 superdoc V2 的 OOXML-native 处理思路,用 `serializeSectionProperties` + 直改 `w:cols`);
-  - (b) 走 OfficeCLI `sections`(agent 通道,但用户手动分栏体验差)。
+- **分栏**:✅ **spike 已确认 V1 原生支持**(实测 parse→serialize 往返无损,见下)。
 
-  **建议:分栏列为 P0 的"先 spike"项**——先验证 `serializeSectionProperties` 能否承载 `w:cols` 往返;不能则分栏走 OfficeCLI 或后置。
+  spike 实测(用 `parseDocx`/`serializeDocx` 跑真实 docx):
+  1. `SectionProperties` 类型**完整支持分栏**:`columnCount`/`columnSpace`/`equalWidth`/`separator`/`columns[]`。
+  2. `parseDocx` 解析 `w:cols w:num="2"` → `finalSectionProperties.columnCount:2, columnSpace:720` ✅
+  3. `serializeDocx` 序列化回 `<w:cols w:num="2" w:space="720">` ✅
+  4. ⚠️ 但**无公开“设置分栏”命令**:`getLayout()` 返回只读快照(无 setColumns),`setSectionProperties` 命令字符串在库中不存在(Raven 页面设置的回退路径是理想化的)。
+
+  **实现路径(已定)**:headless 直改 —— `bridge.getDocument()` → 改 `package.document.finalSectionProperties.columnCount` → `serializeDocx` + `repackDocx` → reload(复用 Raven 现有 `reloadFromTemp`)。**数据模型原生支持,无需走 OfficeCLI,但要自写“改 OOXML → 重载”命令(中工作量)**。
 
 ## 6.1 许可证边界(硬约束)
 
@@ -140,7 +144,9 @@ P0 已决策:样式库 + 目录 + 水印 + 分栏。盘点后:
 
 ## 7. 下一步(更新)
 
-1. **P0 纯接线三项先开工**(样式库/目录/水印)——不依赖任何 spike,可立即拆 worktree。
-2. **分栏 spike**:验证 `serializeSectionProperties` + `w:cols` 往返(决定自研 vs OfficeCLI)。
+1. **P0 四项全部敲定**(2026-08-14 分栏 spike 后):
+   - 样式库 / 目录 / 水印:🟢 纯接线(PM 命令包装)
+   - 分栏:🟡 V1 原生支持,自写 headless 直改命令 + 自绘 UI(中工作量)
+2. **P0 拆 worktree 分支实施**(四项,沿用 ui-overhaul 流程)。
 3. **OfficeCLI 保真 spike**(已决定引入):`officecli_exec` 命令 + 真实文档回环。
 4. 之后按 §4 归属表逐项排期。
