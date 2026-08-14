@@ -89,6 +89,6 @@ async fn officecli_exec(
 ## 8. 里程碑
 
 1. **M1 保真 spike** ✅ 完成(2026-08-14,见 spike-results.md)。
-2. **M2 officecli_exec 命令**(§3):Rust 实现 + 单测;首批只接 公式/域/脚注/表格/书签(文本结构类)。
+2. **M2 officecli_exec 命令** — 实现 spec 见 `officecli-m2-spec.md`(架构改为扩展直跑 + rel 规范化);首批只接 公式/域/脚注/表格/图片/书签。
 3. **M3 agent 工具**(§4):白名单语义工具(公式/域/脚注/表格/书签;图片待 rel 修复)。
 4. **M4 打包**(§6):sidecar 集成 + 构建验证。
