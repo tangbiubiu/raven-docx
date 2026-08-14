@@ -9,27 +9,11 @@
 - **增补第二编辑引擎**(非替换):现有 DocxReviewer 工具全部保留,OfficeCLI 作为第二引擎增补(白名单语义工具)。两引擎共享同一临时文件 + reload 链路(wps-benchmark.md §2.3)。
 - **安全边界不变**:pi 仍 `--exclude-tools bash`;OfficeCLI 通过 Rust Tauri 命令调用,不走 shell。
 
-## 2. 保真 spike(验范围,不是 go/no-go 门)
+## 2. 保真 spike(已完成,验范围)
 
-**定位(已拍板)**:OfficeCLI 已决定引入;spike 不是 go/no-go 门,而是**验证接入范围**——哪些能力走 OfficeCLI、哪些退回 DocxReviewer。
+**定位(已拍板)**:OfficeCLI 已决定引入;spike 不是 go/no-go 门,而是**验证接入范围**。
 
-**目的**:验证 docx-editor-core 序列化 → OfficeCLI 编辑 → 重解析的往返无损(两套独立 OOXML 实现,可能互相丢细节)。
-
-**步骤**:
-
-1. 下载 officecli 二进制(macOS arm64),放临时目录。
-2. 取真实文档(含图片/表格/修订的 .docx 样本)。
-3. 回环测试:
-   - docx-editor-core `parseDocx` + `repackDocx` → 文件 A
-   - `officecli open A` → `add`(插入一个脚注/公式/表格)→ `close`
-   - docx-editor-core `parseDocx` 重新解析 → 比对:正文/表格/图片/修订/样式是否丢失
-4. 重点测:图片(media parts)、表格(hMerge/列操作)、修订(ins/del marks)、样式、页眉页脚。
-5. **通过标准**(三环都过才算 pass):
-   - 内容无丢失、结构无损坏、Word 能正常打开;
-   - **reload 回 Raven 编辑器**:officecli 写入的公式/图表/域等内容,编辑器 reload 后**内容不丢、渲染不坏**(生产路径的关键环,不测会推迟到 M3 才爆);
-   - **双引擎往返**:officecli 编辑后,DocxReviewer 再编辑(insert_paragraph 等)→ 验证 DocxReviewer 缓存/PM view 正确失效重建,无静默损坏(index.ts 已有同类 cache 失效逻辑)。
-
-**结果导向**:spike 结果决定**接入范围**——高保真能力(公式/图/图表)直接走 OfficeCLI;低保真能力退回 DocxReviewer 扩展(纯文本类操作)。
+**✅ 已完成(2026-08-14)**:结果见 `officecli-spike-results.md`。结论:公式/域/脚注/表格安全;图片因 officecli rel 路径 bug 丢失(可修);图表/mermaid 原生形状因库不支持而排除。
 
 ## 3. `officecli_exec` Tauri 命令设计(Rust)
 
@@ -74,15 +58,18 @@ async fn officecli_exec(
 
 ## 5. 能力归属(哪些走 OfficeCLI)
 
-| 能力 | 归属 |
+| 能力 | 归属(spike 后) |
 | --- | --- |
-| LaTeX 公式 | OfficeCLI(库 math 节点无 LaTeX 输入) |
-| mermaid 图 | OfficeCLI(库无) |
-| 图表 | OfficeCLI(库无 chart 节点) |
-| OLE | OfficeCLI(库无) |
-| 表单/域全集(22 类型) | OfficeCLI(库只有 field 节点) |
-| 书签/题注/交叉引用 | OfficeCLI(agent 按需);UI 层自写 field 命令(roadmap P1) |
-| 分栏 | 库自研(P0);OfficeCLI sections 作备选 |
+| LaTeX 公式 | ✅ OfficeCLI(oMath 往返无损) |
+| 域全集(22 类型) | ✅ OfficeCLI(field 往返无损) |
+| 脚注 | ✅ OfficeCLI(往返无损) |
+| 表格增强 | ✅ OfficeCLI(往返无损) |
+| 书签/题注/交叉引用 | ✅ OfficeCLI(文本类,预期安全待实测);UI 层自写 field 命令(roadmap P1) |
+| 图片 | ⚠️ 需先修 officecli rel 路径 bug(见 spike-results §3) |
+| mermaid 图 | ❌ 排除(库不支持 wps:wsp 往返) |
+| 图表 | ❌ 排除(库不支持 chart 往返) |
+| OLE | ❓ 未测,同属 drawing 类,预期同图表风险 |
+| 分栏 | 库自研(P0 已完成);OfficeCLI sections 作备选 |
 
 ## 6. 打包与分发
 
@@ -101,7 +88,7 @@ async fn officecli_exec(
 
 ## 8. 里程碑
 
-1. **M1 保真 spike**(§2):往返无损验证 → 定接入范围(非 go/no-go)。
-2. **M2 officecli_exec 命令**(§3):Rust 实现 + 单测。
-3. **M3 agent 工具**(§4):白名单语义工具(公式/图/图表/书签/题注/交叉引用)。
+1. **M1 保真 spike** ✅ 完成(2026-08-14,见 spike-results.md)。
+2. **M2 officecli_exec 命令**(§3):Rust 实现 + 单测;首批只接 公式/域/脚注/表格/书签(文本结构类)。
+3. **M3 agent 工具**(§4):白名单语义工具(公式/域/脚注/表格/书签;图片待 rel 修复)。
 4. **M4 打包**(§6):sidecar 集成 + 构建验证。
