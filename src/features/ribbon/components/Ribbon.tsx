@@ -292,7 +292,7 @@ export function Ribbon(callbacks: RibbonCallbacks) {
       return (
         <div
           aria-labelledby={`ribbon-tab-${activeTabId}`}
-          className="flex flex-wrap items-stretch gap-1 px-2 py-1"
+          className="flex flex-wrap items-stretch justify-between gap-1 px-2 py-1"
           role="tabpanel"
         >
           {panelContent}
