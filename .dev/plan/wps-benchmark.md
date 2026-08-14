@@ -1,6 +1,6 @@
 # 对标 WPS + 引入 OfficeCLI —— 规划文档
 
-> 状态:讨论定稿,待决策 → 待调查盘点 → 待实施
+> 状态:决策已定 → 待调查盘点 → 待实施
 > 关联:.dev/archive/ui-overhaul/(已完成的换皮)、.dev/requirements/(原始需求)
 
 ## 1. 背景与目标
@@ -73,6 +73,9 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 - **P0 基本闭环**:剪贴板组(复制/剪切/粘贴)、导出 PDF、样式库(标题 1–9)
 - **P1 文档结构**:自动目录、分栏/分隔符、水印/页面背景、题注/书签/交叉引用、页码、多级列表
+
+> 已决策的首批实施范围(P0):**样式库 + 目录 + 水印 + 分栏**。剪贴板组、导出 PDF 暂缓。
+
 - **P2 插入丰富度**:形状/图表/公式/文本框/符号/日期、封面页
 - **P3 审阅专业度**:拼写检查、翻译、比较文档、保护文档
 - **P4 视图体验**:多视图/阅读模式、网格线、拆分窗口、全屏/护眼、单双页
@@ -84,7 +87,7 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 1. 快速访问工具栏(左上常驻 新建/打开/保存 + 自定义下拉)
 2. 功能区折叠(双击标签收起 ribbon)
-3. Backstage 全屏文件面板(之前砍了,可重新评估)
+3. Backstage 全屏文件面板(已决策:改全屏)
 4. 状态栏缩放成组(`缩小 | 100% | 放大 | 最佳显示比例`)
 5. 导航窗格(标题树,Raven 大纲面板已接近,可对标增强)
 
@@ -115,19 +118,18 @@ OfficeCLI 相对现有 DocxReviewer **唯一不可替代价值** = LaTeX 公式�
 
 ## 5. 之后要做什么(顺序)
 
-1. **[待决策] OfficeCLI 引入与否**(§6-①)
-2. **[待决策] P0 功能范围与优先顺序**(§6-②)
-3. **能力盘点**:拉全库导出清单(命令/节点/headless API/React 组件)× OfficeCLI 能力 × WPS 对标表 → 产出 `.dev/plan/wps-benchmark/capability-audit.md`(边界:哪些走 UI、哪些走现有 agent、哪些走 OfficeCLI、哪些两边都没有)
-4. **保真 spike**(若引入 OfficeCLI):最小 `officecli_exec` + 真实文档回环测试
-5. **实施 P0**(剪贴板/导出 PDF/样式库 等,按决策范围拆 worktree 分支,沿用 ui-overhaul 的流程)
-6. **布局改进**(快速访问工具栏/折叠/状态栏/导航窗格,按需)
+1. **能力盘点(仅 Word)**:拉全库导出清单(命令/节点/headless API/React 组件)× OfficeCLI Word 能力 × WPS 对标表 → 产出 `.dev/plan/wps-benchmark/capability-audit.md`(边界:哪些走 UI、哪些走现有 agent、哪些走 OfficeCLI、哪些两边都没有)
+2. **OfficeCLI 保真 spike**(已决定引入):最小 `officecli_exec` Tauri 命令 + 真实文档(含图片/表格/修订)回环测试
+3. **P0 实施**:样式库(`applyStyle` 接线 + UI)+ 目录(`generateTOC`)+ 水印(`setWatermark`)+ 分栏(`w:cols`)——拆 worktree 分支,沿用 ui-overhaul 流程
+4. **布局改进**:文件标签改全屏 Backstage(已决策)+ 快速访问工具栏/功能区折叠/状态栏缩放成组/导航窗格(按需)
+5. **OfficeCLI 正式接入**:`officecli_exec` 命令 + agent 工具暴露(公式/图/图表/OLE 走 OfficeCLI)
 
-## 6. 待决策(请用户拍板)
+## 6. 已决策(2026-08-14)
 
-1. **OfficeCLI 引入与否** — 取决于是否需要公式/图/图表/OLE(或未来 Excel/PPT)。
-2. **P0 功能范围** — 建议先做:剪贴板组 + 导出 PDF + 样式库;是否认可、是否增减。
-3. **能力盘点范围** — 只盘 Word,还是连 OfficeCLI 带来的 Excel/PPT 一起列入长远规划。
-4. **Backstage 是否重新评估** — 之前砍掉全屏文件面板(下拉方案),WPS 是全屏;是否维持下拉。
+1. **引入 OfficeCLI** — agent 后端换 OfficeCLI,先做往返保真 spike。
+2. **P0 功能范围** — 样式库 + 目录 + 水印 + 分栏(剪贴板/导出 PDF 暂缓)。
+3. **能力盘点范围** — 仅 Word(Excel/PPT 不列入本轮)。
+4. **文件面板** — 改全屏 Backstage(对标 WPS)。
 
 ## 7. 附:已归档
 
