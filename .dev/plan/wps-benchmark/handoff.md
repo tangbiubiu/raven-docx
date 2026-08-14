@@ -5,8 +5,8 @@
 
 ## 0. 工作区状态(先读)
 
-- **工作区有未提交改动**:P1(多级列表/分节符)、commands.ts 拆分、progress.md 更新均已实现但**未提交**。接手第一步:先提交这批改动,再开工新事项。
-- 测试基线:**711 个 it() / 70 文件**,typecheck + biome + test 全绿(改动前必须跑)。
+- **工作区干净**:此前未提交的 P1 + commands 拆分 + OfficeCLI M2/M3 已全部提交(`8bddb31`、`bbbf66f`,2026-08-14)。
+- 测试基线:**719 个 it() / 71 文件**,typecheck + biome + test 全绿(改动前必须跑)。
 
 ## 1. 来龙去脉(30 秒读完)
 
@@ -22,12 +22,12 @@
 
 **已完成**(截至 2026-08-14):
 
-- P0:样式库 / 水印 / 分栏(分支已合入 main,渲染层按 `columnCount` 分栏已验证闭环)。
-- P0 目录(TOC):⚠️ **部分**——按钮已接线(`generateTOC`),但实测 WPS 数字样式文档缺 TOCHeading/TOC1 样式,插入被编辑器往返回滚。**已决策:走 OfficeCLI**(见 §2-A `insert_toc`)。
-- P1:多级列表 + 分节符(替换弱命令 wrapIn/lift,接线 HomeTab/快捷键/命令面板;Layout 分节符下拉含 oddPage/evenPage/删除)。**工作区未提交**。
-- 架构债:`commands.ts` 已拆成 `src/features/editor/commands/`(10 文件,barrel 导出,公开 API 不变)。
-- OfficeCLI M1 spike:验范围完成(见 §2-A 引用的结果)。
-- progress.md 已更新为按模块进度(不再停在 Phase 4 Template)。
+- P0:样式库 / 水印 / 分栏(渲染层按 `columnCount` 分栏已验证闭环)。
+- P0 目录(TOC):⚠️ **部分**——`generateTOC` 按钮在编辑器往返回滚;**已决策走 OfficeCLI**(§2-A `insert_toc`)。
+- P1:多级列表 + 分节符(✅ 已提交 `8bddb31`)。
+- 架构债:`commands.ts` 已拆(✅ 已提交 `8bddb31`,barrel 带 biome-ignore 保留导入兼容)。
+- OfficeCLI M1/M2/M3(✅ 已提交 `bbbf66f`):spike 验范围 + batch runner + rels 规范化 + 8 工具。
+- progress.md 已更新为按模块进度。
 
 ## 2. 待实施清单(按优先级)
 
