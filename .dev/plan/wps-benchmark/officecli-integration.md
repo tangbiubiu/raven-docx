@@ -1,6 +1,7 @@
 # OfficeCLI 接入计划
 
-> 状态:待实施(已决定引入,spike 只验范围;许可证 Apache-2.0 已核实)
+> 状态:✅ M2 已完成(2026-08-14);M3 agent 工具已随 M2 落地;M4 打包待正式发布时验证。
+> ⚠️ **§3(Rust Tauri 命令设计)已被 `officecli-m2-spec.md` §1 取代**:officecli 改为 pi 扩展(Node)直接 spawn(扩展在独立 pi 进程,调不了 Tauri 命令);Rust 只负责打包二进制 + 注入 `RAVEN_OFFICECLI_BIN` env。M1 spike 已完成(见 officecli-spike-results.md),图表/mermaid/OLE 排除。
 > 定位:agent 的文档操作后端,处理 docx-editor-core 无法覆盖的能力(LaTeX 公式/mermaid 图/图表/OLE/表单/域全集/书签题注)
 
 ## 1. 目标与边界
@@ -89,6 +90,6 @@ async fn officecli_exec(
 ## 8. 里程碑
 
 1. **M1 保真 spike** ✅ 完成(2026-08-14,见 spike-results.md)。
-2. **M2 officecli_exec 命令** — 实现 spec 见 `officecli-m2-spec.md`(架构改为扩展直跑 + rel 规范化);首批只接 公式/域/脚注/表格/图片/书签。
-3. **M3 agent 工具**(§4):白名单语义工具(公式/域/脚注/表格/书签;图片待 rel 修复)。
-4. **M4 打包**(§6):sidecar 集成 + 构建验证。
+2. **M2 officecli_exec 命令** ✅ 完成(2026-08-14):按 `officecli-m2-spec.md` 实现——扩展直跑 `batch`(单进程、立即落盘、无 resident)、rels 规范化(jszip 后处理)、DocxReviewer 重建;Rust 注入 `RAVEN_OFFICECLI_BIN` env。
+3. **M3 agent 工具** ✅ 完成(2026-08-14):白名单语义工具 8 个(insert_equation/insert_field/insert_footnote/insert_table/insert_toc/add_bookmark/add_caption/cross_reference);insert_picture 待前端图片上传通道(§4.1)。
+4. **M4 打包** ⏳ 待发布构建验证:tauri.conf.json resources 已加 `resources/officecli/*`,二进制已就位(dev 模式用 CARGO_MANIFEST_DIR 定位)。

@@ -23,14 +23,14 @@ P0(样式库/目录/水印/分栏)是"补齐基本闭环"。本文规划 P0 之�
 | P5 | 平台能力 | 导出 PDF/多格式、崩溃恢复、加密 | ⚪ |
 | — | 布局 | Backstage 全屏、快速访问工具栏、折叠、状态栏、导航窗格 | 前端自研 |
 | — | 架构债 | commands.ts 拆分、headless 统一、表格/列表命令补齐 | 重构 |
-| — | OfficeCLI | 保真 spike → officecli_exec → agent 工具 | 见 officecli-integration.md |
+| — | OfficeCLI | ✅ M1 spike → M2 batch runner + rels 规范化 → M3 白名单工具 8 个(已完成);M4 打包待发布验证 | 见 officecli-integration.md |
 
 ## 2. P1 文档结构
 
 | 项 | 能力 | 技术路径 | 依赖 | 工作量 | 优先级 |
 | --- | --- | --- | --- | --- | --- |
-| 多级列表 | 🟢 increaseListLevel/decreaseListLevel/toggleNumberedList/toggleBulletList/removeList | 替换现有 wrapIn/lift 实现(commands.ts 已用弱命令) | 无 | 低 | 高 |
-| 分节符 | 🟢 insertSectionBreak/removeSectionBreak(spike 发现) | 包装进 commands.ts + Layout 标签按钮 | 无 | 低 | 高 |
+| 多级列表 | 🟢 increaseListLevel/decreaseListLevel/toggleNumberedList/toggleBulletList/removeList | ✅ 已完成(2026-08-14:替换弱命令 wrapIn/lift,接线 HomeTab/快捷键/命令面板;execIndent/Outdent 列表内走级别;selectionFormat.listType 改读 numPr) | 无 | 低 | 高 |
+| 分节符 | 🟢 insertSectionBreak/removeSectionBreak(spike 发现) | ✅ 已完成(2026-08-14:insert 已接线;补 removeSectionBreak 命令 + Layout 分节符下拉补 oddPage/evenPage/删除) | 无 | 低 | 高 |
 | 页码 | 🟡 field(PAGE)+ 页眉页脚 getHfPmView | 自写 insertField 命令 + 页眉页脚编辑器加页码按钮 | P0 分栏? | 中 | 中 |
 | 题注/书签/交叉引用 | 🟡 field(REF/PAGEREF/SEQ) | 自写 insertField + 书签标记命令;或 agent 走 OfficeCLI | 无 | 中 | 中 |
 
@@ -111,8 +111,9 @@ P0(✅ 已完成,2026-08-14 合入)
      ├─ P1:多级列表 + 分节符(纯接线,快)
      ├─ 布局:Backstage 全屏 + 状态栏缩放成组(已决策)
      └─ OfficeCLI 保真 spike → 接入(见 officecli-integration.md)
+         ├─ ✅ M2/M3 已完成(2026-08-14):公式/域/脚注/表格/目录/书签/题注/交叉引用 8 个白名单工具
          ├─ P2:符号/文本框 + 公式/图/图表走 agent
-         ├─ P1:题注/书签/交叉引用(自写 field 或 agent)
+         ├─ P1:题注/书签/交叉引用(自写 field 或 agent)✅ agent 侧已覆盖,UI 自写 field 待 P1
          ├─ P3:修订 by-id 增强
          ├─ P5:导出 txt/md + 崩溃恢复(建议)
          └─ P1:剪贴板组(高频,后续顺带)

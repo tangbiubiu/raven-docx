@@ -38,6 +38,13 @@ const PI_BINARY_REL: &str = if cfg!(target_os = "windows") {
 /// pi-extensions 目录在 resources 下的相对路径
 const PI_EXTENSIONS_REL: &str = "pi-extensions";
 
+/// officecli 二进制在 resources 下的相对路径
+const OFFICECLI_BINARY_REL: &str = if cfg!(target_os = "windows") {
+    "officecli/officecli.exe"
+} else {
+    "officecli/officecli"
+};
+
 /// 获取内置 pi 二进制的绝对路径
 ///
 /// - 开发模式：Tauri 的 resource_dir 指向 target/debug/，资源文件不在那里。
@@ -58,6 +65,22 @@ pub fn pi_binary_path(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
         .resolve(PI_BINARY_REL, BaseDirectory::Resource)
         .map_err(|e| format!("解析 pi 二进制路径失败: {}", e))
+}
+
+/// 获取 officecli 二进制的绝对路径(与 pi_binary_path 同模式:开发模式用源码目录,生产用 resource 解析)
+pub fn officecli_bin_path(app: &AppHandle) -> Result<PathBuf, String> {
+    if cfg!(debug_assertions) {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let dev_path = manifest_dir.join("resources").join(OFFICECLI_BINARY_REL);
+        if dev_path.exists() {
+            return Ok(dev_path);
+        }
+        log::warn!("[pi] 开发模式未在 {} 找到 officecli,回退到 resource_dir", dev_path.display());
+    }
+
+    app.path()
+        .resolve(OFFICECLI_BINARY_REL, BaseDirectory::Resource)
+        .map_err(|e| format!("解析 officecli 二进制路径失败: {}", e))
 }
 
 /// 获取 pi-extensions 目录的绝对路径
@@ -324,6 +347,16 @@ impl AgentManager {
             cmd.env("RAVEN_DOCX_NAME", &doc_name);
         }
 
+        // 注入 officecli 二进制路径(仅当存在;缺失时 extension 的 officecli 工具报"未安装")
+        if let Ok(bin_path) = officecli_bin_path(&app_handle) {
+            if bin_path.exists() {
+                cmd.env("RAVEN_OFFICECLI_BIN", &bin_path);
+                log::info!("[pi] 注入 RAVEN_OFFICECLI_BIN: {}", bin_path.display());
+            } else {
+                log::warn!("[pi] officecli 二进制缺失: {}", bin_path.display());
+            }
+        }
+
         // 如果有 session_id，添加 --session-id 参数
         if let Some(sid) = &session_id {
             cmd.arg("--session-id").arg(sid);
@@ -520,10 +553,14 @@ impl AgentManager {
                                 RpcFrame::ToolExecutionEnd { tool_name, is_error, .. } => {
                                     log::info!("[pi] tool_execution_end: {} (error: {})", tool_name, is_error);
                                     // 修改类工具成功执行 → 标记 dirty
+                                    // (含 officecli 白名单工具:它们直接写 RAVEN_DOCX_PATH,agent_end 时前端 reload)
                                     const MUTATION_TOOLS: &[&str] = &[
                                         "suggest_change", "add_comment", "apply_formatting",
                                         "set_paragraph_style", "reply_comment", "resolve_comment",
                                         "insert_paragraph",
+                                        "insert_equation", "insert_field", "insert_footnote",
+                                        "insert_table", "insert_toc", "add_bookmark",
+                                        "add_caption", "cross_reference",
                                     ];
                                     if !is_error && MUTATION_TOOLS.contains(&tool_name.as_str()) {
                                         document_dirty = true;

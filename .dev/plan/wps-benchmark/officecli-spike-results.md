@@ -52,4 +52,4 @@
 
 1. **图片 rel 问题(已解)**:`officecli_exec` wrapper 在 officecli 写完后规范化 rels(去 `/` 前导斜杠、去 `/word/` 前缀);或报 officecli issue。已验证规范化后图片往返无损。
 2. **图表/形状**:从 OfficeCLI 范围排除,等 docx-editor-core 支持(或改走 agent 的 DocxReviewer 纯文本路径,不碰图表)。
-3. **M2 范围收敛**:`officecli_exec` 首批只接 公式/域/脚注/表格/书签(文本结构类),图片待 rel 修复,图表/形状不做。
+3. **M2 范围收敛**:`officecli_exec` 首批只接 公式/域/脚注/表格/书签/目录(文本结构类),图片待 rel 修复,图表/形状不做。

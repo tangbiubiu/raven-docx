@@ -2,9 +2,10 @@
   "name": "raven-docx",
   "version": "1.0.0",
   "private": true,
-  "description": "pi extension for Raven docx agent — headless DocxReviewer + tracked changes",
+  "description": "pi extension for Raven docx agent — headless DocxReviewer + officecli 白名单工具",
   "type": "module",
   "dependencies": {
-    "@eigenpal/docx-editor-agents": "1.3.2"
+    "@eigenpal/docx-editor-agents": "1.3.2",
+    "jszip": "^3.10.1"
   }
 }

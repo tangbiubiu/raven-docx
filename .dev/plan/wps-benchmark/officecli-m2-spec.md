@@ -1,7 +1,7 @@
-# OfficeCLI M2 实现 spec:`officecli_exec`(agent 侧)
+# OfficeCLI M2 实现 spec:`officecli` 白名单工具(agent 侧)
 
-> 状态:待实施(依赖 M1 spike 已完成,见 officecli-spike-results.md)
-> 定位:让 pi agent 通过白名单语义工具用 officecli 操作当前文档(公式/域/脚注/表格/图片/书签题注)
+> 状态:✅ 已完成(2026-08-14)。新增 `officecli.ts`(batch runner + rels 规范化)、`index.ts` 注册 8 个白名单工具、`pi/mod.rs` 注入 `RAVEN_OFFICECLI_BIN`、tauri.conf.json 打包 officecli 二进制。验收:719 it() 全绿 + 真实二进制端到端验证(batch 写入 → rels 规范化 → validate 通过)。
+> 定位:让 pi agent 通过白名单语义工具用 officecli 操作当前文档(公式/域/脚注/表格/书签题注)
 
 ## 1. 架构决策:extension 直跑,而非 Rust Tauri 命令
 
@@ -61,6 +61,7 @@ export function runOfficeCli(args: string[]): { ok: boolean; stdout: string; std
 | 工具 | officecli 命令(示意) | 参数校验 |
 | --- | --- | --- |
 | `insert_equation` | `add <doc> /body --type equation --prop mode=inline\|display --prop formula="..."` | formula 非空,≤500 字符 |
+| `insert_toc` | `add <doc> / --type toc`(生成目录域) | 已决策:目录走 OfficeCLI(`generateTOC` 实测往返回滚) |
 | `insert_field` | `add <doc> / --type field --prop fieldType=page\|date\|...` | fieldType ∈ 枚举 |
 | `insert_footnote` | `add <doc> /body/p[N] --type footnote --prop text="..."` | text 非空 |
 | `insert_table` | `add <doc> / --type table --prop rows=N --prop cols=M` | 1≤rows,cols≤20 |
@@ -79,6 +80,7 @@ export function runOfficeCli(args: string[]): { ok: boolean; stdout: string; std
 - 或 agent 提供图片,前端先转存到 temp 目录再通知工具。
 
 > 实现时可先只接非图片工具,图片工具等 rel 规范化 + 图片上传通道就绪后再开。
+> 目录已决策走 OfficeCLI(`insert_toc`);WPS 数字样式文档缺 TOCHeading/TOC1 样式,generateTOC 插入被编辑器往返回滚(见 progress.md)。
 
 ## 5. rels 规范化(后处理,spike 已验证)
 

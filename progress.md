@@ -10,9 +10,13 @@
 | 目录(TOC) | ⚠️ 部分 | 按钮已接线(generateTOC);实测 WPS 数字样式文档缺 TOCHeading/TOC1 样式,插入被编辑器往返回滚。**已决策:走 OfficeCLI** |
 | 水印 | ✅ P0 | 对话框 + 命令;实测 OOXML 含 `v:textpath`,重开预填回路正确 |
 | 分栏 | ✅ P0 | 序列化回写(`finalSectionProperties` + `updateDocumentXml`)+ 分节符;实测渲染层按 `columnCount` 分栏(layout-engine paginator) |
+| 多级列表 | ✅ P1 | 库真实命令(toggleBulletList/toggleNumberedList/increaseListLevel/decreaseListLevel/removeList)替换死命令 wrapIn/lift;⌘⇧7/8、HomeTab、命令面板已接线;⌘]/⌘[ 列表内走级别;selectionFormat.listType 改读 numPr(711 it() 全绿) |
+| 分节符 | ✅ P1 | removeSectionBreak 命令;Layout 分节符下拉补 oddPage/evenPage/删除分节符 |
+| OfficeCLI M2/M3 | ✅ | 白名单语义工具 8 个(公式/域/脚注/表格/目录/书签/题注/交叉引用)走 officecli `batch` 单进程(立即落盘、无 resident);写后 rels 规范化 + 重建 DocxReviewer;Rust 注入 `RAVEN_OFFICECLI_BIN`;图片工具待前端上传通道(719 it() 全绿) |
 | 模板变量 | ✅ Phase 4 | useTemplateVars + VariableForm + WorkspacePage 集成 |
 | 换皮(UI overhaul) | ✅ | ribbon 面板化(平铺/两端对齐/视觉打磨)、ruler 对齐、pi 与本地 ~/.pi 隔离 |
 | 文档打开/保存 | ✅ | Tauri bridge 打开/保存/另存为;重载链路(agent 回环) |
+| commands.ts 拆分 | ✅ 架构债 | 874 行 god-file → `commands/` 按域拆分(formatting/paragraph/styles/table/image/review/document-structure/history + shared),barrel 保持 `@/features/editor/commands` 公开 API 不变(699 it() 全绿) |
 
 ## 已知问题(实测发现)
 
