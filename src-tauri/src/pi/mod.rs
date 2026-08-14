@@ -259,35 +259,6 @@ impl AgentManager {
         Ok(app_data)
     }
 
-    /// 检查 Raven 隔离目录是否有有效凭证配置
-    ///
-    /// 检测 auth.json 或 models.json 是否存在且非空（>2 字节）。
-    /// 用于决定是否设置 PI_CODING_AGENT_DIR 环境变量：
-    /// 有有效配置时覆盖 pi 的配置目录为 Raven 隔离目录，
-    /// 无配置时让 pi 用默认目录（~/.pi/agent/）。
-    pub fn check_credentials_ready() -> bool {
-        let agent_dir = match Self::pi_agent_dir() {
-            Ok(dir) => dir,
-            Err(_) => return false,
-        };
-        let auth_json = agent_dir.join("auth.json");
-        let models_json = agent_dir.join("models.json");
-
-        // auth.json 或 models.json 至少一个存在且非空
-        let auth_valid = auth_json.exists() && {
-            std::fs::metadata(&auth_json)
-                .map(|m| m.len() > 2)
-                .unwrap_or(false)
-        };
-        let models_valid = models_json.exists() && {
-            std::fs::metadata(&models_json)
-                .map(|m| m.len() > 2)
-                .unwrap_or(false)
-        };
-        auth_valid || models_valid
-    }
-
-
     /// spawn pi 子进程
     pub async fn spawn(&self, session_id: Option<String>) -> Result<(), String> {
         // 获取 AppHandle，用于定位内置 pi 二进制
@@ -317,15 +288,13 @@ impl AgentManager {
         // 构建命令（使用内置 pi 二进制绝对路径）
         let mut cmd = Command::new(pi_path);
 
-        // 只有当 Raven 隔离目录有有效凭证时，才用 PI_CODING_AGENT_DIR 覆盖。
-        // 否则不设此环境变量，让 pi 用默认配置目录（~/.pi/agent/）。
-        // pi 的 PI_CODING_AGENT_DIR 是覆盖而非追加——设了就不用全局配置。
-        let has_raven_credentials = Self::check_credentials_ready();
-        if has_raven_credentials {
-            cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
-        } else {
-            log::info!("[pi] Raven 隔离目录无有效凭证，pi 将使用默认配置目录");
-        }
+        // 完全隔离: 无条件把 pi 配置目录指向 Raven 自己的 pi-agent 目录,
+        // 绝不读取本机 ~/.pi/agent(扩展/凭证/模型/技能/会话)。避免与用户自装的
+        // pi 生态耦合 —— 用户 pi 版本与内置 pi 版本不一致时,加载用户扩展会崩溃
+        // (如 @earendil-works/pi-ai/compat 解析失败)。
+        // PI_CODING_AGENT_DIR 是覆盖而非追加;raven-docx 扩展通过 --extension
+        // 显式加载,不受隔离影响,扩展机制保持开启。
+        cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
         cmd.arg("--mode").arg("rpc")
             .arg("--session-dir").arg(&agent_dir);
 
@@ -965,10 +934,8 @@ pub async fn test_api_connection(app: &AppHandle) -> Result<bool, String> {
     // 构建命令：与 spawn() 一致，使用内置 pi 二进制
     let mut cmd = Command::new(pi_path);
 
-    // 与 spawn() 一致：仅当 Raven 隔离目录有有效凭证时才覆盖配置目录
-    if AgentManager::check_credentials_ready() {
-        cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
-    }
+    // 与 spawn() 一致：无条件隔离配置目录（不读本机 ~/.pi/agent）
+    cmd.env("PI_CODING_AGENT_DIR", &agent_dir);
     cmd.arg("--mode").arg("rpc")
         .arg("--session-dir").arg(&agent_dir)
         .arg("--no-session");
