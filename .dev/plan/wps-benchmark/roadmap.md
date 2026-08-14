@@ -1,6 +1,6 @@
 # 后期路线图(P1–P5 + 布局 + 架构债)
 
-> 状态:待实施(前期:能力盘点 + P0 已定,实施已交同事)
+> 状态:P0 已完成(2026-08-14 合入);P1 及后续待实施
 > 依赖:capability-audit.md(能力归属)、p0-implementation.md(P0 技术细节)
 
 ## 0. 定位
@@ -53,10 +53,10 @@ P0(样式库/目录/水印/分栏)是"补齐基本闭环"。本文规划 P0 之�
 | 项 | 能力 | 技术路径 | 工作量 | 决策 |
 | --- | --- | --- | --- | --- |
 | 修订 by-id 增强 | 🟢 acceptChangeById/rejectChangeById | 增强现有 ReviewTab(现有用 range 版) | 低 | 建议做 |
-| 拼写检查 | ⚪ 均无 | 自研(浏览器 spellcheck 叠加/第三方词典)或放弃 | 高 | **待决策** |
-| 比较文档 | ⚪ 均无 | 自研(diff 两 docx)或放弃 | 高 | **待决策** |
-| 翻译/同义词 | ⚪ 均无 | 放弃(agent 可代做)或接外部 API | 低 | **待决策** |
-| 保护/加密 | ⚪ 均无 | 自研(Tauri 端 OOXML 加密)或放弃 | 高 | **待决策** |
+| 拼写检查 | ⚪ 均无 | 自研(浏览器 spellcheck 叠加/第三方词典)或放弃 | 高 | **暂缓(已决策)** |
+| 比较文档 | ⚪ 均无 | 自研(diff 两 docx)或放弃 | 高 | **暂缓(已决策)** |
+| 翻译/同义词 | ⚪ 均无 | 放弃(agent 可代做)或接外部 API | 低 | **暂缓(已决策)** |
+| 保护/加密 | ⚪ 均无 | 自研(Tauri 端 OOXML 加密)或放弃 | 高 | **暂缓(已决策)** |
 
 > P3 的 ⚪ 项是"均无"重灾区,建议**暂缓或放弃**,优先把 🟢🟡 的能力做满(对标价值更高)。
 
@@ -107,8 +107,8 @@ P0(样式库/目录/水印/分栏)是"补齐基本闭环"。本文规划 P0 之�
 
 | 项 | 说明 | 优先级 |
 | --- | --- | --- |
-| commands.ts 按域拆分 | 500 行 god-file → commands/(formatting/paragraph/table/image/review/document-structure/styles) | 高(增长前必做) |
-| 桥接契约补齐 | applyFormatting/setParagraphStyle 空桩(P0 样式库已做) | 高(P0 内) |
+| commands.ts 按域拆分 | `src/features/editor/commands.ts` 已 874 行 god-file → commands/(formatting/paragraph/table/image/review/document-structure/styles) | 高(增长前必做) |
+| 桥接契约补齐 | ✅ 已完成(P0 样式库已委托 ref API) | 高(P0 内) |
 | 表格命令补齐 | 库 32 命令只接 ~10(addColumn/deleteRow/autofit/distribute/select/边框全套) | 中 |
 | 列表命令替换 | wrapIn/lift → toggleBulletList/increaseListLevel(在 P1 多级列表做) | 中 |
 | 数据访问统一 headless | 字数/大纲/正文从直读 PM view → headless getParagraphs/countWords | 中 |
@@ -117,7 +117,7 @@ P0(样式库/目录/水印/分栏)是"补齐基本闭环"。本文规划 P0 之�
 ## 9. 建议的推进顺序
 
 ```text
-P0(实施中,同事)
+P0(✅ 已完成,2026-08-14 合入)
  └─ 架构债:commands.ts 拆分(增长前必做)
      ├─ P1:多级列表 + 分节符(纯接线,快)
      ├─ 布局:Backstage 全屏 + 状态栏缩放成组(已决策)

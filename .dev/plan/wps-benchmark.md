@@ -1,6 +1,6 @@
 # 对标 WPS + 引入 OfficeCLI —— 规划文档
 
-> 状态:决策已定 → 待调查盘点 → 待实施
+> 状态:P0 已完成(2026-08-14 合入);剩余:OfficeCLI spike + P1
 > 关联:.dev/archive/ui-overhaul/(已完成的换皮)、.dev/requirements/(原始需求)
 
 ## 1. 背景与目标
@@ -31,7 +31,7 @@
 - **命令**:`generateTOC`(目录)、`applyStyle/clearStyle/getStyleId`(样式库)、`setWatermark`(水印)、`addTabStop/removeTabStop`(制表位)、完整表格命令(20+,只接了~10)、`toggleBulletList/increaseListLevel/setLtr/setRtl/setUnderlineStyle`
 - **headless API**:`parseDocx/serializeDocx`、`getParagraphs/getBodyText/countWords`、内容控件查询、`DocumentAgent`
 - **React 自带 UI**:`HorizontalRuler`、`ColorPicker`、`FontPicker`、`InsertSymbolDialog`、`PageSetupDialog`、`FindReplaceDialog`、`HyperlinkDialog`、`InsertTableDialog`、`PrintPreview` 等(Raven 重复实现了其中一部分)
-- **桥接空桩**:`createEditorBridge` 里 `applyFormatting: () => false`、`setParagraphStyle: () => false`
+- **桥接(已接)**:`createEditorBridge` 的 `applyFormatting`/`setParagraphStyle` 已委托 ref API + StyleResolver(P0 样式库完成)
 
 **库明确没有的**(需自研或另想办法):拼写检查、比较文档、导出 PDF、翻译/同义词。
 
@@ -61,7 +61,7 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 | 优先级 | 动作 |
 | --- | --- |
-| P0 | 补桥接契约:对齐 `EditorBridge` 与库真实 API,接上 `applyFormatting`/`setParagraphStyle` 空桩 |
+| P0 | ✅ 补桥接契约(已完成):`applyFormatting`/`setParagraphStyle` 已委托 ref API + StyleResolver |
 | P0 | 建**能力盘点表**(库 vs OfficeCLI vs WPS),作为后续所有实施的地图 |
 | P1 | `commands.ts` 按域拆分(已 500 行 god-file,中间夹 import)→ `commands/(formatting/paragraph/table/image/review/document-structure/styles).ts` |
 | P2 | 数据访问统一走 headless API(`getParagraphs/countWords`),减少对 PM 内部结构耦合;导出 PDF = `serializeDocx` + Tauri 端渲染 |

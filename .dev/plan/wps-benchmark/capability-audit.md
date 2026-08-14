@@ -23,7 +23,7 @@
 | 图片 | setImageWrapType(环绕)、insertImageNode(tracked 插入) |
 | 页面 | insertPageBreak、**setWatermark/getWatermarkFromState** |
 | 审阅评论 | addCommentMark/removeCommentMark、acceptChange/rejectChange/**acceptChangeById/rejectChangeById**/acceptAllChanges/rejectAllChanges/findNext/PreviousChange、toggleSuggestionMode/isSuggestionModeActive |
-| 桥接(空桩对应真实 API) | **applyFormatting(view,{paraId,search,marks})**、**setParagraphStyle(view,{paraId,styleId},resolver)**、StyleResolver(OOXML 样式级联) |
+| 桥接(已接) | **applyFormatting(view,{paraId,search,marks})**、**setParagraphStyle(view,{paraId,styleId},resolver)**、StyleResolver(OOXML 样式级联) |
 
 ### 2.2 节点已存在、但无公开 insert 命令(需自写命令,序列化现成)
 
@@ -124,7 +124,7 @@ MenuBar、Toolbar、ToolbarButton/Group/Separator、TitleBar、AlignmentButtons�
 P0 已决策:样式库 + 目录 + 水印 + 分栏。盘点后:
 
 - **样式库 / 目录 / 水印**:🟢 库命令现成,**纯接线 + 自绘 UI**,零风险。
-  - 样式库:接 `applyFormatting`/`setParagraphStyle` 空桩 + 用 `applyStyle`/`StyleResolver` + `StylePicker`。
+  - 样式库:✅ 已接(`applyFormatting`/`setParagraphStyle` 委托 ref API + `applyStyle`/`StyleResolver` + `StylePicker`)。
   - 目录:`generateTOC`。
   - 水印:`setWatermark`。
 - **分栏**:✅ **spike 已确认 V1 原生支持**(实测 parse→serialize 往返无损,见下)。

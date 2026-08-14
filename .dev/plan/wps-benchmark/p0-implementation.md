@@ -1,13 +1,13 @@
 # P0 实施计划:样式库 / 目录 / 水印 / 分栏
 
-> 状态:待实施(分栏 spike 已完成,见 capability-audit.md §6)
+> 状态:**已完成**(2026-08-14 四项全部合入:styles/watermark/toc/columns)
 > 依赖:capability-audit.md 的边界地图;沿用 ui-overhaul 的 worktree 流程
 
 ## 0. 总览
 
 | 项 | 形态 | 库 API | 分支 | 工作量 | 依赖 |
 | --- | --- | --- | --- | --- | --- |
-| 样式库 | 纯接线 | `applyStyle`/`clearStyle`/`getStyleId` + `applyFormatting`/`setParagraphStyle`(空桩)+ `StyleResolver` | ui/p0-styles | 低 | 无 |
+| 样式库 | 纯接线 | `applyStyle`/`clearStyle`/`getStyleId` + `applyFormatting`/`setParagraphStyle`(已接)+ `StyleResolver` | ui/p0-styles | 低 | 无 |
 | 目录 | 纯接线 | `generateTOC`(Command) | ui/p0-toc | 低 | 样式库 |
 | 水印 | 纯接线 | `setWatermark`/`getWatermarkFromState` | ui/p0-watermark | 低 | 无 |
 | 分栏 | 自研直改 | `SectionProperties` 数据模型(无 setter) | ui/p0-columns | 中 | 无 |
@@ -20,7 +20,7 @@
 
 **技术要点**:
 
-1. **接桥接空桩**(`src/stores/useDocumentStore.ts` 的 `EditorBridge` + `createEditorBridge`):
+1. **桥接(已完成)**:`applyFormatting`/`setParagraphStyle` 已委托 ref API + StyleResolver。
    - `applyFormatting(view, { paraId, search, marks })` ← 库 `prosemirror/applyFormatting`
    - `setParagraphStyle(view, { paraId, styleId }, resolver)` ← 同上;`resolver` 由 `StyleResolver` 从文档 styles 构建(级联:docDefaults → Normal → basedOn)
 2. **commands.ts 包装**:`execApplyStyle(styleId)` → `applyStyle`;`execClearStyle()` → `clearStyle`;`execGetStyleId()` → `getStyleId`。
@@ -31,12 +31,12 @@
 
 ## 2. 目录(ui/p0-toc)
 
-**目标**:启用现有 disabled 的"目录"按钮(`ReferencesTab` 里 `ribbon-toc` 目前 `disabled` 无 onClick)。
+**目标**:启用"目录"按钮(`ReferencesTab` `ribbon-toc`)。已完成(commit `a972e14`)。
 
 **技术要点**:
 
 1. commands.ts 包装 `execGenerateTOC()` → 库 `generateTOC`(Command,基于 heading 样式 + field 域)。
-2. ReferencesTab 目录按钮去 `disabled` + 加 `onClick={execGenerateTOC}`。
+2. ReferencesTab 目录按钮已接 `onClick={execGenerateTOC}`(✅ 已完成)。
 3. 依赖 §1 样式库(标题样式是 TOC 识别基础)。
 
 **风险/降级**:`generateTOC` 生成的是 TOC 域指令;若 V1 编辑器渲染层不显示 TOC 内容(需实测),降级为:插入 TOC 域(Word 打开按 F9 更新),或该功能走 OfficeCLI TOC(agent 通道)。
@@ -65,10 +65,10 @@
    - `bridge.getDocument()` → OOXML `Document`
    - 改 `doc.package.document.finalSectionProperties`(整页分栏)或段落 `sectionProperties`(分节分栏):`columnCount`/`columnSpace`/`equalWidth`/`separator`/`columns[]`
    - `serializeDocx(doc)` 得 document.xml + `updateDocumentXml(originalBuffer, xml)`(最小改动,保留其余 parts)→ 写临时文件 → `reloadFromTemp`(复用现有 agent 回环基础设施)
-2. **关键风险**:PM 编辑的未保存改动需先落盘再直改;渲染层是否按 `columnCount` 分栏**待实测**(模型往返已确认,渲染未验证)。
+2. **关键风险(未闭环)**:PM 编辑的未保存改动需先落盘再直改;渲染层是否按 `columnCount` 分栏**仍未验证**——已合入代码只有序列化回写路径(`finalSectionProperties` + `updateDocumentXml`),渲染层无 column painter。**风险项未闭环,待实测或走降级。**
 3. UI:Layout 标签新组"分栏"(1/2/3 栏 + 更多分栏对话框:栏数/栏宽/间距/分隔线)。
 
-**降级**:若编辑器渲染不支持分栏 → 降级为"保存时写入分栏(Word 正确显示),编辑器内近似/不显示",并在计划中标注。
+**降级(待验证后决策)**:若编辑器渲染不支持分栏 → 降级为"保存时写入分栏(Word 正确显示),编辑器内近似/不显示",并闭环此风险项。
 
 **验收**:设 2 栏 → 编辑区分栏渲染;保存重开保留;Word 打开正常。
 
