@@ -13,6 +13,11 @@ vi.mock("@/features/table/components/FootnoteDialog", () => ({
   FootnoteDialog: () => <div>插入脚注</div>,
 }));
 
+const mockCmds = vi.hoisted(() => ({
+  execGenerateTOC: vi.fn(),
+}));
+vi.mock("@/features/editor/commands", () => mockCmds);
+
 const props = {
   onNew: vi.fn(),
   onOpen: vi.fn(),
@@ -40,5 +45,11 @@ describe("ReferencesTab", () => {
     render(<ReferencesTab {...props} />);
     fireEvent.click(screen.getByTestId("ribbon-insertFootnote"));
     expect(screen.getByText("插入脚注")).toBeInTheDocument();
+  });
+
+  it("点击目录按钮调用 execGenerateTOC", () => {
+    render(<ReferencesTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-toc"));
+    expect(mockCmds.execGenerateTOC).toHaveBeenCalled();
   });
 });

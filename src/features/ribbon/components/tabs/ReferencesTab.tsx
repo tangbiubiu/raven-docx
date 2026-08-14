@@ -3,6 +3,7 @@
 import { Footprints, ListTree } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { execGenerateTOC } from "@/features/editor/commands";
 import { FootnoteDialog } from "@/features/table/components/FootnoteDialog";
 import { useT } from "@/lib/i18n";
 import type { RibbonCallbacks } from "../Ribbon";
@@ -30,8 +31,8 @@ export function ReferencesTab(_props: RibbonCallbacks) {
 
       <RibbonGroup labelKey="ribbon.group.toc">
         <RibbonButton
-          disabled
           label={t("ribbon.button.toc")}
+          onClick={execGenerateTOC}
           testId="ribbon-toc"
         >
           <ListTree className="size-5" />

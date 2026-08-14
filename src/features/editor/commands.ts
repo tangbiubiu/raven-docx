@@ -17,6 +17,7 @@ import {
   clearTextColor,
   createRemoveMarkCommand,
   createSetMarkCommand,
+  generateTOC,
   getStyleId,
   insertPageBreak,
   insertTable,
@@ -432,6 +433,13 @@ export function execGetStyleId(): string | null {
 /** 插入分页符 / Insert a page break at the cursor */
 export function execInsertPageBreak(): void {
   apply(insertPageBreak);
+}
+
+// === 目录 (P0: TOC)/ Table of contents ===
+
+/** 插入目录(基于标题样式 + field 域)/ Insert a table of contents */
+export function execGenerateTOC(): void {
+  apply(generateTOC);
 }
 
 // === 插入 ===
