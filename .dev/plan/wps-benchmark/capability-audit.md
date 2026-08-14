@@ -128,10 +128,15 @@ P0 已决策:样式库 + 目录 + 水印 + 分栏。盘点后:
   - 目录:`generateTOC`。
   - 水印:`setWatermark`。
 - **分栏**:🟡 **库无公开命令**(`w:cols` 仅内部序列化)。两条路:
-  - (a) 自研 sectPr 操作命令(用 `serializeSectionProperties` + 直改 `w:cols`);
+  - (a) 自研 sectPr 操作命令(参考 superdoc V2 的 OOXML-native 处理思路,用 `serializeSectionProperties` + 直改 `w:cols`);
   - (b) 走 OfficeCLI `sections`(agent 通道,但用户手动分栏体验差)。
 
   **建议:分栏列为 P0 的"先 spike"项**——先验证 `serializeSectionProperties` 能否承载 `w:cols` 往返;不能则分栏走 OfficeCLI 或后置。
+
+## 6.1 许可证边界(硬约束)
+
+- **不引入 AGPL**。superdoc V2(AGPL-3.0)仅作设计参考(分栏/节/页眉页脚的原生 OOXML 处理思路),不引入代码。
+- 当前栈:docx-editor-core V1 = Apache-2.0 ✓,OfficeCLI = Apache-2.0 ✓(已核实 LICENSE)。
 
 ## 7. 下一步(更新)
 

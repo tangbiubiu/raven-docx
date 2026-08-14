@@ -116,6 +116,11 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 OfficeCLI 相对现有 DocxReviewer **唯一不可替代价值** = LaTeX 公式、mermaid 图、图表、OLE、以及未来的 Excel/PPT。**这几项不是刚需 → 留在 docx-editor-core 扩工具集(零风险);是刚需 → 走 OfficeCLI(先 spike)。**
 
+### 4.4 许可证约束(硬约束)
+
+- **不引入 AGPL**。评估过 [superdoc/docx-editor](https://github.com/superdoc/docx-editor)(= docx-editor-core 的继任者,V2 为 OOXML 原生重写,自带 SDK/MCP/CLI),其许可证为 **AGPL-3.0** → **放弃引入,仅参考其 OOXML-native 设计思路**(如分栏/节/页眉页脚的原生处理),自行在 V1 上实现或走 OfficeCLI。
+- 当前栈许可证:docx-editor-core V1 = **Apache-2.0** ✓,OfficeCLI = **Apache-2.0** ✓(已核实 LICENSE 文件)。
+
 ## 5. 之后要做什么(顺序)
 
 1. **能力盘点(仅 Word)**:拉全库导出清单(命令/节点/headless API/React 组件)× OfficeCLI Word 能力 × WPS 对标表 → 产出 `.dev/plan/wps-benchmark/capability-audit.md`(边界:哪些走 UI、哪些走现有 agent、哪些走 OfficeCLI、哪些两边都没有)
@@ -130,6 +135,7 @@ OfficeCLI 相对现有 DocxReviewer **唯一不可替代价值** = LaTeX 公式�
 2. **P0 功能范围** — 样式库 + 目录 + 水印 + 分栏(剪贴板/导出 PDF 暂缓)。
 3. **能力盘点范围** — 仅 Word(Excel/PPT 不列入本轮)。
 4. **文件面板** — 改全屏 Backstage(对标 WPS)。
+5. **许可证约束** — 不引入 AGPL;superdoc V2(AGPL-3.0)仅参考设计思路;栈锁定 docx-editor-core V1(Apache-2.0)+ OfficeCLI(Apache-2.0)。
 
 ## 7. 附:已归档
 
