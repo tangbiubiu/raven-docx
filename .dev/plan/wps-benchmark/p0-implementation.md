@@ -65,10 +65,10 @@
    - `bridge.getDocument()` → OOXML `Document`
    - 改 `doc.package.document.finalSectionProperties`(整页分栏)或段落 `sectionProperties`(分节分栏):`columnCount`/`columnSpace`/`equalWidth`/`separator`/`columns[]`
    - `serializeDocx(doc)` 得 document.xml + `updateDocumentXml(originalBuffer, xml)`(最小改动,保留其余 parts)→ 写临时文件 → `reloadFromTemp`(复用现有 agent 回环基础设施)
-2. **关键风险(未闭环)**:PM 编辑的未保存改动需先落盘再直改;渲染层是否按 `columnCount` 分栏**仍未验证**——已合入代码只有序列化回写路径(`finalSectionProperties` + `updateDocumentXml`),渲染层无 column painter。**风险项未闭环,待实测或走降级。**
+2. **关键风险(已闭环 2026-08-14)**:PM 编辑的未保存改动需先落盘再直改;渲染层按 `columnCount` 分栏**已验证**——layout-engine(layout-engine/index.mjs → chunk-JHTURDPX)是完整分栏 paginator:`columnIndex` 追踪 + `getColumnX()` 计算列 x,fragment.x 随列偏移;OOXML 转换层(chunk-3G44SFHX)把 `<w:cols>` 读入数据模型(`columnCount`/`columnSpace`/`equalWidth`/`columns[]`);React adapter 用 `renderPages(oe.pages)`(layout-engine 输出)渲染 DOM(`layout-page-content`)。headless 实测:layoutDocument 传 `columns:{count:2,gap:400}` → 每页 paragraph fragment x=[800,4200](内容流到第二列);单栏 x=[800]。**数据流闭环:docx→模型→section config→分栏布局→DOM。**
 3. UI:Layout 标签新组"分栏"(1/2/3 栏 + 更多分栏对话框:栏数/栏宽/间距/分隔线)。
 
-**降级(待验证后决策)**:若编辑器渲染不支持分栏 → 降级为"保存时写入分栏(Word 正确显示),编辑器内近似/不显示",并闭环此风险项。
+**降级(已排除)**:渲染层支持分栏,降级方案不再需要。
 
 **验收**:设 2 栏 → 编辑区分栏渲染;保存重开保留;Word 打开正常。
 
