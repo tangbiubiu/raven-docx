@@ -48,9 +48,19 @@ const mockCmds = vi.hoisted(() => {
     findPreviousChange: vi.fn(
       () => ({ from: 2, to: 4, type: "deletion" }) as unknown
     ),
+    // P0 样式库 / style library
+    applyStyle: vi.fn((_styleId: string, _resolved?: unknown) => mkCmd()),
+    clearStyle: mkCmd(),
+    getStyleId: vi.fn(() => "Heading1"),
+    insertPageBreak: mkCmd(),
   };
 });
 vi.mock("@eigenpal/docx-editor-core/prosemirror/commands", () => mockCmds);
+
+// --- mock StyleResolver 入口(getDocument 为 null 时本不会构造,隔离真实库代码)---
+vi.mock("@eigenpal/docx-editor-core/prosemirror", () => ({
+  createStyleResolver: vi.fn(() => null),
+}));
 
 // --- mock docx-editor-core PM 插件(suggestion mode = track changes)---
 const mockPlugins = vi.hoisted(() => ({
@@ -108,7 +118,7 @@ const mockView = {
 vi.mock("@/stores/useDocumentStore", () => ({
   useDocumentStore: {
     getState: vi.fn(() => ({
-      editorBridge: { getEditorView: () => mockView },
+      editorBridge: { getEditorView: () => mockView, getDocument: () => null },
     })),
   },
 }));
@@ -117,12 +127,16 @@ import {
   applyBatch,
   execAcceptAllChanges,
   execAcceptChange,
+  execApplyStyle,
   execClearFontFamily,
   execClearFontSize,
   execClearHighlight,
+  execClearStyle,
   execClearTextColor,
   execFindNextChange,
   execFindPreviousChange,
+  execGetStyleId,
+  execInsertPageBreak,
   execInsertTable,
   execRejectAllChanges,
   execRejectChange,
@@ -943,5 +957,46 @@ describe("execSetFontFamilyComplete — 字段合并(只覆盖传入字段)", ()
     };
     setView(view);
     expect(() => execSetFontFamilyComplete({ ascii: "Arial" })).not.toThrow();
+  });
+});
+
+describe("execApplyStyle / execClearStyle / execGetStyleId — P0 样式库", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 前面的 setView 测试会替换 editorBridge(无 getDocument、非 mockView),
+    // 这里重置为含 getDocument 的完整 bridge。
+    vi.mocked(useDocumentStore.getState).mockReturnValue({
+      editorBridge: {
+        getEditorView: () => mockView,
+        getDocument: () => null,
+      },
+    } as never);
+  });
+
+  it("execApplyStyle 以 styleId 调用库 applyStyle 并 dispatch", () => {
+    execApplyStyle("Heading1");
+    expect(mockCmds.applyStyle).toHaveBeenCalledWith("Heading1", undefined);
+    const cmd = mockCmds.applyStyle.mock.results[0]?.value;
+    expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+  });
+
+  it("execClearStyle dispatch 库 clearStyle 命令", () => {
+    execClearStyle();
+    expect(mockCmds.clearStyle).toHaveBeenCalledWith(
+      mockView.state,
+      mockDispatch
+    );
+  });
+
+  it("execGetStyleId 返回当前选区段落样式 ID", () => {
+    expect(execGetStyleId()).toBe("Heading1");
+  });
+
+  it("execInsertPageBreak dispatch 库 insertPageBreak 命令", () => {
+    execInsertPageBreak();
+    expect(mockCmds.insertPageBreak).toHaveBeenCalledWith(
+      mockView.state,
+      mockDispatch
+    );
   });
 });

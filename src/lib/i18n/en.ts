@@ -98,6 +98,7 @@ export const en: Translations = {
   "format.heading5": "Heading 5",
   "format.heading6": "Heading 6",
   "format.normal": "Normal",
+  "format.clearStyle": "Clear Style",
   "format.alignLeft": "Align Left",
   "format.alignCenter": "Center",
   "format.alignRight": "Align Right",

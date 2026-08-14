@@ -11,6 +11,7 @@ import { UnsavedConfirmDialog } from "@/features/document/components/unsaved-con
 import { useAutoSave } from "@/features/document/hooks/use-auto-save";
 import { useCloseGuard } from "@/features/document/hooks/use-close-guard";
 import { useDocument } from "@/features/document/hooks/useDocument";
+import { execInsertPageBreak } from "@/features/editor/commands";
 import { EditorPane } from "@/features/editor/components/EditorPane";
 import { OutlinePanel } from "@/features/editor/components/OutlinePanel";
 import { Ruler } from "@/features/editor/components/Ruler";
@@ -175,8 +176,7 @@ export default function WorkspacePage() {
       useAppStore.getState().setCommentPanelOpen(true);
     },
     onInsertPageBreak: () => {
-      const bridge = useDocumentStore.getState().editorBridge;
-      bridge?.applyFormatting?.({ insertPageBreak: true });
+      execInsertPageBreak();
     },
   };
 

@@ -119,6 +119,8 @@ export type FormatState = {
   highlight?: string;
   alignment?: Alignment;
   headingLevel?: number; // 1-6，undefined 表示正文
+  /** 当前段落的 OOXML 样式 ID（如 Heading1/Title），无样式时 undefined */
+  styleId?: string;
   listType?: "ordered" | "unordered" | null;
   superscript?: boolean;
   subscript?: boolean;

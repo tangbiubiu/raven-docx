@@ -36,14 +36,12 @@ import {
   execOutdent,
   execRedo,
   execSetAlignment,
-  execSetBlockType,
   execUndo,
   execWrapIn,
 } from "@/features/editor/commands";
 import {
   ALIGNMENTS,
   FONT_SIZES,
-  HEADING_OPTIONS,
   SUPER_SUB_MARKS,
   TEXT_MARKS,
 } from "@/features/formatting/constants";
@@ -66,10 +64,10 @@ import {
   ListToggleButton,
   MarkToggleButton,
   useFontSizeValue,
-  useHeadingValue,
 } from "../RibbonFormatButtons";
 import { RibbonGroup } from "../RibbonGroup";
 import { RibbonSeparator } from "../RibbonSeparator";
+import { StyleDropdown } from "../StyleDropdown";
 
 /** 文本标记 → lucide 图标映射 / text mark → lucide icon */
 const MARK_ICONS: Record<string, LucideIcon> = {
@@ -100,7 +98,6 @@ const MARK_SHORTCUTS: Record<string, string> = {
 export function HomeTab(_props: RibbonCallbacks) {
   const { t } = useT();
   const fontSizeValue = useFontSizeValue();
-  const headingValue = useHeadingValue();
   // 文字颜色/高亮的响应式回显值 / Reactive text color / highlight echo values
   const { textColor, highlight } = useFormatState();
   const openModal = useAppStore((s) => s.openModal);
@@ -254,28 +251,7 @@ export function HomeTab(_props: RibbonCallbacks) {
 
       {/* 样式组 / Styles group */}
       <RibbonGroup labelKey="ribbon.group.styles">
-        <Select
-          onValueChange={(v) => {
-            if (v === "paragraph") {
-              execSetBlockType("paragraph");
-            } else {
-              const level = Number.parseInt(v.replace("heading", ""), 10);
-              execSetBlockType("heading", { level });
-            }
-          }}
-          value={headingValue}
-        >
-          <SelectTrigger className="h-7 w-[80px] text-xs" size="sm">
-            <SelectValue placeholder={t("format.normal")} />
-          </SelectTrigger>
-          <SelectContent>
-            {HEADING_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {t(opt.i18n)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <StyleDropdown />
       </RibbonGroup>
 
       <RibbonSeparator />

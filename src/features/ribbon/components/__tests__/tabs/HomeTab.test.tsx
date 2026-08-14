@@ -17,8 +17,11 @@ const mockDocState = {
   selectionFormat: null,
 };
 vi.mock("@/stores/useDocumentStore", () => ({
-  useDocumentStore: vi.fn((selector?: (s: typeof mockDocState) => unknown) =>
-    typeof selector === "function" ? selector(mockDocState) : mockDocState
+  useDocumentStore: Object.assign(
+    vi.fn((selector?: (s: typeof mockDocState) => unknown) =>
+      typeof selector === "function" ? selector(mockDocState) : mockDocState
+    ),
+    { getState: vi.fn(() => mockDocState) }
   ),
 }));
 
@@ -53,6 +56,8 @@ const mockCmds = vi.hoisted(() => ({
   execLift: vi.fn(),
   execIndent: vi.fn(),
   execOutdent: vi.fn(),
+  execApplyStyle: vi.fn(),
+  execClearStyle: vi.fn(),
 }));
 vi.mock("@/features/editor/commands", () => mockCmds);
 
@@ -148,6 +153,12 @@ describe("HomeTab", () => {
   it("渲染查找按钮", () => {
     render(<HomeTab {...props} />);
     expect(screen.getByTestId("ribbon-find")).toBeInTheDocument();
+  });
+
+  it("渲染样式组下拉(文档无样式时仅清除选项)", () => {
+    render(<HomeTab {...props} />);
+    // 样式下拉 trigger 存在;无文档时列表为空,仅含清除选项
+    expect(screen.getByTestId("ribbon-style")).toBeInTheDocument();
   });
 
   it("点击查找按钮调用 openModal('findReplace')", () => {
