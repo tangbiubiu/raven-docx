@@ -69,12 +69,14 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 ### 3.2 功能:能力盘点表驱动(待产出)
 
-按优先级(WPS 有、Raven 无):
+> 说明:本清单是 **WPS 功能差距分析**(WPS 有、Raven 无),按功能重要度排序,不代表实施顺序。实施顺序见 §6。
+
+按差距优先级(WPS 有、Raven 无):
 
 - **P0 基本闭环**:剪贴板组(复制/剪切/粘贴)、导出 PDF、样式库(标题 1–9)
 - **P1 文档结构**:自动目录、分栏/分隔符、水印/页面背景、题注/书签/交叉引用、页码、多级列表
 
-> 已决策的首批实施范围(P0):**样式库 + 目录 + 水印 + 分栏**。剪贴板组、导出 PDF 暂缓。
+> 已决策的首批实施范围(P0):**样式库 + 目录 + 水印 + 分栏**(✅ 已完成)。剪贴板组、导出 PDF 暂缓(剪贴板为高频但用户拍板维持暂缓,后续 P1 顺带)。
 
 - **P2 插入丰富度**:形状/图表/公式/文本框/符号/日期、封面页
 - **P3 审阅专业度**:拼写检查、翻译、比较文档、保护文档
@@ -114,7 +116,9 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 ### 4.3 决策依据(一句话)
 
-OfficeCLI 相对现有 DocxReviewer **唯一不可替代价值** = LaTeX 公式、mermaid 图、图表、OLE、以及未来的 Excel/PPT。**这几项不是刚需 → 留在 docx-editor-core 扩工具集(零风险);是刚需 → 走 OfficeCLI(先 spike)。**
+OfficeCLI 相对现有 DocxReviewer **唯一不可替代价值** = LaTeX 公式、mermaid 图、图表、OLE、以及未来的 Excel/PPT。
+
+**已拍板(2026-08-14):已决定引入 OfficeCLI;spike 不是 go/no-go 门,而是验证接入范围**(哪些能力走 OfficeCLI、哪些退回 DocxReviewer)。详见 `officecli-integration.md` §2。
 
 ### 4.4 许可证约束(硬约束)
 
@@ -131,11 +135,12 @@ OfficeCLI 相对现有 DocxReviewer **唯一不可替代价值** = LaTeX 公式�
 
 ## 6. 已决策(2026-08-14)
 
-1. **引入 OfficeCLI** — agent 后端换 OfficeCLI,先做往返保真 spike。
-2. **P0 功能范围** — 样式库 + 目录 + 水印 + 分栏(剪贴板/导出 PDF 暂缓)。
+1. **引入 OfficeCLI** — 已决定引入;spike 验范围(非 go/no-go);agent 接口用**白名单语义工具**(不做通用透传)。
+2. **P0 功能范围** — 样式库 + 目录 + 水印 + 分栏(✅ 已完成);剪贴板/导出 PDF 暂缓(剪贴板维持暂缓,用户拍板)。
 3. **能力盘点范围** — 仅 Word(Excel/PPT 不列入本轮)。
 4. **文件面板** — 改全屏 Backstage(对标 WPS)。
 5. **许可证约束** — 不引入 AGPL;superdoc V2(AGPL-3.0)仅参考设计思路;栈锁定 docx-editor-core V1(Apache-2.0)+ OfficeCLI(Apache-2.0)。
+6. **云同步/版本历史** — 从计划摘除(后端/存储全待定且不在 WPS 对标范围),等后端落地再立。
 
 ## 7. 附:已归档
 

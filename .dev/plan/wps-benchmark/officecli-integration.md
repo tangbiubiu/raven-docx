@@ -1,6 +1,6 @@
 # OfficeCLI 接入计划
 
-> 状态:待实施(已决策引入,许可证 Apache-2.0 已核实)
+> 状态:待实施(已决定引入,spike 只验范围;许可证 Apache-2.0 已核实)
 > 定位:agent 的文档操作后端,处理 docx-editor-core 无法覆盖的能力(LaTeX 公式/mermaid 图/图表/OLE/表单/域全集/书签题注)
 
 ## 1. 目标与边界
@@ -9,7 +9,9 @@
 - **替换现有 agent 后端**:DocxReviewer(docx-editor-core)→ OfficeCLI。同步链路(临时文件 + reload)**原样保留**(wps-benchmark.md §2.3)。
 - **安全边界不变**:pi 仍 `--exclude-tools bash`;OfficeCLI 通过 Rust Tauri 命令调用,不走 shell。
 
-## 2. 保真 spike(第一步,先行验证)
+## 2. 保真 spike(验范围,不是 go/no-go 门)
+
+**定位(已拍板)**:OfficeCLI 已决定引入;spike 不是 go/no-go 门,而是**验证接入范围**——哪些能力走 OfficeCLI、哪些退回 DocxReviewer。
 
 **目的**:验证 docx-editor-core 序列化 → OfficeCLI 编辑 → 重解析的往返无损(两套独立 OOXML 实现,可能互相丢细节)。
 
@@ -24,7 +26,7 @@
 4. 重点测:图片(media parts)、表格(hMerge/列操作)、修订(ins/del marks)、样式、页眉页脚。
 5. **通过标准**:内容无丢失、结构无损坏、Word 能正常打开。
 
-**结果导向**:通过 → 继续 §3;失败 → 缩小 OfficeCLI 使用范围(只做纯文本类操作)或退回扩展 DocxReviewer。
+**结果导向**:spike 结果决定**接入范围**——高保真能力(公式/图/图表)直接走 OfficeCLI;低保真能力退回 DocxReviewer 扩展(纯文本类操作)。
 
 ## 3. `officecli_exec` Tauri 命令设计(Rust)
 
@@ -52,20 +54,20 @@ async fn officecli_exec(
 - **session 管理**:officecli 有 resident session(open/close);命令内部做 open → 子命令 → close 一次性收尾,或按文档缓存 session(待 spike 定)。
 - **二进制定位**:Tauri sidecar 打包(`src-tauri/binaries/officecli`),或首次运行下载到 app data 目录(待定)。
 
-## 4. agent 工具暴露(pi 扩展)
+## 4. agent 工具暴露(pi 扩展,白名单语义工具)
 
-在 `src-tauri/resources/pi-extensions/raven-docx/index.ts` 新增工具(与现有 insert_paragraph 并列):
+在 `src-tauri/resources/pi-extensions/raven-docx/index.ts` 新增工具(与现有 insert_paragraph 并列)。
+
+**接口形态(已拍板):白名单语义工具,不做通用透传。** 每个工具内部固定参数/路径,agent 无法传任意路径或子命令,不暴露文件读写原语。
 
 | 工具 | 作用 | 走 |
 | --- | --- | --- |
-| `officecli_run` | 通用:执行任意 officecli 子命令(参数透传) | officecli_exec |
 | `insert_equation` | LaTeX 公式 | officecli add ... equation |
 | `insert_diagram` | mermaid 图 | officecli add ... diagram |
 | `insert_chart` | 图表 | officecli add ... chart |
 | `insert_bookmark` / `add_caption` / `cross_reference` | 书签/题注/交叉引用 | officecli |
-| `set_columns`(备选) | 分栏(若 P0 自研路径失败) | officecli sections |
 
-> 设计取向:**暴露一个通用的 `officecli_run`**(完整表达力)+ **少量语义化高频工具**(公式/图/图表),平衡灵活性与可控性。
+> 越权边界:工具内部**只能操作当前文档临时文件**(`RAVEN_DOCX_PATH`),不接受任意路径;officecli 的 open/close 由 `officecli_exec` 命令内部收尾,不对 agent 暴露。
 
 ## 5. 能力归属(哪些走 OfficeCLI)
 
@@ -92,11 +94,11 @@ async fn officecli_exec(
 | 往返保真不达标 | 缩小 OfficeCLI 用途(纯文本/公式),其余退回 DocxReviewer 扩展 |
 | officecli session 与编辑器并发 | 文档 busy 锁 + open/close 一次性收尾 |
 | 二进制体积/启动慢 | sidecar 常驻或按需懒启动(待 spike 测) |
-| 通用 officecli_run 误用 | 参数白名单(禁止路径越界)+ busy 锁 + 命令日志审计 |
+| 语义工具越权 | 工具内部只操作当前文档临时文件,不接任意路径;命令日志审计 |
 
 ## 8. 里程碑
 
-1. **M1 保真 spike**(§2):往返无损验证 → go/no-go。
+1. **M1 保真 spike**(§2):往返无损验证 → 定接入范围(非 go/no-go)。
 2. **M2 officecli_exec 命令**(§3):Rust 实现 + 单测。
-3. **M3 agent 工具**(§4):`officecli_run` + 公式/图/图表工具。
+3. **M3 agent 工具**(§4):白名单语义工具(公式/图/图表/书签/题注/交叉引用)。
 4. **M4 打包**(§6):sidecar 集成 + 构建验证。
