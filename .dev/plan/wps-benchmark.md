@@ -39,7 +39,7 @@
 
 ```
 useAgentSession 存临时文件(RAVEN_DOCX_PATH)
-  → pi spawn 拿到 env(--exclude-tools bash,安全边界)
+  → pi spawn 拿到 env(`--exclude-tools read,write,edit,bash,grep,find,ls`,安全边界)
   → raven-docx 扩展用 DocxReviewer 编辑文档
   → persistDoc 写回临时文件
   → agent_end(documentDirty) → reloadDocument → reloadFromTemp → 落盘原文件
@@ -63,7 +63,7 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 | --- | --- |
 | P0 | ✅ 补桥接契约(已完成):`applyFormatting`/`setParagraphStyle` 已委托 ref API + StyleResolver |
 | P0 | 建**能力盘点表**(库 vs OfficeCLI vs WPS),作为后续所有实施的地图 |
-| P1 | `commands.ts` 按域拆分(已 500 行 god-file,中间夹 import)→ `commands/(formatting/paragraph/table/image/review/document-structure/styles).ts` |
+| P1 | `commands.ts` 按域拆分(已 874 行 god-file,中间夹 import)→ `commands/(formatting/paragraph/table/image/review/document-structure/styles).ts` |
 | P2 | 数据访问统一走 headless API(`getParagraphs/countWords`),减少对 PM 内部结构耦合;导出 PDF = `serializeDocx` + Tauri 端渲染 |
 | P3 | 重复 UI 取舍:保留 Raven 自绘组件(样式统一),复用库对话框逻辑或作 fallback;不再新造库已提供的纯逻辑 |
 
@@ -73,17 +73,17 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 按差距优先级(WPS 有、Raven 无):
 
-- **P0 基本闭环**:剪贴板组(复制/剪切/粘贴)、导出 PDF、样式库(标题 1–9)
-- **P1 文档结构**:自动目录、分栏/分隔符、水印/页面背景、题注/书签/交叉引用、页码、多级列表
+- **基本闭环**:剪贴板组(复制/剪切/粘贴)、导出 PDF、样式库(标题 1–9)
+- **文档结构**:自动目录、分栏/分隔符、水印/页面背景、题注/书签/交叉引用、页码、多级列表
 
-> 已决策的首批实施范围(P0):**样式库 + 目录 + 水印 + 分栏**(✅ 已完成)。剪贴板组、导出 PDF 暂缓(剪贴板为高频但用户拍板维持暂缓,后续 P1 顺带)。
+> 已决策的首批实施范围(✅ 已完成):**样式库 + 目录 + 水印 + 分栏**。剪贴板组、导出 PDF 暂缓(剪贴板高频但用户拍板维持暂缓,后续顺带)。
 
-- **P2 插入丰富度**:形状/图表/公式/文本框/符号/日期、封面页
-- **P3 审阅专业度**:拼写检查、翻译、比较文档、保护文档
-- **P4 视图体验**:多视图/阅读模式、网格线、拆分窗口、全屏/护眼、单双页
-- **P5 平台**:崩溃恢复、云同步、加密、导出多格式
+- **插入丰富度**:形状/图表/公式/文本框/符号/日期、封面页
+- **审阅专业度**:拼写检查、翻译、比较文档、保护文档
+- **视图体验**:多视图/阅读模式、网格线、拆分窗口、全屏/护眼、单双页
+- **平台能力**:崩溃恢复、加密、导出多格式
 
-> 大部分 P0–P2 项**库已支持**(generateTOC/applyStyle/setWatermark/field/math/shape/textBox 等),是"接线 + UI"工作量;P3–P5 里有几项(拼写/比较/导出 PDF/翻译)库没有,需另立方案。
+> 大部分基本闭环–文档结构项**库已支持**(generateTOC/applyStyle/setWatermark/field/math/shape/textBox 等),是"接线 + UI"工作量;审阅专业度/视图体验/平台里有几项(拼写/比较/导出 PDF/翻译)库没有,需另立方案。
 
 ### 3.3 布局:值得学的 5 点
 
@@ -99,7 +99,7 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 ### 4.1 关键判断
 
-**不是"新增双源真值",是"替换 agent 编辑后端"。** 现有 agent 后端 = DocxReviewer(docx-editor-core);换成 OfficeCLI 后,§2.3 的同步链路(临时文件 + reload)原样保留,只换中间的编辑引擎。
+**不是"新增双源真值",是"增补第二编辑引擎"。** 现有 agent 后端 = DocxReviewer(docx-editor-core)保留;OfficeCLI 作为第二引擎增补(白名单语义工具),§2.3 的同步链路(临时文件 + reload)原样保留,两引擎共享同一临时文件。
 
 | 维度 | DocxReviewer(现状) | OfficeCLI(提案) |
 | --- | --- | --- |
@@ -111,7 +111,7 @@ useAgentSession 存临时文件(RAVEN_DOCX_PATH)
 
 ### 4.2 两个条件
 
-1. **不让 pi 直接 bash 调 OfficeCLI**(`--exclude-tools bash` 是安全边界)。应包一个 Rust Tauri 命令 `officecli_exec`:flush 编辑器 buffer → 无 shell 跑二进制 → 读回 → reload → 返回 diff/摘要,作为 agent 的一个工具暴露。
+1. **不让 pi 直接 bash 调 OfficeCLI**(`--exclude-tools read,write,edit,bash,grep,find,ls` 是安全边界)。应包一个 Rust Tauri 命令 `officecli_exec`:flush 编辑器 buffer → 无 shell 跑二进制 → 读回 → reload → 返回 diff/摘要,作为 agent 的一个工具暴露。
 2. **先做"往返保真"spike**:真实文档(含图片/表格/修订)走 docx-editor-core 序列化 → OfficeCLI 编辑 → 重解析,确认无丢失。
 
 ### 4.3 决策依据(一句话)

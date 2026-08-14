@@ -6,7 +6,7 @@
 ## 1. 目标与边界
 
 - **不引入 AGPL**(已决策)。OfficeCLI 单二进制,Apache-2.0,无依赖。
-- **替换现有 agent 后端**:DocxReviewer(docx-editor-core)→ OfficeCLI。同步链路(临时文件 + reload)**原样保留**(wps-benchmark.md §2.3)。
+- **增补第二编辑引擎**(非替换):现有 DocxReviewer 工具全部保留,OfficeCLI 作为第二引擎增补(白名单语义工具)。两引擎共享同一临时文件 + reload 链路(wps-benchmark.md §2.3)。
 - **安全边界不变**:pi 仍 `--exclude-tools bash`;OfficeCLI 通过 Rust Tauri 命令调用,不走 shell。
 
 ## 2. 保真 spike(验范围,不是 go/no-go 门)
@@ -24,7 +24,10 @@
    - `officecli open A` → `add`(插入一个脚注/公式/表格)→ `close`
    - docx-editor-core `parseDocx` 重新解析 → 比对:正文/表格/图片/修订/样式是否丢失
 4. 重点测:图片(media parts)、表格(hMerge/列操作)、修订(ins/del marks)、样式、页眉页脚。
-5. **通过标准**:内容无丢失、结构无损坏、Word 能正常打开。
+5. **通过标准**(三环都过才算 pass):
+   - 内容无丢失、结构无损坏、Word 能正常打开;
+   - **reload 回 Raven 编辑器**:officecli 写入的公式/图表/域等内容,编辑器 reload 后**内容不丢、渲染不坏**(生产路径的关键环,不测会推迟到 M3 才爆);
+   - **双引擎往返**:officecli 编辑后,DocxReviewer 再编辑(insert_paragraph 等)→ 验证 DocxReviewer 缓存/PM view 正确失效重建,无静默损坏(index.ts 已有同类 cache 失效逻辑)。
 
 **结果导向**:spike 结果决定**接入范围**——高保真能力(公式/图/图表)直接走 OfficeCLI;低保真能力退回 DocxReviewer 扩展(纯文本类操作)。
 
@@ -44,7 +47,7 @@ async fn officecli_exec(
 
 1. flush:把编辑器当前 buffer 落到临时文件 `RAVEN_DOCX_PATH`(复用现有 agent 回环逻辑)。
 2. 执行:`Command::new(officecli_bin).args(args)` 无 shell spawn,捕获 stdout/stderr。
-3. 读回:命令结束后读临时文件 → `reloadFromTemp`(现有命令)→ 编辑器重载。
+3. 读回:命令结束后读临时文件 → `reloadFromTemp`(现有命令)→ 编辑器重载;**同时重建/失效 DocxReviewer 缓存与 PM view**(与 insert_paragraph 的 cache 失效逻辑一致,否则双引擎往返会静默损坏)。
 4. 返回:`{ stdout, stderr, exit_code, dirty }` 摘要给 agent。
 
 **关键点**:
