@@ -15,8 +15,20 @@ const mockCmds = vi.hoisted(() => ({
   execSetLineSpacing: vi.fn(),
   execSetParagraphSpacing: vi.fn(),
   execSetIndentation: vi.fn(),
+  execSetWatermark: vi.fn(),
+  execGetWatermark: vi.fn(() => null),
 }));
 vi.mock("@/features/editor/commands", () => mockCmds);
+
+vi.mock("../../WatermarkDialog", () => ({
+  WatermarkDialog: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="watermark-dialog-mock">
+      <button onClick={onClose} type="button">
+        close
+      </button>
+    </div>
+  ),
+}));
 
 // Radix Select 在 jsdom 下打开下拉需要 PointerEvent;mock 为原生 <select>,
 // SelectTrigger 仅渲染 trigger 文本,onValueChange 通过 change 事件触发。
@@ -197,6 +209,18 @@ describe("LayoutTab", () => {
     render(<LayoutTab {...props} />);
     fireEvent.click(screen.getByTestId("ribbon-headerFooter"));
     expect(props.onHeaderFooter).toHaveBeenCalled();
+  });
+
+  it("渲染水印组", () => {
+    render(<LayoutTab {...props} />);
+    expect(screen.getByText("ribbon.group.watermark")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-watermark")).toBeInTheDocument();
+  });
+
+  it("点击水印按钮弹出水印对话框", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-watermark"));
+    expect(screen.getByTestId("watermark-dialog-mock")).toBeInTheDocument();
   });
 
   it("点击增加缩进调用 execIndent", () => {

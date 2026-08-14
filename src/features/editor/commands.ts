@@ -702,3 +702,28 @@ export function execFindPreviousChange(): void {
   );
   view.dispatch(tr.scrollIntoView());
 }
+
+// === Watermark (P0) / 水印 ===
+import {
+  getWatermarkFromState,
+  setWatermark,
+} from "@eigenpal/docx-editor-core/prosemirror/commands";
+import type { TextWatermark } from "@eigenpal/docx-editor-core/types/document";
+
+/**
+ * 设置文本水印(null 清除)/ Set text watermark (null clears).
+ * 库命令为 doc 属性操作,随 undo/redo。
+ */
+export function execSetWatermark(watermark: TextWatermark | null): void {
+  apply(setWatermark(watermark));
+}
+
+/** 读取当前水印(仅文本水印)/ Get current text watermark, or null. */
+export function execGetWatermark(): TextWatermark | null {
+  const view = getView();
+  if (!view) {
+    return null;
+  }
+  const wm = getWatermarkFromState(view.state);
+  return wm && wm.kind === "text" ? wm : null;
+}
