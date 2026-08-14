@@ -19,10 +19,8 @@ export function RibbonGroup({
 }: RibbonGroupProps) {
   const { t } = useT();
   return (
-    <div className={cn("flex grow flex-col", className)}>
-      <div className="flex flex-1 items-end justify-between gap-0.5 pb-1">
-        {children}
-      </div>
+    <div className={cn("flex flex-col", className)}>
+      <div className="flex flex-1 items-end gap-0.5 pb-1">{children}</div>
       {/* p5: 去掉分组标签上方 border-t(与 RibbonSeparator 竖线二选一,保留竖线) */}
       <div className="pt-0.5 text-center text-[11px] text-muted-foreground uppercase tracking-wide">
         {t(labelKey)}
