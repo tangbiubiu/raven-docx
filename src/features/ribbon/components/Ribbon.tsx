@@ -289,15 +289,10 @@ export function Ribbon(callbacks: RibbonCallbacks) {
   // 面板渲染:宽屏内联,窄屏浮层 / Panel render: inline on desktop, popover on mobile
   const renderPanel = () => {
     if (isDesktop) {
-      // 文件 tab 是垂直菜单,面板高度自适应;其余 tab 按内容收紧(p5: 88→74,按钮 44px)
-      const panelHeight = activeTabId === "file" ? "h-auto" : "h-[74px]";
       return (
         <div
           aria-labelledby={`ribbon-tab-${activeTabId}`}
-          className={cn(
-            "flex items-stretch gap-1 overflow-x-auto px-2 py-1",
-            panelHeight
-          )}
+          className="flex flex-wrap items-stretch gap-1 px-2 py-1"
           role="tabpanel"
         >
           {panelContent}
@@ -322,7 +317,7 @@ export function Ribbon(callbacks: RibbonCallbacks) {
         >
           <div
             aria-labelledby={`ribbon-tab-${activeTabId}`}
-            className="flex items-stretch gap-1 py-1"
+            className="flex flex-wrap items-stretch gap-1 py-1"
             role="tabpanel"
           >
             {panelContent}
