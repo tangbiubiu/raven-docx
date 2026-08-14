@@ -46,7 +46,9 @@
 
 ### B. 表格命令补齐【中,架构债】
 
-**现状**:库 32 个表格命令,Raven 只接了 10 个(table.ts)。
+**实施 spec**:`table-commands-spec.md`(含 21 个缺失命令清单 + 签名 + prosemirror-tables 不兼容修复)。
+
+**现状**:库 32 个表格命令,Raven 只接了 10 个(table.ts)。**关键发现**:右键菜单 `useTableOperations.ts` 用了 prosemirror-tables(泛型,snake_case 节点名),与 docx-editor-core 的 tableRow/tableCell(camelCase)不兼容,大概率已失效,需迁移到库自己的命令。
 
 **未接的**(库命令名):`addColumnLeft`、`addColumnRight`、`addRowAbove`、`addRowBelow`、`deleteColumn`、`deleteRow`、`deleteTable`、`selectRow`、`selectColumn`、`selectTable`、`setCellMargins`、`setCellTextDirection`、`setAllTableBorders`、`setInsideTableBorders`、`setOutsideTableBorders`、`removeTableBorders`、`setTableBorderColor`、`setTableBorderWidth`、`autoFitContents`、`distributeColumns`、`toggleNoWrap`
 
