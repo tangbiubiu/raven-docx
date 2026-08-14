@@ -45,6 +45,7 @@ export const en: Translations = {
   "menu.insert.table": "Table…",
   "menu.insert.image": "Image…",
   "menu.insert.link": "Link…",
+  "menu.insert.footnote": "Footnote…",
   "menu.insert.pageBreak": "Page Break",
   "menu.agent.panel": "Agent Panel",
   "menu.agent.send": "Send to Agent",

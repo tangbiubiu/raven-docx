@@ -45,6 +45,7 @@ export const zhCN: Translations = {
   "menu.insert.table": "表格…",
   "menu.insert.image": "图片…",
   "menu.insert.link": "链接…",
+  "menu.insert.footnote": "脚注…",
   "menu.insert.pageBreak": "分页符",
   "menu.agent.panel": "Agent 面板",
   "menu.agent.send": "发送给 Agent",
