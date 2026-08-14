@@ -1,7 +1,16 @@
 // src/features/ribbon/components/tabs/LayoutTab.tsx — 布局标签页 / Layout tab
 // Phase 3: 行距 / 段落间距 / 缩进控制 / line spacing, paragraph spacing, indent
 
-import { Columns, Indent, LayoutTemplate, Outdent } from "lucide-react";
+import {
+  Columns,
+  Columns2,
+  Columns3,
+  Indent,
+  LayoutTemplate,
+  Outdent,
+  SlidersHorizontal,
+} from "lucide-react";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -11,11 +20,14 @@ import {
 } from "@/components/ui/select";
 import {
   execIndent,
+  execInsertSectionBreak,
   execOutdent,
+  execSetColumns,
   execSetIndentation,
   execSetLineSpacing,
   execSetParagraphSpacing,
 } from "@/features/editor/commands";
+import { ColumnsDialog } from "@/features/page-layout/components/ColumnsDialog";
 import { useT } from "@/lib/i18n";
 import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
@@ -42,6 +54,7 @@ const ptToTwips = (pt: number): number => pt * 20;
 
 export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
   const { t } = useT();
+  const [showColumnsDialog, setShowColumnsDialog] = useState(false);
   return (
     <>
       <RibbonGroup labelKey="ribbon.group.pageSetup">
@@ -64,6 +77,60 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
         >
           <Columns className="size-5" />
         </RibbonButton>
+      </RibbonGroup>
+
+      <RibbonSeparator />
+
+      {/* 分栏组 / Columns group */}
+      <RibbonGroup labelKey="ribbon.group.columns">
+        <RibbonButton
+          label={t("columns.one")}
+          onClick={() => execSetColumns({ columnCount: 1 })}
+          testId="ribbon-columns-1"
+        >
+          <Columns className="size-5" />
+        </RibbonButton>
+        <RibbonButton
+          label={t("columns.two")}
+          onClick={() => execSetColumns({ columnCount: 2 })}
+          testId="ribbon-columns-2"
+        >
+          <Columns2 className="size-5" />
+        </RibbonButton>
+        <RibbonButton
+          label={t("columns.three")}
+          onClick={() => execSetColumns({ columnCount: 3 })}
+          testId="ribbon-columns-3"
+        >
+          <Columns3 className="size-5" />
+        </RibbonButton>
+        <RibbonButton
+          label={t("columns.more")}
+          onClick={() => setShowColumnsDialog(true)}
+          testId="ribbon-columns-more"
+        >
+          <SlidersHorizontal className="size-5" />
+        </RibbonButton>
+        {/* 分节符 / Section break */}
+        <span className="contents" data-testid="ribbon-sectionBreak">
+          <Select
+            onValueChange={(v) =>
+              execInsertSectionBreak(
+                v as "nextPage" | "continuous" | "oddPage" | "evenPage"
+              )
+            }
+          >
+            <SelectTrigger className="h-7 w-[70px] text-xs" size="sm">
+              <SelectValue placeholder={t("columns.sectionBreak")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nextPage">{t("columns.nextPage")}</SelectItem>
+              <SelectItem value="continuous">
+                {t("columns.continuous")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </span>
       </RibbonGroup>
 
       <RibbonSeparator />
@@ -212,6 +279,11 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
           </Select>
         </span>
       </RibbonGroup>
+
+      <ColumnsDialog
+        onClose={() => setShowColumnsDialog(false)}
+        open={showColumnsDialog}
+      />
     </>
   );
 }
