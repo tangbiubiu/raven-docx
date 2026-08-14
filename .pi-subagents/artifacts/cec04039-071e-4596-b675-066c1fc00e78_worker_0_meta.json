@@ -1,0 +1,244 @@
+{
+  "runId": "cec04039-071e-4596-b675-066c1fc00e78",
+  "agent": "worker",
+  "task": "[Read from: /Users/biubiu/0_MyStorage/01_Work/02_project/raven-docx/.worktree/ui-p0-watermark/context.md, /Users/biubiu/0_MyStorage/01_Work/02_project/raven-docx/.worktree/ui-p0-watermark/plan.md]\n\nYou are a delegated subagent running from a fork of the parent session. Treat the inherited conversation as reference-only context, not a live thread to continue. Do not continue or answer prior messages as if they are waiting for a reply. Your sole job is to execute the task below and return a focused result for that task using your tools.\n\nTask:\nWork in /Users/biubiu/0_MyStorage/01_Work/02_project/raven-docx/.worktree/ui-p0-watermark (branch ui/p0-watermark). This is a git worktree of raven-docx; node_modules and src/lib/bindings.ts are symlinked from main and `bun run typecheck` passes. Do NOT create/merge branches, do NOT touch main or other worktrees.\n\nImplement the text watermark feature per .dev/plan/wps-benchmark/p0-implementation.md §3.\n\nSTEP 1 — read: .dev/plan/wps-benchmark/p0-implementation.md §3; src/features/editor/commands.ts (existing exec* pattern: getView() + apply(cmd) helpers at top); src/features/ribbon/components/tabs/LayoutTab.tsx (add the new 水印 group here); src/lib/i18n/en.ts and src/lib/i18n/zh-CN.ts (add keys in strict pairs); src/features/ribbon/components/__tests__/tabs/LayoutTab.test.tsx (mock pattern: vi.mock('@/features/editor/commands') and a mocked select).\n\nSTEP 2 — library API (already verified, do not re-research):\n- import { setWatermark, getWatermarkFromState } from '@eigenpal/docx-editor-core/prosemirror/commands'\n- setWatermark(watermark: Watermark | null): Command — doc-attribute command, undo/redo aware\n- getWatermarkFromState(state: EditorState): Watermark | null\n- TextWatermark = { kind:'text', text: string, font: string, color: string (CSS hex '#C0C0C0'), semitransparent: boolean, layout: 'diagonal'|'horizontal', fontSize?: number (pt) }\n- PictureWatermark is OPTIONAL per plan — skip it. To find the exported Watermark/TextWatermark type: grep 'watermark-DAcnAs_J' in node_modules/@eigenpal/docx-editor-core/dist/*.d.ts to find the re-exporting entry (likely the core root or types/document). If no clean type export exists, define a local TextWatermark interface matching the lib shape and cast at the boundary.\n\nSTEP 3 — src/features/editor/commands.ts: add\n- execSetWatermark(watermark: TextWatermark | null): void → apply(setWatermark(watermark))\n- execGetWatermark(): TextWatermark | null → reads getWatermarkFromState(view.state)\n\nSTEP 4 — UI in LayoutTab: new RibbonGroup labelKey 'ribbon.group.watermark' (place after the headerFooter group): a trigger button (testId ribbon-watermark) opening a self-drawn Dialog (use src/components/ui/dialog.tsx, input.tsx, select.tsx, button.tsx, and ../ColorPicker — do NOT use a lib-provided watermark dialog). Fields: watermark text input, font input, color ColorPicker, layout Select (diagonal/horizontal), semitransparent Select or checkbox, optional font size Select (pt). Prefill from execGetWatermark() on open. Confirm → execSetWatermark(...); a 清除水印 action → execSetWatermark(null). Follow existing component styles (h-7 text-xs etc.).\n\nSTEP 5 — i18n: paired keys in en.ts + zh-CN.ts: ribbon.group.watermark, watermark.title, watermark.text, watermark.font, watermark.color, watermark.layout, watermark.diagonal, watermark.horizontal, watermark.semitransparent, watermark.size, watermark.apply, watermark.clear, watermark.cancel (adjust names to existing conventions).\n\nSTEP 6 — tests: extend LayoutTab.test.tsx with the existing mock style. Cover: trigger button renders; dialog opens with fields; confirm calls execSetWatermark with the assembled object; clear calls execSetWatermark(null). Keep small.\n\nSTEP 7 — verify in the worktree: bun run typecheck && bunx biome check && bun run test — all must pass. Then git add + commit 'feat(watermark): text watermark dialog + commands (p0)'. No merge, no push.\n\nReport: files changed, verification output (tail of each command), any deviations.\n\n## Acceptance Contract\nAcceptance level: checked\nCompletion is not accepted from prose alone. End with a structured acceptance report.\n\nCriteria:\n- criterion-1: Implement the requested change without widening scope\n- criterion-2: Return evidence sufficient for an independent acceptance review\n\nRequired evidence: changed-files, tests-added, commands-run, residual-risks, no-staged-files\n\nReview gate: required by reviewer.\n\nFinish with a fenced JSON block tagged `acceptance-report` in this shape:\nUse empty arrays when no items apply; array fields contain strings unless object entries are shown.\n`criteriaSatisfied[].status` must be exactly one of: satisfied, not-satisfied, not-applicable.\n`commandsRun[].result` must be exactly one of: passed, failed, not-run.\n`manualNotes` and `notes` are optional strings; an empty string means no note and does not satisfy `manual-notes` evidence.\n```acceptance-report\n{\n  \"criteriaSatisfied\": [\n    {\n      \"id\": \"criterion-1\",\n      \"status\": \"satisfied\",\n      \"evidence\": \"specific proof\"\n    },\n    {\n      \"id\": \"criterion-2\",\n      \"status\": \"satisfied\",\n      \"evidence\": \"specific proof\"\n    }\n  ],\n  \"changedFiles\": [\n    \"src/file.ts\"\n  ],\n  \"testsAddedOrUpdated\": [\n    \"test/file.test.ts\"\n  ],\n  \"commandsRun\": [\n    {\n      \"command\": \"command\",\n      \"result\": \"passed\",\n      \"summary\": \"short result\"\n    }\n  ],\n  \"validationOutput\": [\n    \"validation output or concise summary\"\n  ],\n  \"residualRisks\": [\n    \"none\"\n  ],\n  \"noStagedFiles\": true,\n  \"diffSummary\": \"short description of the diff\",\n  \"reviewFindings\": [\n    \"blocker: file.ts:12 - issue found, or no blockers\"\n  ],\n  \"manualNotes\": \"anything else the parent should know\"\n}\n```",
+  "exitCode": 0,
+  "model": "ISRC/DeepSeek-V4-Flash-0731:high",
+  "attemptedModels": [
+    "ISRC/DeepSeek-V4-Flash-0731:high"
+  ],
+  "modelAttempts": [
+    {
+      "model": "ISRC/DeepSeek-V4-Flash-0731:high",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 93568,
+        "output": 15945,
+        "cacheRead": 2699008,
+        "cacheWrite": 0,
+        "cost": 0.025661144000000004,
+        "turns": 33
+      }
+    }
+  ],
+  "acceptance": {
+    "status": "review-required",
+    "evidenceStatus": "checked",
+    "explicit": false,
+    "effectiveAcceptance": {
+      "level": "checked",
+      "explicit": false,
+      "inferredReason": [
+        "async write-capable or risky run"
+      ],
+      "criteria": [
+        {
+          "id": "criterion-1",
+          "must": "Implement the requested change without widening scope",
+          "evidence": [
+            "changed-files",
+            "tests-added",
+            "commands-run",
+            "residual-risks",
+            "no-staged-files"
+          ],
+          "severity": "required"
+        },
+        {
+          "id": "criterion-2",
+          "must": "Return evidence sufficient for an independent acceptance review",
+          "evidence": [
+            "changed-files",
+            "tests-added",
+            "commands-run",
+            "residual-risks",
+            "no-staged-files"
+          ],
+          "severity": "required"
+        }
+      ],
+      "evidence": [
+        "changed-files",
+        "tests-added",
+        "commands-run",
+        "residual-risks",
+        "no-staged-files"
+      ],
+      "verify": [],
+      "review": {
+        "agent": "reviewer",
+        "required": true
+      },
+      "stopRules": []
+    },
+    "inferredReason": [
+      "async write-capable or risky run"
+    ],
+    "criteria": [
+      {
+        "id": "criterion-1",
+        "must": "Implement the requested change without widening scope",
+        "evidence": [
+          "changed-files",
+          "tests-added",
+          "commands-run",
+          "residual-risks",
+          "no-staged-files"
+        ],
+        "severity": "required"
+      },
+      {
+        "id": "criterion-2",
+        "must": "Return evidence sufficient for an independent acceptance review",
+        "evidence": [
+          "changed-files",
+          "tests-added",
+          "commands-run",
+          "residual-risks",
+          "no-staged-files"
+        ],
+        "severity": "required"
+      }
+    ],
+    "runtimeChecks": [
+      {
+        "id": "criterion:criterion-1",
+        "status": "passed",
+        "message": "Required criterion 'criterion-1' satisfied."
+      },
+      {
+        "id": "criterion:criterion-2",
+        "status": "passed",
+        "message": "Required criterion 'criterion-2' satisfied."
+      },
+      {
+        "id": "evidence:changed-files",
+        "status": "passed",
+        "message": "changed-files evidence present."
+      },
+      {
+        "id": "evidence:tests-added",
+        "status": "passed",
+        "message": "tests-added evidence present."
+      },
+      {
+        "id": "evidence:commands-run",
+        "status": "passed",
+        "message": "commands-run evidence present."
+      },
+      {
+        "id": "evidence:residual-risks",
+        "status": "passed",
+        "message": "residual-risks evidence present."
+      },
+      {
+        "id": "evidence:no-staged-files",
+        "status": "passed",
+        "message": "no-staged-files evidence present."
+      },
+      {
+        "id": "no-staged-files",
+        "status": "passed",
+        "message": "No staged files detected."
+      }
+    ],
+    "verifyRuns": [],
+    "childReport": {
+      "criteriaSatisfied": [
+        {
+          "id": "criterion-1",
+          "status": "satisfied",
+          "evidence": "Scope limited to plan §3: 2 command wrappers, one self-drawn dialog, one ribbon group, paired i18n keys, 2 test files. Picture watermark skipped as plan marks it optional. No lib-provided watermark dialog pulled in; no changes outside the listed files."
+        },
+        {
+          "id": "criterion-2",
+          "status": "satisfied",
+          "evidence": "Commit ae74bd2 on ui/p0-watermark with 7 files (+424/-1). typecheck passed; biome check clean on all 7 changed files; full test suite 685/685 passed (679 baseline + 6 new). Full-repo `bunx biome check` reports only pre-existing errors in committed .dev/proto/settings.html (untouched, fails on main identically)."
+        }
+      ],
+      "changedFiles": [
+        "src/features/editor/commands.ts",
+        "src/features/ribbon/components/WatermarkDialog.tsx",
+        "src/features/ribbon/components/tabs/LayoutTab.tsx",
+        "src/features/ribbon/components/__tests__/WatermarkDialog.test.tsx",
+        "src/features/ribbon/components/__tests__/tabs/LayoutTab.test.tsx",
+        "src/lib/i18n/en.ts",
+        "src/lib/i18n/zh-CN.ts"
+      ],
+      "testsAddedOrUpdated": [
+        "src/features/ribbon/components/__tests__/WatermarkDialog.test.tsx (4 tests: fields render, apply calls execSetWatermark with assembled object, clear calls execSetWatermark(null), prefill from execGetWatermark)",
+        "src/features/ribbon/components/__tests__/tabs/LayoutTab.test.tsx (2 tests: watermark group renders, trigger opens dialog)"
+      ],
+      "commandsRun": [
+        {
+          "command": "bun run typecheck",
+          "result": "passed",
+          "summary": "tsc --noEmit clean"
+        },
+        {
+          "command": "bunx biome check <7 changed files>",
+          "result": "passed",
+          "summary": "no diagnostics after one --write format pass on 3 files"
+        },
+        {
+          "command": "bun run test",
+          "result": "passed",
+          "summary": "69 files, 685 tests passed (679 baseline + 6 new)"
+        },
+        {
+          "command": "git commit",
+          "result": "passed",
+          "summary": "ae74bd2 feat(watermark): text watermark dialog + commands (p0)"
+        }
+      ],
+      "validationOutput": [
+        "typecheck: PASS",
+        "biome (changed files): PASS",
+        "vitest: 685 passed, 0 failed",
+        "git status clean after commit"
+      ],
+      "residualRisks": [
+        "Editor rendering of the watermark (lib painter) not verifiable in jsdom — needs manual run in the Tauri app to confirm the acceptance '编辑区显示/清除' behavior",
+        "Picture watermark not implemented (plan marks it optional)",
+        "Full-repo `bunx biome check` fails on pre-existing .dev/proto/settings.html lint errors (committed file, also fails on main; unrelated to this diff)"
+      ],
+      "noStagedFiles": true,
+      "diffSummary": "+424/-1 across 7 files: watermark command wrappers (execSetWatermark/execGetWatermark using lib setWatermark/getWatermarkFromState), self-drawn WatermarkDialog (text/font/color/layout/semitransparent/size, prefilled from current state, apply/clear/cancel), LayoutTab 水印 group + dialog wiring, 14 paired i18n keys, 6 new tests",
+      "reviewFindings": [
+        "no blockers"
+      ],
+      "manualNotes": "Watermark type imported from @eigenpal/docx-editor-core/types/document (TextWatermark re-export confirmed). execGetWatermark filters to kind==='text' since picture watermarks are out of scope. LayoutTab test mocks WatermarkDialog per the ReferencesTab/FootnoteDialog pattern; dialog internals covered by its own test file. Worktree left on ui/p0-watermark, committed, not merged/pushed."
+    },
+    "reviewResult": {
+      "status": "review-required",
+      "findings": [
+        {
+          "severity": "non-blocking",
+          "issue": "Independent review has not been supplied.",
+          "rationale": "The run cannot be marked reviewed from child evidence alone."
+        }
+      ]
+    }
+  },
+  "launchResolvedExtensions": {
+    "version": 1,
+    "source": "launch-resolved",
+    "disableAmbientExtensions": false,
+    "runtime": [
+      "sha256:1277244f11976f87"
+    ],
+    "configured": [],
+    "effective": [
+      "sha256:1277244f11976f87"
+    ],
+    "omitted": {
+      "runtime": 0,
+      "configured": 0,
+      "effective": 0
+    }
+  },
+  "transcriptPath": "/Users/biubiu/0_MyStorage/01_Work/02_project/raven-docx/.pi-subagents/artifacts/cec04039-071e-4596-b675-066c1fc00e78_worker_0_transcript.jsonl",
+  "skills": [],
+  "timestamp": 1786678778235
+}

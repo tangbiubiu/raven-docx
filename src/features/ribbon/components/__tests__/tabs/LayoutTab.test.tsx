@@ -17,6 +17,8 @@ const mockCmds = vi.hoisted(() => ({
   execSetIndentation: vi.fn(),
   execSetWatermark: vi.fn(),
   execGetWatermark: vi.fn(() => null),
+  execSetColumns: vi.fn(),
+  execInsertSectionBreak: vi.fn(),
 }));
 vi.mock("@/features/editor/commands", () => mockCmds);
 
@@ -29,6 +31,28 @@ vi.mock("../../WatermarkDialog", () => ({
     </div>
   ),
 }));
+
+// Mock Dialog 组件避免 jsdom 中 Radix Portal 兼容性问题(variable-form.test 同款)
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+    open ? <div data-testid="columns-dialog">{children}</div> : null,
+  DialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogHeader: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogFooter: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <h2>{children}</h2>
+  ),
+  DialogDescription: ({ children }: { children: React.ReactNode }) => (
+    <p>{children}</p>
+  ),
+}));
+
 
 // Radix Select 在 jsdom 下打开下拉需要 PointerEvent;mock 为原生 <select>,
 // SelectTrigger 仅渲染 trigger 文本,onValueChange 通过 change 事件触发。
@@ -227,5 +251,49 @@ describe("LayoutTab", () => {
     render(<LayoutTab {...props} />);
     fireEvent.click(screen.getByTestId("ribbon-indent"));
     expect(mockCmds.execIndent).toHaveBeenCalled();
+  });
+
+  it("渲染分栏组(1/2/3 栏/更多分栏/分节符)", () => {
+    render(<LayoutTab {...props} />);
+    expect(screen.getByText("ribbon.group.columns")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-columns-1")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-columns-2")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-columns-3")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-columns-more")).toBeInTheDocument();
+    expect(screen.getByTestId("ribbon-sectionBreak")).toBeInTheDocument();
+  });
+
+  it("点击 2 栏调用 execSetColumns({ columnCount: 2 })", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-columns-2"));
+    expect(mockCmds.execSetColumns).toHaveBeenCalledWith({ columnCount: 2 });
+  });
+
+  it("点击 3 栏调用 execSetColumns({ columnCount: 3 })", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-columns-3"));
+    expect(mockCmds.execSetColumns).toHaveBeenCalledWith({ columnCount: 3 });
+  });
+
+  it("分节符选择连续调用 execInsertSectionBreak('continuous')", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.change(getSelect("ribbon-sectionBreak"), {
+      target: { value: "continuous" },
+    });
+    expect(mockCmds.execInsertSectionBreak).toHaveBeenCalledWith("continuous");
+  });
+
+  it("点击更多分栏 → 对话框应用调用 execSetColumns", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.click(screen.getByTestId("ribbon-columns-more"));
+    expect(screen.getByTestId("columns-dialog")).toBeInTheDocument();
+    // 默认:2 栏 / 等宽 / 0.75cm / 无分隔线
+    fireEvent.click(screen.getByText("columns.apply"));
+    expect(mockCmds.execSetColumns).toHaveBeenCalledWith({
+      columnCount: 2,
+      columnSpace: 425,
+      equalWidth: true,
+      separator: false,
+    });
   });
 });
