@@ -20,7 +20,7 @@
 | 脚注 | ✓ 保留(footnotes.xml + reference) | **安全** |
 | 表格(3×3) | ✓ 保留(tbl/tr/tc 完整) | **安全** |
 | 文本段落 | ✓ 保留 | **安全** |
-| 图片(picture) | ❌ media 在 parse 阶段丢失 | **根因可修**(见 §3) |
+| 图片(picture) | ✅ 规范化 rels 后往返无损(a:blip + media + rel 全保留) | **可修复**(见 §3) |
 | 图表(chart) | ❌ `c:chart` 引用丢失,压平成无 media 的 `<pic:pic>`,chart1.xml 成孤儿 | **库不支持,排除** |
 | mermaid 原生形状 | ❌ 6 个 `wps:wsp` 压平成 1 个无 media 的 `<pic:pic>` | **库不支持,排除** |
 
@@ -29,7 +29,9 @@
 
 ## 3. 根因分析
 
-**① 图片丢失(可修)**:officecli 写非标准 relationship `Target="/media/image.png"`(前导斜杠、绝对路径),而库/标准是相对路径 `Target="media/image.png"`。docx-editor-core 按相对路径解析 → 找不到 media → 丢弃。**不是 docx-editor-core 不能处理图片**(它有 image 节点 + addMedia),是 officecli 的 rel 格式不兼容。
+**① 图片丢失(可修,已验证)**:officecli 写非标准 relationship `Target="/media/image.png"`(前导斜杠、绝对路径),而库/标准是相对路径 `Target="media/image.png"`。docx-editor-core 按相对路径解析 → 找不到 media → 丢弃。
+
+**修复已验证**:把 rels 里所有 `Target="/..."`、`Target="/word/..."` 去前导斜杠/去 `/word/` 前缀改相对路径后,docx-editor-core 往返**无损**——`<a:blip r:embed>` 引用 + `media/image.png` part + rel 三项全保留。修复可在 `officecli_exec` wrapper 里后处理 docx(解 zip → 改 `_rels/*.rels` → 重打包),或报 officecli issue。
 
 **② 图表/原生形状丢失(库限制,不可修)**:docx-editor-core 的 schema 无 chart 节点、无 wps:wsp(WordprocessingShape)往返,parse 时把 `c:chart`/`wps:wsp` 的 drawing 当普通图片,re-serialize 成 `<pic:pic>`。
 
@@ -42,12 +44,12 @@
 | 脚注 | ✅ 可以 | 库 footnotes 完整往返 |
 | 表格增强 | ✅ 可以 | 库 table 完整往返 |
 | 书签/题注/交叉引用(文本类) | ✅ 预期可以 | 同 field/文本类,待实测 |
-| 图片 | ⚠️ 需先修 rel | officecli rel 路径 bug 修复(或 wrapper 规范化)后预期安全 |
+| 图片 | ✅ 可走(需 wrapper 规范化 rels,已验证修复后往返无损) |
 | 图表 | ❌ 排除 | docx-editor-core 不支持 chart 往返 |
 | mermaid 原生形状 | ❌ 排除 | 库不支持 wps:wsp 往返;降级 PNG 也依赖图片 rel 修复 |
 
 ## 5. 建议动作
 
-1. **图片 rel 问题**:向 officecli 报 issue(rel Target 前导斜杠非标准);或 `officecli_exec` wrapper 在 officecli 写完后规范化 rels(去前导斜杠)。修复后重测图片往返。
+1. **图片 rel 问题(已解)**:`officecli_exec` wrapper 在 officecli 写完后规范化 rels(去 `/` 前导斜杠、去 `/word/` 前缀);或报 officecli issue。已验证规范化后图片往返无损。
 2. **图表/形状**:从 OfficeCLI 范围排除,等 docx-editor-core 支持(或改走 agent 的 DocxReviewer 纯文本路径,不碰图表)。
 3. **M2 范围收敛**:`officecli_exec` 首批只接 公式/域/脚注/表格/书签(文本结构类),图片待 rel 修复,图表/形状不做。

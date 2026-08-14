@@ -65,7 +65,7 @@ async fn officecli_exec(
 | 脚注 | ✅ OfficeCLI(往返无损) |
 | 表格增强 | ✅ OfficeCLI(往返无损) |
 | 书签/题注/交叉引用 | ✅ OfficeCLI(文本类,预期安全待实测);UI 层自写 field 命令(roadmap P1) |
-| 图片 | ⚠️ 需先修 officecli rel 路径 bug(见 spike-results §3) |
+| 图片 | ✅ OfficeCLI(需 `officecli_exec` wrapper 规范化 rels,已验证修复后往返无损) |
 | mermaid 图 | ❌ 排除(库不支持 wps:wsp 往返) |
 | 图表 | ❌ 排除(库不支持 chart 往返) |
 | OLE | ❓ 未测,同属 drawing 类,预期同图表风险 |

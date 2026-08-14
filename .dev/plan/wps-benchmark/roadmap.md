@@ -96,7 +96,7 @@ P0(样式库/目录/水印/分栏)是"补齐基本闭环"。本文规划 P0 之�
 
 | 项 | 说明 | 优先级 |
 | --- | --- | --- |
-| commands.ts 按域拆分 | `src/features/editor/commands.ts` 已 874 行 god-file → commands/(formatting/paragraph/table/image/review/document-structure/styles) | 高(增长前必做) |
+| commands.ts 按域拆分 | ✅ 已完成(2026-08-14:`commands/` 目录,barrel 导出,公开 API 不变) | 高(增长前必做) |
 | 桥接契约补齐 | ✅ 已完成(P0 样式库已委托 ref API) | 高(P0 内) |
 | 表格命令补齐 | 库 32 命令只接 ~10(addColumn/deleteRow/autofit/distribute/select/边框全套) | 中 |
 | 列表命令替换 | wrapIn/lift → toggleBulletList/increaseListLevel(在 P1 多级列表做) | 中 |
