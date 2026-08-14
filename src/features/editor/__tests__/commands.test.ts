@@ -53,6 +53,15 @@ const mockCmds = vi.hoisted(() => {
     clearStyle: mkCmd(),
     getStyleId: vi.fn(() => "Heading1"),
     insertPageBreak: mkCmd(),
+    // P1 列表 / list commands
+    toggleBulletList: mkCmd(),
+    toggleNumberedList: mkCmd(),
+    increaseListLevel: mkCmd(),
+    decreaseListLevel: mkCmd(),
+    removeList: mkCmd(),
+    increaseIndent: vi.fn((_amount?: number) => mkCmd()),
+    decreaseIndent: vi.fn((_amount?: number) => mkCmd()),
+    isInList: vi.fn(() => false),
   };
 });
 vi.mock("@eigenpal/docx-editor-core/prosemirror/commands", () => mockCmds);
@@ -133,13 +142,18 @@ import {
   execClearHighlight,
   execClearStyle,
   execClearTextColor,
+  execDecreaseListLevel,
   execFindNextChange,
   execFindPreviousChange,
   execGetStyleId,
+  execIncreaseListLevel,
+  execIndent,
   execInsertPageBreak,
   execInsertTable,
+  execOutdent,
   execRejectAllChanges,
   execRejectChange,
+  execRemoveList,
   execRemoveMark,
   execSetAlignment,
   execSetBlockType,
@@ -153,6 +167,8 @@ import {
   execSetMark,
   execSetParagraphSpacing,
   execSetTextColor,
+  execToggleBulletList,
+  execToggleNumberedList,
   execToggleTrackChanges,
   isTrackChangesActive,
 } from "@/features/editor/commands";
@@ -346,6 +362,84 @@ describe("commands — 格式命令封装", () => {
       expect(mockCmds.alignLeft).not.toHaveBeenCalled();
       expect(mockCmds.alignRight).not.toHaveBeenCalled();
       expect(mockCmds.alignJustify).not.toHaveBeenCalled();
+    });
+  });
+  // === 列表与缩进 (P1) / lists & indent ===
+  describe("列表与缩进命令 (P1)", () => {
+    it("execToggleNumberedList → 调用库 toggleNumberedList 并 dispatch", () => {
+      execToggleNumberedList();
+      expect(mockCmds.toggleNumberedList).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("execToggleBulletList → 调用库 toggleBulletList 并 dispatch", () => {
+      execToggleBulletList();
+      expect(mockCmds.toggleBulletList).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("execIncreaseListLevel → 调用库 increaseListLevel 并 dispatch", () => {
+      execIncreaseListLevel();
+      expect(mockCmds.increaseListLevel).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("execDecreaseListLevel → 调用库 decreaseListLevel 并 dispatch", () => {
+      execDecreaseListLevel();
+      expect(mockCmds.decreaseListLevel).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("execRemoveList → 调用库 removeList 并 dispatch", () => {
+      execRemoveList();
+      expect(mockCmds.removeList).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+    });
+
+    it("execIndent 非列表 → 走库 increaseIndent 工厂", () => {
+      mockCmds.isInList.mockReturnValue(false);
+      execIndent();
+      expect(mockCmds.increaseIndent).toHaveBeenCalled();
+      const cmd = mockCmds.increaseIndent.mock.results[0]?.value;
+      expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+    });
+
+    it("execIndent 列表内 → 走 increaseListLevel", () => {
+      mockCmds.isInList.mockReturnValue(true);
+      execIndent();
+      expect(mockCmds.increaseListLevel).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+      expect(mockCmds.increaseIndent).not.toHaveBeenCalled();
+    });
+
+    it("execOutdent 非列表 → 走库 decreaseIndent 工厂", () => {
+      mockCmds.isInList.mockReturnValue(false);
+      execOutdent();
+      expect(mockCmds.decreaseIndent).toHaveBeenCalled();
+      const cmd = mockCmds.decreaseIndent.mock.results[0]?.value;
+      expect(cmd).toHaveBeenCalledWith(mockView.state, mockDispatch);
+    });
+
+    it("execOutdent 列表内 → 走 decreaseListLevel", () => {
+      mockCmds.isInList.mockReturnValue(true);
+      execOutdent();
+      expect(mockCmds.decreaseListLevel).toHaveBeenCalledWith(
+        mockView.state,
+        mockDispatch
+      );
+      expect(mockCmds.decreaseIndent).not.toHaveBeenCalled();
     });
   });
   // === Block 类型 / block type ===

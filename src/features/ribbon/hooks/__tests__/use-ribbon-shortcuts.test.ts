@@ -6,8 +6,8 @@ const mockExec = vi.hoisted(() => ({
   clearFormatting: vi.fn(),
   execIndent: vi.fn(),
   execOutdent: vi.fn(),
-  execWrapIn: vi.fn(),
-  execLift: vi.fn(),
+  execToggleBulletList: vi.fn(),
+  execToggleNumberedList: vi.fn(),
 }));
 
 vi.mock("@/features/formatting/format-apply", () => ({
@@ -16,8 +16,8 @@ vi.mock("@/features/formatting/format-apply", () => ({
 vi.mock("@/features/editor/commands", () => ({
   execIndent: mockExec.execIndent,
   execOutdent: mockExec.execOutdent,
-  execWrapIn: mockExec.execWrapIn,
-  execLift: mockExec.execLift,
+  execToggleBulletList: mockExec.execToggleBulletList,
+  execToggleNumberedList: mockExec.execToggleNumberedList,
 }));
 
 import { useRibbonShortcuts } from "../use-ribbon-shortcuts";
@@ -78,13 +78,13 @@ describe("useRibbonShortcuts", () => {
   it("Cmd+Shift+7(Digit7) 触发有序列表", () => {
     renderHook(() => useRibbonShortcuts());
     act(() => fireKey({ key: "&", code: "Digit7", meta: true, shift: true }));
-    expect(mockExec.execWrapIn).toHaveBeenCalledWith("ordered_list");
+    expect(mockExec.execToggleNumberedList).toHaveBeenCalledOnce();
   });
 
   it("Cmd+Shift+8(Digit8) 触发无序列表", () => {
     renderHook(() => useRibbonShortcuts());
     act(() => fireKey({ key: "*", code: "Digit8", meta: true, shift: true }));
-    expect(mockExec.execWrapIn).toHaveBeenCalledWith("bullet_list");
+    expect(mockExec.execToggleBulletList).toHaveBeenCalledOnce();
   });
 
   it("卸载后移除监听", () => {

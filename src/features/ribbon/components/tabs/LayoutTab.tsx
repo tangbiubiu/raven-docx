@@ -24,6 +24,7 @@ import {
   execIndent,
   execInsertSectionBreak,
   execOutdent,
+  execRemoveSectionBreak,
   execSetColumns,
   execSetIndentation,
   execSetLineSpacing,
@@ -131,11 +132,15 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
         {/* 分节符 / Section break */}
         <span className="contents" data-testid="ribbon-sectionBreak">
           <Select
-            onValueChange={(v) =>
-              execInsertSectionBreak(
-                v as "nextPage" | "continuous" | "oddPage" | "evenPage"
-              )
-            }
+            onValueChange={(v) => {
+              if (v === "remove") {
+                execRemoveSectionBreak();
+              } else {
+                execInsertSectionBreak(
+                  v as "nextPage" | "continuous" | "oddPage" | "evenPage"
+                );
+              }
+            }}
           >
             <SelectTrigger className="h-7 w-[70px] text-xs" size="sm">
               <SelectValue placeholder={t("columns.sectionBreak")} />
@@ -144,6 +149,11 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
               <SelectItem value="nextPage">{t("columns.nextPage")}</SelectItem>
               <SelectItem value="continuous">
                 {t("columns.continuous")}
+              </SelectItem>
+              <SelectItem value="oddPage">{t("columns.oddPage")}</SelectItem>
+              <SelectItem value="evenPage">{t("columns.evenPage")}</SelectItem>
+              <SelectItem value="remove">
+                {t("columns.removeSectionBreak")}
               </SelectItem>
             </SelectContent>
           </Select>

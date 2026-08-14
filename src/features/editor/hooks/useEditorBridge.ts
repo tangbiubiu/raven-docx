@@ -329,30 +329,22 @@ export function useEditorBridge() {
     }
   };
 
-  /** 从 ProseMirror 当前选区推断列表类型（向上遍历祖先节点）*/
+  /**
+   * 从 ProseMirror 当前选区推断列表类型(读段落 numPr 属性)。
+   * 本 schema 无 ordered_list/bullet_list 节点——列表是段落 attrs:
+   * numPr 存在 + listIsBullet=true → 无序;numPr 存在 + false → 有序。
+   */
   const getListTypeFromPM = (): "ordered" | "unordered" | null => {
     const pmState = editorRef.current?.getEditorRef()?.getState();
     if (!pmState) {
       return null;
     }
     const { $from } = pmState.selection;
-    const depth = $from.depth;
-    if (typeof depth !== "number") {
+    const node = $from.parent;
+    if (node.type.name !== "paragraph" || !node.attrs.numPr) {
       return null;
     }
-    for (let d = depth; d > 0; d--) {
-      const node = $from.node(d);
-      if (!node) {
-        continue;
-      }
-      if (node.type.name === "ordered_list") {
-        return "ordered";
-      }
-      if (node.type.name === "bullet_list") {
-        return "unordered";
-      }
-    }
-    return null;
+    return node.attrs.listIsBullet ? "unordered" : "ordered";
   };
 
   /** 选区变化回调 — 将库 SelectionState 全量映射到 store.selectionFormat */

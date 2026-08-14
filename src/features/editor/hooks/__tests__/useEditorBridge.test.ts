@@ -36,6 +36,10 @@ describe("useEditorBridge", () => {
               }
               return null;
             },
+            parent: {
+              type: { name: "paragraph" },
+              attrs: { paraId: "P1A2B3" },
+            },
             doc: null as unknown,
             depth: 1,
           },
@@ -129,6 +133,10 @@ describe("useEditorBridge", () => {
               type: { name: "heading" },
               attrs: { paraId: "H3" },
             }),
+            parent: {
+              type: { name: "heading" },
+              attrs: { paraId: "H3" },
+            },
             doc: null as unknown,
             depth: 1,
           },
@@ -168,6 +176,10 @@ describe("useEditorBridge", () => {
               type: { name: "paragraph" },
               attrs: { paraId: "P" },
             }),
+            parent: {
+              type: { name: "paragraph" },
+              attrs: { paraId: "P" },
+            },
             doc: null as unknown,
             depth: 1,
           },
@@ -197,6 +209,45 @@ describe("useEditorBridge", () => {
       expect(
         useDocumentStore.getState().selectionFormat?.headingLevel
       ).toBeUndefined();
+    });
+    it("段落 numPr+listIsBullet 时 selectionFormat.listType=unordered", () => {
+      const { result } = renderHook(() => useEditorBridge());
+      const mockPMState = {
+        selection: {
+          $from: {
+            parent: {
+              type: { name: "paragraph" },
+              attrs: {
+                paraId: "L1",
+                numPr: { numId: 1, ilvl: 0 },
+                listIsBullet: true,
+              },
+            },
+          },
+        },
+      } as unknown as EditorState;
+      act(() => {
+        result.current.editorRef.current = {
+          getEditorRef: () => ({
+            getState: () => mockPMState,
+            getView: () => null,
+          }),
+        } as never;
+      });
+      act(() => {
+        result.current.handleSelectionChange({
+          hasSelection: true,
+          isMultiParagraph: false,
+          textFormatting: {},
+          paragraphFormatting: {},
+          styleId: null,
+          startParagraphIndex: 0,
+          endParagraphIndex: 0,
+        });
+      });
+      expect(useDocumentStore.getState().selectionFormat?.listType).toBe(
+        "unordered"
+      );
     });
     it("view 为 null 时降级为库 tf.fontFamily?.ascii", () => {
       const { result } = renderHook(() => useEditorBridge());

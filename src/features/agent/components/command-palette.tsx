@@ -32,12 +32,16 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
+  execDecreaseListLevel,
+  execIncreaseListLevel,
   execIndent,
   execInsertTable,
   execOutdent,
+  execRemoveList,
   execSetAlignment,
+  execToggleBulletList,
   execToggleMark,
-  execWrapIn,
+  execToggleNumberedList,
 } from "@/features/editor/commands";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -231,14 +235,35 @@ const RIBBON_COMMANDS: PaletteAction[] = [
     id: "cmd-orderedList",
     labelKey: "format.orderedList",
     icon: ListOrdered,
-    execute: () => execWrapIn("ordered_list"),
+    execute: () => execToggleNumberedList(),
   },
   {
     kind: "command",
     id: "cmd-unorderedList",
     labelKey: "format.unorderedList",
     icon: List,
-    execute: () => execWrapIn("bullet_list"),
+    execute: () => execToggleBulletList(),
+  },
+  {
+    kind: "command",
+    id: "cmd-increaseListLevel",
+    labelKey: "format.increaseListLevel",
+    icon: Indent,
+    execute: () => execIncreaseListLevel(),
+  },
+  {
+    kind: "command",
+    id: "cmd-decreaseListLevel",
+    labelKey: "format.decreaseListLevel",
+    icon: Outdent,
+    execute: () => execDecreaseListLevel(),
+  },
+  {
+    kind: "command",
+    id: "cmd-removeList",
+    labelKey: "format.removeList",
+    icon: ListOrdered,
+    execute: () => execRemoveList(),
   },
   {
     kind: "command",

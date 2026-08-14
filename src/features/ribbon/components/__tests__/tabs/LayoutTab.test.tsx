@@ -19,6 +19,7 @@ const mockCmds = vi.hoisted(() => ({
   execGetWatermark: vi.fn(() => null),
   execSetColumns: vi.fn(),
   execInsertSectionBreak: vi.fn(),
+  execRemoveSectionBreak: vi.fn(),
 }));
 vi.mock("@/features/editor/commands", () => mockCmds);
 
@@ -52,7 +53,6 @@ vi.mock("@/components/ui/dialog", () => ({
     <p>{children}</p>
   ),
 }));
-
 
 // Radix Select 在 jsdom 下打开下拉需要 PointerEvent;mock 为原生 <select>,
 // SelectTrigger 仅渲染 trigger 文本,onValueChange 通过 change 事件触发。
@@ -281,6 +281,22 @@ describe("LayoutTab", () => {
       target: { value: "continuous" },
     });
     expect(mockCmds.execInsertSectionBreak).toHaveBeenCalledWith("continuous");
+  });
+
+  it("分节符选择奇数页调用 execInsertSectionBreak('oddPage')", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.change(getSelect("ribbon-sectionBreak"), {
+      target: { value: "oddPage" },
+    });
+    expect(mockCmds.execInsertSectionBreak).toHaveBeenCalledWith("oddPage");
+  });
+
+  it("分节符选择删除调用 execRemoveSectionBreak", () => {
+    render(<LayoutTab {...props} />);
+    fireEvent.change(getSelect("ribbon-sectionBreak"), {
+      target: { value: "remove" },
+    });
+    expect(mockCmds.execRemoveSectionBreak).toHaveBeenCalledOnce();
   });
 
   it("点击更多分栏 → 对话框应用调用 execSetColumns", () => {

@@ -32,12 +32,12 @@ import {
 } from "@/components/ui/select";
 import {
   execIndent,
-  execLift,
   execOutdent,
   execRedo,
   execSetAlignment,
+  execToggleBulletList,
+  execToggleNumberedList,
   execUndo,
-  execWrapIn,
 } from "@/features/editor/commands";
 import {
   ALIGNMENTS,
@@ -210,9 +210,7 @@ export function HomeTab(_props: RibbonCallbacks) {
         <ListToggleButton
           label={t("format.orderedList")}
           listType="ordered"
-          onToggle={(pressed) =>
-            pressed ? execLift() : execWrapIn("ordered_list")
-          }
+          onToggle={() => execToggleNumberedList()}
           shortcut="⌘⇧7"
           testId="ribbon-orderedList"
         >
@@ -221,9 +219,7 @@ export function HomeTab(_props: RibbonCallbacks) {
         <ListToggleButton
           label={t("format.unorderedList")}
           listType="unordered"
-          onToggle={(pressed) =>
-            pressed ? execLift() : execWrapIn("bullet_list")
-          }
+          onToggle={() => execToggleBulletList()}
           shortcut="⌘⇧8"
           testId="ribbon-unorderedList"
         >

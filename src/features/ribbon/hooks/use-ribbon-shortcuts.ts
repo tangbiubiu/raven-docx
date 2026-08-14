@@ -8,7 +8,7 @@
 //
 // 本 hook 绑定:
 //   Cmd+\   清除格式
-//   Cmd+]   增加缩进
+//   Cmd+]   增加缩进(列表内降级为降级缩进→列表级别)
 //   Cmd+[   减少缩进
 //   Cmd+Shift+7  有序列表(用 e.code 避免 Shift+数字的符号映射问题)
 //   Cmd+Shift+8  无序列表
@@ -16,7 +16,8 @@ import { useEffect } from "react";
 import {
   execIndent,
   execOutdent,
-  execWrapIn,
+  execToggleBulletList,
+  execToggleNumberedList,
 } from "@/features/editor/commands";
 import { clearFormatting } from "@/features/formatting/format-apply";
 
@@ -29,8 +30,8 @@ const NO_SHIFT_SHORTCUTS: Record<string, () => void> = {
 
 /** Shift 修饰的快捷键映射(e.code → 执行函数)/ shift shortcut map */
 const SHIFT_SHORTCUTS: Record<string, () => void> = {
-  Digit7: () => execWrapIn("ordered_list"),
-  Digit8: () => execWrapIn("bullet_list"),
+  Digit7: execToggleNumberedList,
+  Digit8: execToggleBulletList,
 };
 
 export function useRibbonShortcuts(): void {

@@ -108,43 +108,10 @@ export function useFormatState() {
     return;
   };
 
-  /**
-   * 判断当前是否在某种列表内。
-   */
-  const getListType = (): "ordered" | "unordered" | null => {
-    const view = getView();
-    if (!view) {
-      return null;
-    }
-
-    const { state } = view;
-    const { $from } = state.selection;
-
-    // 向上遍历祖先节点，查找 list_item 的父节点
-    const depth = $from.depth;
-    if (typeof depth !== "number") {
-      return null;
-    }
-    for (let d = depth; d > 0; d--) {
-      const node = $from.node(d);
-      if (!node) {
-        continue;
-      }
-      if (node.type.name === "ordered_list") {
-        return "ordered";
-      }
-      if (node.type.name === "bullet_list") {
-        return "unordered";
-      }
-    }
-    return null;
-  };
-
   return {
     isActive,
     isAlignActive,
     getHeadingLevel,
-    getListType,
     // 响应式选区格式值(从 selectionFormat 读取,随选区变化更新)
     // Reactive selection format values (from selectionFormat, update on selection change)
     fontFamily,
