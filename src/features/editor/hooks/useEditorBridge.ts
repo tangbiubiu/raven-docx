@@ -181,6 +181,7 @@ function buildSelectionFormat(
     fontFamily,
     alignment: normalizeAlignment(state.paragraphFormatting.alignment),
     headingLevel: headingMatch ? Number(headingMatch[1]) : undefined,
+    styleId: state.styleId ?? undefined,
     listType,
   };
 }
@@ -211,8 +212,25 @@ export function createEditorBridge(ref: DocxEditorRef): EditorBridge {
     getSelectionInfo: () => useDocumentStore.getState().selectionInfo,
     getEditorView: () => ref.getEditorRef()?.getView() ?? null,
     dispatchTransaction: (tr) => ref.getEditorRef()?.dispatch?.(tr),
-    applyFormatting: () => false,
-    setParagraphStyle: () => false,
+    // 委托 react 适配器的 applyFormatting/setParagraphStyle（内部使用库命令 + StyleResolver）。
+    // 兼容旧调用形态（opts 为宽松 Record）：缺 paraId/marks 视为无效请求返回 false。
+    applyFormatting: (opts) => {
+      const { paraId, search, marks } = opts as {
+        paraId?: string;
+        search?: string;
+        marks?: unknown;
+      };
+      if (!(paraId && marks)) {
+        return false;
+      }
+      return ref.applyFormatting({
+        paraId,
+        search,
+        marks: marks as never,
+      });
+    },
+    setParagraphStyle: (opts) =>
+      ref.setParagraphStyle({ paraId: opts.paraId, styleId: opts.styleId }),
     scrollToParaId: (paraId) => ref.scrollToParaId(paraId),
     setZoom: (zoom) => ref.setZoom(zoom / 100), // store 存百分比，DocxEditor 用分数刻度
     openPrintPreview: () => ref.openPrintPreview(),

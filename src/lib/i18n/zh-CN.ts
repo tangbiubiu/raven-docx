@@ -99,6 +99,7 @@ export const zhCN: Translations = {
   "format.heading5": "标题 5",
   "format.heading6": "标题 6",
   "format.normal": "正文",
+  "format.clearStyle": "清除样式",
   "format.alignLeft": "左对齐",
   "format.alignCenter": "居中",
   "format.alignRight": "右对齐",
