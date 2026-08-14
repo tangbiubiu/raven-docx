@@ -157,6 +157,22 @@ export const en: Translations = {
   "ribbon.group.changes": "Changes",
   "ribbon.group.allChanges": "All Changes",
   "ribbon.group.print": "Print",
+  "ribbon.group.watermark": "Watermark",
+
+  // === Watermark dialog ===
+  "watermark.title": "Watermark",
+  "watermark.text": "Text",
+  "watermark.font": "Font",
+  "watermark.color": "Color",
+  "watermark.layout": "Layout",
+  "watermark.diagonal": "Diagonal",
+  "watermark.horizontal": "Horizontal",
+  "watermark.semitransparent": "Semitransparent",
+  "watermark.size": "Size",
+  "watermark.size.auto": "Auto",
+  "watermark.apply": "Apply",
+  "watermark.clear": "Clear Watermark",
+  "watermark.cancel": "Cancel",
 
   // === Ribbon Buttons ===
   "ribbon.button.newComment": "New Comment",

@@ -158,6 +158,22 @@ export const zhCN: Translations = {
   "ribbon.group.changes": "更改",
   "ribbon.group.allChanges": "全部更改",
   "ribbon.group.print": "打印",
+  "ribbon.group.watermark": "水印",
+
+  // === 水印对话框 ===
+  "watermark.title": "水印",
+  "watermark.text": "文字",
+  "watermark.font": "字体",
+  "watermark.color": "颜色",
+  "watermark.layout": "版式",
+  "watermark.diagonal": "斜向",
+  "watermark.horizontal": "水平",
+  "watermark.semitransparent": "半透明",
+  "watermark.size": "字号",
+  "watermark.size.auto": "自动",
+  "watermark.apply": "确定",
+  "watermark.clear": "清除水印",
+  "watermark.cancel": "取消",
 
   // === Ribbon 按钮(新增项,复用项不重复) ===
   "ribbon.button.newComment": "新建批注",

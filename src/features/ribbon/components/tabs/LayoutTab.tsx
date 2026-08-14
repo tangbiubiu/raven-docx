@@ -1,7 +1,15 @@
 // src/features/ribbon/components/tabs/LayoutTab.tsx — 布局标签页 / Layout tab
 // Phase 3: 行距 / 段落间距 / 缩进控制 / line spacing, paragraph spacing, indent
 
-import { Columns, Indent, LayoutTemplate, Outdent } from "lucide-react";
+import {
+  Columns,
+  Droplets,
+  Indent,
+  LayoutTemplate,
+  Outdent,
+} from "lucide-react";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -21,6 +29,7 @@ import type { RibbonCallbacks } from "../Ribbon";
 import { RibbonButton } from "../RibbonButton";
 import { RibbonGroup } from "../RibbonGroup";
 import { RibbonSeparator } from "../RibbonSeparator";
+import { WatermarkDialog } from "../WatermarkDialog";
 
 // === 常量 / Constants ===
 
@@ -42,6 +51,7 @@ const ptToTwips = (pt: number): number => pt * 20;
 
 export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
   const { t } = useT();
+  const [showWatermarkDialog, setShowWatermarkDialog] = useState(false);
   return (
     <>
       <RibbonGroup labelKey="ribbon.group.pageSetup">
@@ -67,6 +77,29 @@ export function LayoutTab({ onPageSetup, onHeaderFooter }: RibbonCallbacks) {
       </RibbonGroup>
 
       <RibbonSeparator />
+
+      {/* 水印组 / Watermark group */}
+      <RibbonGroup labelKey="ribbon.group.watermark">
+        <RibbonButton
+          label={t("watermark.title")}
+          onClick={() => setShowWatermarkDialog(true)}
+          testId="ribbon-watermark"
+        >
+          <Droplets className="size-5" />
+        </RibbonButton>
+      </RibbonGroup>
+
+      <RibbonSeparator />
+
+      <Dialog
+        onOpenChange={(o) => !o && setShowWatermarkDialog(false)}
+        open={showWatermarkDialog}
+      >
+        <DialogContent className="p-0">
+          <DialogTitle className="sr-only">{t("watermark.title")}</DialogTitle>
+          <WatermarkDialog onClose={() => setShowWatermarkDialog(false)} />
+        </DialogContent>
+      </Dialog>
 
       <RibbonGroup labelKey="ribbon.group.lineSpacing">
         <span className="contents" data-testid="ribbon-lineSpacing">
